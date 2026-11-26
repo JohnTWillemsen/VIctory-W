@@ -60,9 +60,18 @@ Same pinned detached worktree commit `01f91fea96de7c6fe47d5dd9f302e51a2403cac7`;
 
 Next candidate, separately: upstream #2683 after its 2026-11-26 rebase to main, head `aecd60423c4673233104afaba1bde81f40d78a93`, uses a conservative capped shader view index (`HEAP_VIEWS = 1,000,000`) and carries null-buffer boundary tests. Keep as its own worktree and Cargo target; do not merge with #3300 or #2121 at this stage. Then upstream #2121 at `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608` (paging) is the separately controlled alternative. Both may have revised heads; always reverify pin.
 
+
+### Owner synthetic confirmation of upstream #2683 — November 26
+
+In a **separate, detached worktree** from original clean main, the owner ran the exact upstream [PR #2683](https://github.com/Marvisak/VIctory/pull/2683) commit `aecd60423c4673233104afaba1bde81f40d78a93`, using its own Cargo target directory. Native PowerShell/cmd output confirms the command `cargo test -p victory-gpu --lib --locked descriptor:: -- --test-threads=1 --nocapture` compiled and ran **24 tests: 24 passed / 0 failed / 210 filtered, exit code 0**. These include `descriptor::host::tests::a_heap_has_every_slot_shaders_clamp_to`, `the_capped_layout_and_the_small_range_fit_the_clamp_shaders_use`, and main's prior failing `dynamic_slots_are_held_until_released`. This is **UNIT_PASS on the owner RTX 5090 setup**, without full proof which adapter each test used. It is neither a full workspace test nor a native title/graphics test. Full logs remain outside Git.
+
+**Three distinct synthetic observations:** untouched main `63bcca43`: 21/22 in `descriptor` selection; #3300 pinned `01f91fea`: 16/16 in `descriptor::host::tests::` selection; #2683 pinned `aecd6042`: 24/24 in `descriptor::` selection. **Filters differ; don't compare totals as a performance ranking.** Both upstream patches remain distinct/unmerged and neither is a verified graphics fix in this owner's game.
+
+**Next independent experiment:** [#2121](https://github.com/Marvisak/VIctory/pull/2121) paged view heaps at last-verified `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`; recheck live head, create separate worktree and separate Cargo target, run targeted paging/readback tests before any game build. Do not stack #2121 with #2683 or #3300. Preserve original release and source-clean main.
+
 ## Evidence boundaries
 
-`SOURCE_READ` and `CODE_REVIEWED` apply to script/PR source inspection only. Tests on the owner's machine remain `NOT_RUN` until their log is provided. No title test or FPS claim follows from this collector.
+`SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
 
 Private logs may include local source paths. Review before sharing, and **never upload title logs, captures, memory dumps, raw shader data or proprietary binaries to GitHub**. This collector intentionally does not enumerate untracked files, print git remote URLs, or collect game paths.
 
