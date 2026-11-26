@@ -2,7 +2,7 @@
 
 **Last source verification:** 2026-11-26 (America/Phoenix; some GitHub times UTC).
 **Scope:** New source-clean fork `JohnTWillemsen/VIctory-W` only.
-**Evidence classification:** `SOURCE_READ` (GitHub refs and checked files); `NOT_RUN` (this fork's user hardware gameplay).
+**Evidence classification:** `SOURCE_READ` (GitHub refs and checked files); `CI_PASS` (the explicitly pinned, previously checked documentation head); `NOT_RUN` (this fork's user hardware gameplay).
 
 ## Verified foundation at this snapshot
 
@@ -22,7 +22,7 @@ Establish source-controlled multi-agent onboarding, evidence-first research, PR 
 
 ## Next operations (execute only after live verification)
 
-1. Review this documentation setup against `main`, run the agent-document check and the repository's asset policy/Windows CI. Confirm PR checks on the exact candidate SHA; if unavailable say so.
+1. Review [draft PR #1](https://github.com/JohnTWillemsen/VIctory-W/pull/1) against `main`, then inspect **the live PR head SHA and its completed checks**. The last confirmed clean snapshot was `c4a7817560b6091862dae65a3ca207f0a079b3e0` (Windows CI and agent-docs integrity both succeeded); **subsequent documentation changes require a fresh check**. Owner authorization is required before merging.
 2. Preserve `main` as an upstream-aligned reference. Choose a single small upstream-compatible **source-only** regression or missing bug for a separate experiment. First prove whether `main` already implements it.
 3. Identify the latest primary-upstream issues/PRs by source analysis and evidence. Record candidate/duplicate/conflict checks in UPSTREAM_TRACKER, not ungrounded speculation.
 4. Separately prepare an RTX 5090 local run with legally obtained files outside Git and identical baseline settings; **hardware owner must execute it**. Capture sanitized measurements only in a private local test location.
@@ -31,7 +31,8 @@ Establish source-controlled multi-agent onboarding, evidence-first research, PR 
 ## Current blockers / truth boundaries
 
 - `NOT_RUN`: no new-fork native RTX 5090 game test is recorded.
-- `NOT_VERIFIED`: no assertion about whether this onboarding PR has passed CI or been merged until its live workflow results are checked.
+- `CI_PASS` (previous head only): [Windows CI run 45862905345](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45862905345) succeeded on `c4a7817560b6091862dae65a3ca207f0a079b3e0`: both Clippy variants and workspace tests (872 passed, 0 failed, 10 ignored); the repository asset-policy test passed. [Documentation integrity run 45862905404](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45862905404) also passed with 41 working local links and a deliberate broken-link rejection. **This is not proof the subsequently edited head passed.**
+- `UNKNOWN`: whether PR #1 is currently merged or checked at its *live* head; fetch status and matching workflow results before reporting. It was open/draft during this audit.
 - `UNKNOWN`: present-day upstream branches, PR disposition and hardware behavior beyond this dated snapshot; re-query GitHub.
 - `UNKNOWN`: branch-protection/ruleset enforcement. The GitHub integration could not read the fork's branch-protection settings. **Written instructions are not enforced GitHub permissions.** Owner should enable a `main` ruleset requiring reviewed PRs and the `check` + `agent-docs` checks, with force-push/deletion blocked. Confirm enforcement in GitHub Settings.
 - The historical experimental integration in the old fork lives at a different repository/branch; see LEGACY_CONTEXT.
