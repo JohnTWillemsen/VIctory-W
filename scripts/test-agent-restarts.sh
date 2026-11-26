@@ -46,6 +46,7 @@ case "${1:-}" in
     printf 'task=VW-SIM-001\nbase=%s\nstage=claimed\nevidence=NOT_RUN\n' "$2" > vw-sim-task.txt
     git add vw-sim-task.txt
     git commit -qm 'test: create synthetic task handoff'
+    printf 'local-only-session-A' > "$HOME/session-only-token"
     git push -q -u origin experiment/vw-restart-sim
     ;;
   _interrupt)
@@ -56,6 +57,7 @@ case "${1:-}" in
     ;;
   _resume)
     child_boot "$2"
+    [[ ! -e "$HOME/session-only-token" ]] || fail 'new session inherited prior worker HOME'
     git fetch -q origin
     git switch -q -c experiment/vw-restart-sim --track origin/experiment/vw-restart-sim
     grep -Fxq "base=$2" vw-sim-task.txt || fail 'branch checkpoint from wrong base'
@@ -95,7 +97,6 @@ bash "$repo/scripts/check-agent-docs.sh" >/dev/null || fail 'existing docs valid
 
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
-mkdir -p "$scratch/home-A" "$scratch/home-B" "$scratch/home-C"
 remote="$scratch/local-origin.git"
 git init -q --bare --initial-branch=main "$remote"
 git clone -q "$remote" "$scratch/seed" 2>/dev/null
@@ -110,12 +111,13 @@ baseline="$(git -C "$scratch/seed" rev-parse HEAD)"
 clone_agent() {
   local name="$1"
   git clone -q "$remote" "$scratch/$name"
+  mkdir -p "$scratch/home-$name"
   git -C "$scratch/$name" config user.name "$name"
   git -C "$scratch/$name" config user.email "$name@example.invalid"
 }
 worker() {
   local name="$1" op="$2"; shift 2
-  (cd "$scratch/$name" && env -i PATH="$PATH" HOME="$scratch/home-A" \
+  (cd "$scratch/$name" && env -i PATH="$PATH" HOME="$scratch/home-$name" \
      bash "scripts/test-agent-restarts.sh" "$op" "$@")
 }
 

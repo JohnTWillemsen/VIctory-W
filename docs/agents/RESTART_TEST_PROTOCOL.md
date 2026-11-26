@@ -7,7 +7,7 @@ bash scripts/check-agent-docs.sh
 bash scripts/test-agent-restarts.sh
 ```
 
-The same two checks run in the `agent-docs` GitHub Actions job for pull requests and changes to `main`. The restart test creates a temporary **local bare Git remote**, seeds it from the exact checked-out commit (`git archive HEAD`), and launches workers as separate Bash processes with cleared inherited environments and independent clone directories. It does not push or write to the real GitHub repository, change real branches, run the game, or access a GPU.
+The same two checks run in the `agent-docs` GitHub Actions job for pull requests and changes to `main`. The restart test creates a temporary **local bare Git remote**, seeds it from the exact checked-out commit (`git archive HEAD`), and launches workers as separate Bash processes with cleared inherited environments, **separate HOME directories**, and independent clone directories. The resumed session checks that a marker written only to the prior worker's HOME is unavailable. It does not push or write to the real GitHub repository, change real branches, run the game, or access a GPU.
 
 ## Scenarios with real assertions
 
