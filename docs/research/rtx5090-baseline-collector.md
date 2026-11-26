@@ -199,6 +199,25 @@ Git also auto-merged `crates/victory-gpu/src/host.rs` and `crates/victory-shader
 
 This is E-025. It establishes no combined source fix, no compiler pass, no PSO reduction and no newly rendered game world.
 
+
+### Source-review resolution package for six #189/#2121 conflicts — E-026 (2026-11-26)
+
+**Actual conflict files examined:** The owner's `wave64-paging-conflicts.zip` was unpacked privately. Its metadata identifies a non-committing pending merge on a third local integration branch from #2121 `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608` with `MERGE_HEAD` #189 `3e39e34037915da6d0f10b58b2872799bd9f3ca8`. Six conflicted and two textually auto-merged full Rust files, combined diff and status were inspected; Git had not committed/pushed. Each of the six conflicted files had one marker hunk.
+
+**Prepared review resolutions (NOT owner-tested):**
+1. `apps/victory/src/translate.rs`: keep paging's `victory_gpu::shader_cache::options()`, then apply #189's host-recommended `wave64` mode before `emit_with`.
+2. `crates/victory-gpu/src/draw.rs`: keep runtime `shader_cache::options()` rather than a default option that would discard paging.
+3. `crates/victory-gpu/src/shader_cache.rs`: `options()` now includes the selected Wave64 mode **and** paging+mark flags. The runtime translator loops through supported Wave64 fallbacks while carrying the complete paging/mark options to *each* translation; its cache path distinguishes view-pages, while the cached input retains Wave64 mode.
+4. `crates/victory-shader/src/emit/mod.rs`: retain **all three fields** in `Options`: `view_marks`, `view_pages`, `wave64`.
+5. `crates/victory-shader/src/emit/lower.rs`: retain the `mark_read_bit(VIEW_READS,...)` bitmap write, gated by `self.x.options.view_marks`. Also fix two stale `self.x.view_marks` field references missed by Git conflict markers (one is inside a handle-read path, one in the conflict).
+6. `crates/victory-shader/src/emit/stride_tests.rs`: preserve the fixture's `view_marks` parameter with the new `options: Options { view_marks, ..Default::default() }` API.
+
+`crates/victory-gpu/src/host.rs` and `crates/victory-shader/src/emit/host.rs` are included **unchanged as reviewed reference snapshots**. The resultant six source files passed a static marker-absence check and carry exact per-file hashes in the manifest. **No Rust compiler or Windows test was available in the preparation environment, so NO compile, unit, GPU or gameplay result is asserted.**
+
+A PRIVATE chat download `victory_wave64_paging_reviewed_resolution.zip` (SHA256 `B36D2B4065BE5C346D607E95B0112586F93AB12E707B3DAF31A2998B67237829`) provides these eight source snapshots, patch/diff, manifest, and two PowerShell 5.1 scripts. `APPLY_REVIEWED.ps1` verifies exact branch/HEAD/MERGE_HEAD, all eight original SHA256 hashes and the six unmerged stages before backing up and replacing the six conflicted files. `VALIDATE_REVIEWED.ps1` performs workspace `cargo check --workspace --all-targets`, targeted Wave64, descriptor and full GPU tests, then separate release build in a new Cargo target, stops on first failure and records a private log.
+
+**Next:** The owner applies and tests locally. Do not stage/commit/push conflict resolutions or call them working until compilation and GPU test evidence arrives. Keep the prior pinned #2121, #189 and original main/release untouched. This prepared package is not present in GitHub; a new agent may need the previous chat attachment or to request it if unavailable.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner subsequently supplied **actual synthetic test logs for main, #3300, #2683 and #2121, full #2121 GPU-suite and build logs, a native title runtime trace and firsthand visible-title-card observation**; the dated sections above distinguish these separate sources. **The collector script itself does not run a title or establish FPS**, and the later title-card freeze does not prove a working world or renderer fix.
