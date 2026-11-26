@@ -35,3 +35,15 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Evidence:** [CI 45867868772](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45867868772), exact head `997152e30e57e0d810fbf4275ebfacf8b3370b73`. Owner requested a controlled restart test; no authorization to merge runtime changes or this draft PR is inferred.
 
 **Revisit:** If the protocol or AI execution model changes, add a focused negative regression. Keep GitHub branch protection and genuine independent AI-agent acceptance as separate gates.
+
+### D-004 — 2026-11-26 — Persist verified RTX 5090 progress and future-session bootstrap in GitHub
+
+**Decision / owner authorization:** The owner explicitly requested that meaningful testing and research milestones be committed to GitHub so a new conversation can resume reliably, using a better repository-led prompt if helpful. Keep `CURRENT_STATE`, `TASK_QUEUE`, append-only `EVIDENCE_LOG`, candidate tracker and `NEW_SESSION_PROMPT` updated at substantive milestones; put experiment-specific details into their own draft PR. Maintain the verified main baseline and clear owner-controlled merge approvals.
+
+**Why:** Chats can end without sharing hidden context. Durable, dated, exact-SHA evidence and a branch-aware entry prompt prevent repeating tests or confusing successful unit tests with visual correctness. PR #1 contains these documents but **is not merged into main**, so fresh sessions must first read the docs branch, then verify live PRs and current code.
+
+**Alternatives rejected:** Treat chat memory as the source of truth, write raw PowerShell/title logs to Git, copy entire research history into root README, or auto-merge experimental NVIDIA fixes after a green synthetic test.
+
+**Evidence:** E-011 through E-014, including a reproducible baseline failure and 16/16 host tests on [upstream #3300](https://github.com/Marvisak/VIctory/pull/3300); draft governance [PR #1](https://github.com/JohnTWillemsen/VIctory-W/pull/1) and test [PR #3](https://github.com/JohnTWillemsen/VIctory-W/pull/3).
+
+**Revisit:** Update workflow if PR #1 is merged or a real independently resumed agent exposes gaps. The owner must separately authorize any merge, game artifact upload or upstream submission.
