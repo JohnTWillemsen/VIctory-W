@@ -180,6 +180,25 @@ Command: `cargo test -p victory-shader --locked -- wave64 --test-threads=1`.
 
 Tracked as E-024 in the shared evidence ledger.
 
+
+### Owner's non-mutating #2121 + #189 Git merge inspection — six conflicts (2026-11-26)
+
+Owner uploaded local code-only `wave64-paging-merge-inspection.txt`. This confirms the two pinned upstream heads were fetched and `git merge-tree --write-tree --name-only` returned **exit 1**. The computed tree object `4b08c52f7e5d8680611f375e1f60be268e2c091b` **is not a merge commit or a built binary**.
+
+**Actual Git content conflicts (6):**
+- `apps/victory/src/translate.rs`
+- `crates/victory-gpu/src/draw.rs`
+- `crates/victory-gpu/src/shader_cache.rs`
+- `crates/victory-shader/src/emit/lower.rs`
+- `crates/victory-shader/src/emit/mod.rs`
+- `crates/victory-shader/src/emit/stride_tests.rs`
+
+Git also auto-merged `crates/victory-gpu/src/host.rs` and `crates/victory-shader/src/emit/host.rs`, but these are **semantic overlaps**, not proof of compatibility. The critical integration risks include: matching Wave64 shader mode with emitted code and shader cache keys, keeping paging's view-mark and descriptor-indexing behavior, and not losing #2121's added stride and residency tests.
+
+**Next:** A third, isolated `pr2121-wave64-integration` worktree and local experimental branch from exact #2121, non-committing merge of pinned #189 with rerere disabled, then a **private archive of ONLY the eight open-source Rust files and a combined Git diff**, all source conflict markers intact. No game files, screenshots, shaders or unredacted title logs in archive; original repo and baseline release remain unchanged. The next agent should **actually inspect/reconcile conflicting code** rather than simply selecting entire ours/theirs files. Do not commit or push source containing conflict markers.
+
+This is E-025. It establishes no combined source fix, no compiler pass, no PSO reduction and no newly rendered game world.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner subsequently supplied **actual synthetic test logs for main, #3300, #2683 and #2121, full #2121 GPU-suite and build logs, a native title runtime trace and firsthand visible-title-card observation**; the dated sections above distinguish these separate sources. **The collector script itself does not run a title or establish FPS**, and the later title-card freeze does not prove a working world or renderer fix.
@@ -188,4 +207,4 @@ Private logs may include local source paths. Review before sharing, and **never 
 
 ## Follow-on work
 
-**Current next experiment after E-024:** the separate #2121 diagnostics run (E-023) already confirmed **91 D3D12 Wave64-on-Wave32 errors and an incorrect gray-purple frame**, and #189's **40/40 Wave64-selected tests passed** (E-024). Do not repeat either unchanged experiment for handoff. Source-review both exact PR heads and prepare a **third, isolated paging+Wave64 integration worktree** with independent build/cache and **no changes to original `main`, #2121 or #189 worktrees**. Inspect merge and semantic conflicts (eight overlapping files); do not auto-resolve. Before a game A/B, verify full selected Wave64, descriptor/page tests and GPU suite, then native debug layer with counts of D3D12 Wave64 errors, refused pipelines, dropped dispatches, and visual output. Missing FSPX device slot 0x218, sampler heap and unsupported texture formats remain independent open bugs.
+**Current next experiment after E-025:** the owner ALREADY inspected the two exact refs and Git confirmed **six actual content conflicts**, with two auto-merged shared files. Do not redo read-only merge-tree on unchanged source. Create a third local `pr2121-wave64-integration` worktree from the pinned paging head, use `git merge --no-commit --no-ff` of #189 with rerere disabled, then privately upload the six conflict-marked source files, two auto-merged overlapping source files and a combined Git diff in a ZIP. Inspect and correctly reconcile all code, keeping cache-key dimensions and paging view marks. Then verify Wave64 and descriptor/paging tests, full GPU suite and D3D12 native title scene. Other FSPX slot 0x218, missing sampler heap and unsupported texture formats remain independently unresolved.
