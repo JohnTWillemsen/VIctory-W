@@ -109,6 +109,17 @@ Following the previously recorded shader stride failure (9/10; NVIDIA structured
 
 **Next meaningful gate:** run the experimental paging executable in a controlled private title session, with `VICTORY_VIEW_PAGES=1`, dedicated `VICTORY_CACHE_DIR` / `VICTORY_DATA_DIR` *outside source trees*, pinned source/executable hashes, and the same title/console mode/scene as the baseline. Collect concise startup/paging/frame observations while keeping proprietary title logs, dumps, screenshots and shader caches out of public GitHub. A build/green GPU suite alone cannot establish improved geometry.
 
+
+### First source-built #2121 native-launch attempt — exit 1 with no native output (2026-11-26)
+
+Owner's uploaded private PowerShell log for the pinned experimental #2121 executable contains exactly four substantive lines: "PR #2121 first native execution", full pinned source commit `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`, "Paging enabled: 1", and **"Title exit code: 1"**. It contains **zero VIctory-generated startup/build/mapping, application errors or GPU/scene lines**.
+
+**Evidence classification: UNKNOWN, not a confirmed game or runtime failure.** The prior PowerShell script ran the test binary through `cmd.exe /D /S /C` with multiple nested quotation marks and piped output into `Tee-Object`. The Windows wrapper/capture could be at fault; the log does **not** establish that `victory.exe` successfully started or reached title initialization. Reading `apps/victory/src/main.rs` and `run.rs` at this exact source SHA shows a normal `run` reports title build/mapped-image information after reading/preparing the executable; `--execute` is needed to actually run the title. Failed preflight or missing data may also exit before those messages, but native error text should be captured.
+
+**Next diagnostic:** invoke exact hash-verified `victory.exe` **directly in PowerShell, without `cmd.exe`**, verify `--version` output and `config`, then attempt `run <title-exe> --console series-x` (without `--execute`) to isolate import/map preparation. Only when those succeed, attempt `run <title-exe> --execute --console series-x`. Preserve independent `VICTORY_CACHE_DIR` and `VICTORY_DATA_DIR`, proper stdout/stderr capture and explicit process exit codes. Do not share actual title files or publish unredacted logs. Do not rebuild, merge or infer a paging regression from this result.
+
+This evidence is E-020 in the private owner/test record; E-019's **254/254 GPU passes and release build success** remain valid, as does the separate **shader stride FAIL** (E-018, NVIDIA #1835).
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
