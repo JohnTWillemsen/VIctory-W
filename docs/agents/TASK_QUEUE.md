@@ -1,6 +1,6 @@
 # Bounded task queue (orchestrator-owned)
 
-**Snapshot:** 2026-11-26, after owner RTX 5090 tests. This is a dated task map, **not a live GitHub API**. Before work, inspect *live open PRs* and branch heads, check upstream #1633 claims, and do not assume a previous session still owns a task. No agent may claim background progress without an actual scheduled action.
+**Snapshot:** 2026-11-26, after owner RTX 5090 tests. This is a dated task map, **not a live GitHub API**. Before work, inspect live open PRs/branch refs, check upstream #1633 claims, and do not assume a previous session still owns a task. No agent may claim background progress without an actual scheduled action.
 
 | Task | Status at snapshot | Owner / branch or PR | Acceptance / next action |
 | --- | --- | --- | --- |
