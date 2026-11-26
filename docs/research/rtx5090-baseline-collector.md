@@ -83,6 +83,21 @@ The owner fetched pinned upstream [#2121](https://github.com/Marvisak/VIctory/pu
 
 **Next decision gate:** independently inspect the rest of #2121's GPU/shader regression coverage and determine whether a full Rust GPU/shader test sweep is warranted before an isolated release build. Preserve the existing executable and separate target/cache; keep game files outside Git. Validate actual correctness in comparable scenes before any FPS claim. [#2121](https://github.com/Marvisak/VIctory/pull/2121) may advance: recheck its head before new work.
 
+
+### Broader #2121 shader validation — real failing NVIDIA test (2026-11-26)
+
+Owner supplied a native-output PowerShell log from exactly pinned #2121 `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`, isolated detached worktree / Cargo target, with `VICTORY_VIEW_PAGES=1`. First command:
+
+`cargo test -p victory-shader --lib --locked stride_tests -- --test-threads=1 --nocapture`
+
+**FAILED: 9 passed, 1 failed, 297 filtered, process exit 101**. The failing test is `emit::stride_tests::a_heap_buffer_read_by_element_takes_the_views_stride` at `crates/victory-shader/src/emit/stride_tests.rs:311` (the hardware-labeled D3D12 adapter path). Its observed output starts `[101,104,107,110,...]` then zeros, not expected `[200,201,202,...,231]`. The two **paging-specific** shader tests, `a_heap_index_in_a_paged_view_heap_reads_where_its_page_is` and `views_read_in_a_paged_view_heap_mark_their_pages`, **both passed**, as did `a_heap_buffer_read_where_no_buffer_view_is_reads_zeros`.
+
+This precise NVIDIA behavior and essentially identical array were **already documented** in [upstream issue #1835](https://github.com/Marvisak/VIctory/issues/1835): a synthetic `Stride::Structured(12)` test SRV + translated byte-addressed `rawBufferLoad` appears to apply structure stride twice on NVIDIA. The source code in the tested #2121 revision still uses `Stride::Structured(12)` in this fixture, as in clean `main`; it is not evidence of a new paging regression. [Upstream PR #2178](https://github.com/Marvisak/VIctory/pull/2178), last observed **OPEN** at `319749e45737b4dd76e274a88acd0d2504fcd916`, proposes runtime raw-descriptor handling and a test fixture change, but **was neither combined nor run by the owner**. [#1887](https://github.com/Marvisak/VIctory/pull/1887) is a separate closed test-side effort. No independent runtime fix has been established by this local test. Avoid duplicate fixes, silent skip, or auto-import.
+
+**Important execution consequence:** The owner's scripted loop deliberately stopped when the shader test exited 101. Its scheduled second `cargo test -p victory-gpu --lib --locked` and third `cargo build --release --locked -p victory` **did NOT RUN**. There is **no new #2121 release binary** and no title/gameplay A/B in this report. Preserve original `main` and existing executable.
+
+**Next bounded experiment:** test the broader GPU suite and separately build the #2121 release binary in its own target directory without misreporting known shader-test failure as a pass. Any newly failing GPU test needs review *before gameplay*. Do not merge #2178 into #2121 without explicit owner decision and compatibility/regression review. Retain private logs outside Git.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
