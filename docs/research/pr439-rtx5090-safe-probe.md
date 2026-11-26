@@ -10,6 +10,23 @@ The owner's **local and uncommitted** paging [#2121](https://github.com/Marvisak
 
 **Safety dependency:** #439 explicitly warns that partial BVH builder pipeline activation can corrupt title memory or crash. The [#2118](https://github.com/Marvisak/VIctory/pull/2118) source, pinned `999a8f67125865fcc0b3aa23cdc8a93b10ef9974`, is a separately reviewed candidate all-or-none safeguard. Do **not** run a title using #439 unless this guard (or a verified equivalent) is integrated and tested.
 
+
+## Integration collision map (source patches reviewed, not merged)
+
+Inspected **actual per-file upstream PR diffs**, not just claims. A shared pathname is an **overlap**, not necessarily a Git content conflict, and compatible semantics are NOT inferred by automatic merging:
+
+| Additional PR | Paths also changed by #439 | Implication |
+| --- | ---: | --- |
+| #2118 BVH all-or-none | **3**: `gpu/draw.rs`, `gpu/pipeline.rs`, `gpu/pipeline/placed_uav_tests.rs` | Safety prerequisite; review pipeline creation and dispatch gating together before title use |
+| #2098 RT acceleration view address | **0** | Distinct patch surface, still requires verification |
+| #2626 packed formats | **1**: `gpu/host.rs` | Review format support/host resource fallback |
+| #2628 capped descriptor index | **6**: `apps/victory/src/translate.rs`, `gpu/draw.rs`, `gpu/shader_cache.rs`, `shader/emit/lower.rs`, `shader/emit/mod.rs`, `shader/emit/shader.rs` | High semantic risk: cache keys, shader indexing and Wave64 context must coexist |
+| #2464 raw structured views | **1**: `gpu/host.rs` | Validate raw SRV representation and byte offsets |
+| Existing #2121 paging | **9** shared source paths | A **separate** descriptor strategy from the 5080 report's #2628; do not assume both can simply coexist |
+| Existing #189 Wave64 emulation | **17** shared source paths | **Alternative architecture**, not a straightforward additive patch to #439 |
+
+**Conclusion:** Before any *new* combined source, the owner must pass independent shader/BVH tests and decide between (A) a carefully reproduced version of the *reported RTX 5080 stack* using #2628 or (B) adapting #439 with our #2121 pager; avoid replacing or mutating the already validated local #2121+#189 build. No source file merge, Rust build or title run has been performed for this map.
+
 ## First bounded experiment (no game)
 
 Run the code-only `scripts/research/test-pr439-bvh2118.ps1` on the owner's Windows 11 RTX 5090 machine. It:
