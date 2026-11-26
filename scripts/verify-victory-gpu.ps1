@@ -106,21 +106,7 @@ try {
                 $exit = $LASTEXITCODE
                 $diffs = @($output | Where-Object { $_ -match '^Diff in .+?:[0-9]+:' })
                 $paths = @($diffs | ForEach-Object {
-                    $_ -replace '^Diff in (.*?):[0-9]+:
-    }
-    Note "`nCompleted command groups: $($rows.Count) report lines."
-    if ($failed.Count -eq 0) { Note 'Report outcome: no command failures observed. This is NOT gameplay/GPU proof.' }
-    else {
-        Note 'Command groups with failures or unavailable prerequisites:'
-        foreach ($item in $failed) { Note "- $item" }
-    }
-}
-finally {
-    $rows | Out-File -LiteralPath $logFile -Encoding UTF8
-    Write-Host "`nReport saved: $logFile"
-    Write-Host 'Upload the saved report here. Do not publish raw game logs or captures.'
-}
-, '$1'
+                    $_ -replace '^Diff in (.*?):[0-9]+:$', '$1'
                 } | Sort-Object -Unique)
                 "rustfmt: $($diffs.Count) diff hunks across $($paths.Count) source files (nothing changed)"
                 if ($paths.Count -gt 0) {
