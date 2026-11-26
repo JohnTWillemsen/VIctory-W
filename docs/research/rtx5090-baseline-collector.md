@@ -22,9 +22,18 @@ After reviewing the inventory:
 & 'C:\vtw\verify-victory-gpu.ps1' -Mode Synthetic -Repo 'C:\VIctory-W'
 ```
 
-This adds `cargo fmt --all -- --check`, `cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture`, and `cargo xtask policy`, and saves a separate synthetic report. Cargo may take time to build, need MSVC tools, and exercise GPU tests which skip when appropriate. **Read actual test counts and device selection**, not just the script's final command status. Commands that fail are reported and do not automatically rewrite or delete anything. The script defaults `CARGO_TARGET_DIR` to `C:\vtw` if not already set in this session.
+This adds `cargo fmt --all -- --check` (**summarized**, not a giant line-by-line diff), `cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture`, and `cargo xtask policy`, and saves a separate synthetic report. Cargo's native stdout/stderr are combined before PowerShell receives them to avoid Windows PowerShell 5.1 aborting on a normal `Downloading crates ...` progress line. Cargo may take time to build, need MSVC tools, and exercise GPU tests which skip when appropriate. **Read actual test counts and device selection**, not just the script's final command status. Commands that fail are reported and do not automatically rewrite or delete anything. The script defaults `CARGO_TARGET_DIR` to `C:\vtw` if not already set in this session.
 
 Do not change machine-wide script execution policy. Follow your organization's normal policy for reviewing and permitting a single downloaded script. If Windows blocks it, contact your administrator rather than changing security defaults.
+
+
+### November 26 owner baseline observations
+
+Owner inventory: Windows 11 Pro build 26200; RTX 5090 32607 MiB; NVIDIA driver 617.42; Rust/Cargo 1.98.1 MSVC override; clean repo at `63bcca43`; preexisting VIctory release executable. `link.exe` absent on ordinary PowerShell PATH, which does **not** prove MSVC is uninstalled.
+
+First Synthetic execution using the original collector: `cargo xtask policy` passed (191 files). `cargo fmt --all -- --check` failed with 925 diff hunks across 66 source files despite the clean checkout. Treat as **existing baseline formatting divergence**, not an owner change; never run `cargo fmt` on `main` just to silence it. `cargo test` was **inconclusive** because the collector treated initial native stderr text `Downloading crates ...` as a terminating error and never preserved the actual Cargo outcome. This was a **test-runner bug**, not evidence that the GPU tests failed. The collector was amended to combine native streams and report Cargo's actual exit status.
+
+These observations require a second Synthetic report from the amended collector before assigning any GPU test pass/fail result. Neither first nor second Synthetic report proves gameplay correctness.
 
 ## Evidence boundaries
 
