@@ -216,7 +216,28 @@ This is E-025. It establishes no combined source fix, no compiler pass, no PSO r
 
 A PRIVATE chat download `victory_wave64_paging_reviewed_resolution.zip` (SHA256 `B36D2B4065BE5C346D607E95B0112586F93AB12E707B3DAF31A2998B67237829`) provides these eight source snapshots, patch/diff, manifest, and two PowerShell 5.1 scripts. `APPLY_REVIEWED.ps1` verifies exact branch/HEAD/MERGE_HEAD, all eight original SHA256 hashes and the six unmerged stages before backing up and replacing the six conflicted files. `VALIDATE_REVIEWED.ps1` performs workspace `cargo check --workspace --all-targets`, targeted Wave64, descriptor and full GPU tests, then separate release build in a new Cargo target, stops on first failure and records a private log.
 
-**Next:** The owner applies and tests locally. Do not stage/commit/push conflict resolutions or call them working until compilation and GPU test evidence arrives. Keep the prior pinned #2121, #189 and original main/release untouched. This prepared package is not present in GitHub; a new agent may need the previous chat attachment or to request it if unavailable.
+**Follow-on E-027:** The owner did subsequently apply the reviewed source into the third local worktree and completed all five validation gates as listed above; **not yet a title/graphics test or Git commit**. Do not duplicate these checks on identical files solely for handoff. Keep the prior pinned #2121, #189 and original main/release untouched. This prepared package is not present in GitHub; a new agent may need the previous chat attachment or to request it if unavailable.
+
+
+### Owner combined #2121 paging + #189 Wave64 validated — five gates passed (E-027 · 2026-11-26)
+
+The owner ran `VALIDATE_REVIEWED.ps1` after applying the reviewed six-file source package into the **third, isolated local integration worktree**. The owner provided both the **full native Windows PowerShell validation report** (UTF-8 preamble + UTF-16LE Cargo body; decoded 612 lines) and a ZIP of the **six original pre-resolution conflicted Rust files**, confirming rollback provenance. The backup contains each file's original conflict markers; it is **not** the successfully compiled integrated source or a new Git commit.
+
+The report explicitly identifies **source HEAD #2121 `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608` and pending MERGE_HEAD #189 `3e39e34037915da6d0f10b58b2872799bd9f3ca8`** and states `No git commit created.`
+
+| Owner-run validation command | Result |
+| --- | --- |
+| `cargo check --workspace --all-targets --locked` | **PASS, exit 0** |
+| `cargo test -p victory-shader --lib --locked wave64 -- --test-threads=1` | **40 pass, 0 fail, 0 ignored, 303 filtered, exit 0** |
+| `cargo test -p victory-gpu --lib --locked descriptor:: -- --test-threads=1` | **37 pass, 0 fail, 219 filtered, exit 0** |
+| `cargo test -p victory-gpu --lib --locked -- --test-threads=1` | **255 pass, 0 fail, 1 ignored, exit 0** |
+| `cargo build --release --locked -p victory` | **Optimized source-runtime build PASS, exit 0** |
+
+The combined experimental release binary is in the owner's **separate third Cargo target** (not copied over the original paging/baseline release) and its **SHA-256 is `6BE61C34D01929C42C2BC19AEB6D0BD842973A36B41CE21525BFD55332BCD554`**. The full GPU run also passed a descriptor concurrency test which had failed on an earlier unrelated CI run; this test outcome does not establish that any timing/race condition is fixed. The complete shader suite and known structured-stride test remain separately unverified.
+
+**Boundaries:** `COMPILE_PASS`, `UNIT_PASS` and `RELEASE_BUILD_PASS` are established for **this local resolved integration**. No combined executable/title launch, NVIDIA D3D12 debug-layer error comparison, graphics, performance, scene transition or stability is proven by this validation. **Local source remains uncommitted/unpushed; no code is on `VIctory-W/main`.** The previous standalone #2121 Wave64 driver errors and gray-purple scene (E-023) remain historic baseline evidence, not claims about this new binary. All raw logs/backups remain private.
+
+**Next bounded test:** Verify that release binary hash locally; run directly in Windows PowerShell with `VICTORY_VIEW_PAGES=1`, NVIDIA WARP off, `--execute --console series-x`, and new private `VICTORY_CACHE_DIR` / `VICTORY_DATA_DIR`. Determine what the owner actually sees after the "Two Years Ago" card, preserving graphics and title errors privately. If still incorrect, build an **isolated combined diagnostics-profile binary** with `--features diagnostics`, `VICTORY_D3D12_DEBUG=1` and without GPU-based validation; measure whether Wave64 ID 622 errors and host compute pipeline refusals actually change relative to #2121-only E-023 (91/90). Do not assume success from the green source tests. Preserve exact runtime and reference executable hashes. Public Git evidence: sanitized E-027 only.
 
 ## Evidence boundaries
 
