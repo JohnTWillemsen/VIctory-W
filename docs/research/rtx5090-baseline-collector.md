@@ -35,6 +35,17 @@ First Synthetic execution using the original collector: `cargo xtask policy` pas
 
 These observations require a second Synthetic report from the amended collector before assigning any GPU test pass/fail result. Neither first nor second Synthetic report proves gameplay correctness.
 
+
+### Owner synthetic follow-up, November 26 21:21 UTC
+
+RTX 5090 (driver 617.42), clean main `63bcca43`, Rust 1.98.1:
+- `cargo fmt --all -- --check`: 925 diff hunks in 66 files. Source checkout remained clean; an existing formatting baseline mismatch, **not a patch regression**.
+- `cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture`: **21 passed, 1 failed, 210 filtered**, exit 101. Failing `descriptor::host::tests::dynamic_slots_are_held_until_released` at `descriptor/host.rs:2226`: `heap.heap.GetDesc().NumDescriptors >= victory_shader::emit::HEAP_VIEWS` is false on the capped NVIDIA host.
+- `cargo xtask policy`: 191 files OK.
+- This confirms **the test's assumption fails on this GPU**. It does not show that a shader actually read past the heap during gameplay or that descriptor paging fixed geometry.
+- Existing overlapping upstream PRs: [#3300](https://github.com/Marvisak/VIctory/pull/3300) (functional: keeps the full dynamic pool when the host takes the smaller heap; also corrects the test), [#3244](https://github.com/Marvisak/VIctory/pull/3244) (tests for host-specific capacity and copy-pair placement), [#2937](https://github.com/Marvisak/VIctory/pull/2937) (test skip for capped hosts), and [#2683](https://github.com/Marvisak/VIctory/pull/2683) / [#2121](https://github.com/Marvisak/VIctory/pull/2121) (separate shader bound/paged heap work). **Do not duplicate fixes or claim upstream test ownership.** `NEW-24` is already claimed in upstream #1633.
+- Next valuable independent test: fetch PR #3300 head `01f91fea96de7c6fe47d5dd9f302e51a2403cac7` into a detached worktree, compare its host descriptor unit tests with untouched `main` on the same RTX 5090, and retain logs privately. No merging or proprietary data.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to script/PR source inspection only. Tests on the owner's machine remain `NOT_RUN` until their log is provided. No title test or FPS claim follows from this collector.
