@@ -17,6 +17,7 @@
 | [LEGACY_CONTEXT.md](LEGACY_CONTEXT.md) | Historical pointers to previous fork; **not imported into this fork** | Historical, link-only; never promote on memory |
 | [EXPERIMENT_TEMPLATE.md](EXPERIMENT_TEMPLATE.md) | One-page reproducible hypothesis and A/B experiment template | Copy to PR description or private test notes |
 | [NEW_SESSION_PROMPT.md](NEW_SESSION_PROMPT.md) | Paste-ready handoff for a new agent | Keep concise, in sync with AGENTS |
+| [RESTART_TEST_PROTOCOL.md](RESTART_TEST_PROTOCOL.md) | Reproducible cold-start, interruption and conflict simulations with explicit AI limitations | Update when CI rehearsal scenarios change |
 
 **Source-of-truth order:** current GitHub code and exact SHA → completed linked CI/test results → independently recorded local hardware evidence → dated handoff → upstream author reports → hypotheses. A lower tier cannot override a higher tier without investigation.
 

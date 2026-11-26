@@ -12,6 +12,7 @@ required=(
   docs/agents/UPSTREAM_TRACKER.md docs/agents/TASK_QUEUE.md
   docs/agents/ARCHITECTURE_INDEX.md docs/agents/LEGACY_CONTEXT.md
   docs/agents/EXPERIMENT_TEMPLATE.md docs/agents/NEW_SESSION_PROMPT.md
+  docs/agents/RESTART_TEST_PROTOCOL.md scripts/test-agent-restarts.sh
   docs/architecture.md docs/asset-policy.md rust-toolchain.toml
 )
 for file in "${required[@]}"; do
