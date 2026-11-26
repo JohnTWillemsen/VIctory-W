@@ -94,18 +94,57 @@ try {
 
     if ($Mode -eq 'Synthetic') {
         Note "`nSynthetic mode runs source checks and unit tests; it does NOT run the game."
-        Probe 'cargo fmt --all -- --check' {
+        # Cargo progress and rustfmt diffs often go to native stderr. PowerShell
+        # 5.1 with ErrorActionPreference=Stop can throw an ErrorRecord on the
+        # first stderr line, masking Cargo's real exit status and error. Run
+        # through cmd so 2>&1 joins native streams before PowerShell receives
+        # them. The explicit LASTEXITCODE is still preserved by Probe.
+        Probe 'cargo fmt --all -- --check (summary only)' {
             Push-Location $Repo
-            try { & cargo fmt --all -- --check } finally { Pop-Location }
+            try {
+                $output = @(& $env:ComSpec /D /C 'cargo fmt --all -- --check 2>&1')
+                $exit = $LASTEXITCODE
+                $diffs = @($output | Where-Object { $_ -match '^Diff in .+?:[0-9]+:' })
+                $paths = @($diffs | ForEach-Object {
+                    $_ -replace '^Diff in (.*?):[0-9]+:
+    }
+    Note "`nCompleted command groups: $($rows.Count) report lines."
+    if ($failed.Count -eq 0) { Note 'Report outcome: no command failures observed. This is NOT gameplay/GPU proof.' }
+    else {
+        Note 'Command groups with failures or unavailable prerequisites:'
+        foreach ($item in $failed) { Note "- $item" }
+    }
+}
+finally {
+    $rows | Out-File -LiteralPath $logFile -Encoding UTF8
+    Write-Host "`nReport saved: $logFile"
+    Write-Host 'Upload the saved report here. Do not publish raw game logs or captures.'
+}
+, '$1'
+                } | Sort-Object -Unique)
+                "rustfmt: $($diffs.Count) diff hunks across $($paths.Count) source files (nothing changed)"
+                if ($paths.Count -gt 0) {
+                    'First differing paths (up to 12):'
+                    $paths | Select-Object -First 12
+                }
+                if ($diffs.Count -eq 0 -and $exit -ne 0) {
+                    $output | Select-Object -First 30
+                }
+                $global:LASTEXITCODE = $exit
+            }
+            finally { Pop-Location }
         }
         Probe 'cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture' {
             Push-Location $Repo
-            try { & cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture }
+            try {
+                & $env:ComSpec /D /C 'cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture 2>&1'
+            }
             finally { Pop-Location }
         }
         Probe 'cargo xtask policy' {
             Push-Location $Repo
-            try { & cargo xtask policy } finally { Pop-Location }
+            try { & $env:ComSpec /D /C 'cargo xtask policy 2>&1' }
+            finally { Pop-Location }
         }
     }
     Note "`nCompleted command groups: $($rows.Count) report lines."
