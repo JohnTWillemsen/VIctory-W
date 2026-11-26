@@ -68,5 +68,34 @@ for file in "${required[@]}"; do
   done < <(grep -oE '\]\([^)]*\)' "$file" || true)
 done
 
+# Protect the append-only audit history: one contiguous table, sequential IDs.
+evidence_rows=()
+mapfile -t evidence_rows < <(grep -nE '^[|] E-[0-9]{3} ' docs/agents/EVIDENCE_LOG.md || true)
+if (( ${#evidence_rows[@]} == 0 )); then
+  echo "ERROR: evidence log has no correctly formatted entries" >&2
+  exit 1
+fi
+expected=1
+last_line=0
+for row in "${evidence_rows[@]}"; do
+  line_no="${row%%:*}"
+  entry="${row#*:}"
+  if [[ ! "$entry" =~ ^[|][[:space:]]E-([0-9]{3})[[:space:]] ]]; then
+    echo "ERROR: malformed evidence row at line $line_no" >&2
+    exit 1
+  fi
+  id="${BASH_REMATCH[1]}"
+  if (( 10#$id != expected )); then
+    echo "ERROR: evidence log missing/duplicate/out-of-order E-$id (wanted E-$(printf '%03d' "$expected"))" >&2
+    exit 1
+  fi
+  if (( last_line != 0 && line_no != last_line + 1 )); then
+    echo "ERROR: evidence table split between lines $last_line and $line_no" >&2
+    exit 1
+  fi
+  last_line="$line_no"
+  expected=$((expected + 1))
+done
+
 echo "Agent docs: required files and anchors present; $link_count relative links resolve."
 echo "NOTE: This is a structure check, NOT verification of GitHub state, CI, GPU, or gameplay."
