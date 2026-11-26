@@ -18,15 +18,15 @@ A single agent may do multiple roles when no other workers are available, but mu
 1. Read AGENTS and linked docs; determine project and task.
 2. Query GitHub live: repo/default SHA, related open PRs, relevant branch SHA, upstream SHA and CI. Check whether someone already implemented the proposed change.
 3. Restate the scope and acceptance gate. If a requested ref vanished or moved, **do not write** until reverified; log the discrepancy.
-4. Create a new branch from the exact verified base. No direct `main` writes.
+4. Check other **open PRs/branch heads** for the same task ID and touched paths; TASK_QUEUE is a dated hint, **not a lock**. Create a unique branch from the exact verified base. No direct `main` writes. For longer tasks, reserve ownership with a small task-scoped first commit and draft PR before substantive implementation.
 5. Read actual code paths + tests. Use existing architecture and policy, preserve toolchain pin.
 6. Make the smallest coherent change with explicit regression tests. Run the checks in TESTING where available.
 7. Open **draft PR** and report checks with linked run IDs. Never call a PR verified merely because GitHub said mergeable. Publish an accurate rollback and remaining hardware gate.
-8. Update CURRENT_STATE; append EVIDENCE_LOG for new results, DECISIONS for changed policy; maintain UPSTREAM_TRACKER for researched candidates.
+8. Record full handoff, evidence and changed paths in the PR. The orchestrator reconciles shared CURRENT_STATE/TASK_QUEUE and append-only EVIDENCE_LOG/DECISIONS using live PR state. When operating alone, propose shared-doc updates in the same PR and recheck conflicts before merging; maintain UPSTREAM_TRACKER for researched candidates.
 
 ## Parallel-task coordination
 
-Each implementation task needs a stable ID (e.g. `VW-001`), **specific paths**, owner/worker, base SHA, branch name, hypothesis, allowed edits, expected tests and stop condition. Claim a task in [TASK_QUEUE](TASK_QUEUE.md) before writing. Other agents must not edit its branch. Use separate branches and PRs; one PR per independent behavior. Research can proceed in parallel, but no hidden mass-merges or concurrent updates of shared handoff paths.
+Each implementation task needs a stable ID (e.g. `VW-001`), **specific paths**, owner/worker, base SHA, branch name, hypothesis, allowed edits, expected tests and stop condition. Before implementing, query **live open PRs/branches** for overlapping task IDs and files; a queue entry marked CLAIMED from an ended session does **not** reserve anything indefinitely. The active PR and branch SHA establish whether a workstream exists. Use a unique branch and focused draft PR; never edit another worker's branch or let two workers independently change CURRENT_STATE/TASK_QUEUE. Research can proceed in parallel, but no hidden mass-merges.
 
 When source moves, rebase only after reading the new upstream change and reviewing conflicts. Never force-push an owner's/reference branch. If a PR becomes stale, explain the revalidation plan.
 

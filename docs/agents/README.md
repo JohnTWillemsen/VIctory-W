@@ -20,6 +20,6 @@
 
 **Source-of-truth order:** current GitHub code and exact SHA → completed linked CI/test results → independently recorded local hardware evidence → dated handoff → upstream author reports → hypotheses. A lower tier cannot override a higher tier without investigation.
 
-**Refresh sequence:** read docs → verify GitHub HEAD/PR/CI → inspect actual code and existing tests → update CURRENT_STATE with discrepancies → do bounded work → record evidence and decisions → create/update PR. If GitHub or required test inputs are inaccessible, label the blocked portion `UNKNOWN` or `NOT_RUN`, do useful source-only work, and stop short of acceptance claims.
+**Refresh sequence:** read required docs → verify live HEAD, open PRs and CI → inspect actual source and tests → check task collisions → do bounded work on a dedicated branch → report evidence/blocked steps in the PR → orchestrator reconciles shared CURRENT_STATE/TASK_QUEUE and append-only records. If GitHub or required test inputs are inaccessible, label the blocked portion `UNKNOWN` or `NOT_RUN`, do useful source-only work, and stop short of acceptance claims.
 
 Do not put screenshots, copyrighted artifacts, title-derived dumps, private logs or credentials in agent documents.

@@ -11,6 +11,7 @@
 - Primary upstream: https://github.com/Marvisak/VIctory ; other research source: https://github.com/fxceless/victory-fork .
 - Baseline source files inspected: `README.md`, `.github/workflows/ci.yml`, `docs/architecture.md`, `docs/asset-policy.md`, `rust-toolchain.toml`, `Cargo.toml`, `.gitignore` and `xtask/src/policy.rs`.
 - Pinned Rust toolchain at original baseline: **1.98.1**, MSVC Windows target; do not silently upgrade.
+- GitHub Issues are **disabled** on this new fork as verified via repository metadata on 2026-11-26. The task queue is a dated index; **live draft PRs/branch refs** are the coordination signal. An empty issue search is not evidence that nobody is working.
 - Upstream CI at original baseline: Windows Clippy normal/all-features and locked workspace tests, triggered on PRs and pushes to `main`. A workflow definition does **not** prove a run succeeded.
 - Upstream's README at original baseline reports about **1 FPS in the world on an AMD RX 6700 XT** and incomplete ray-traced lighting. That is upstream-reported historical evidence, not this user's RTX 5090 result.
 - **This new fork has not been gameplay-tested on the user's RTX 5090 in this handoff. No old-fork binary, patch, test result, or gameplay metric is automatically transferable.**
@@ -32,6 +33,7 @@ Establish source-controlled multi-agent onboarding, evidence-first research, PR 
 - `NOT_RUN`: no new-fork native RTX 5090 game test is recorded.
 - `NOT_VERIFIED`: no assertion about whether this onboarding PR has passed CI or been merged until its live workflow results are checked.
 - `UNKNOWN`: present-day upstream branches, PR disposition and hardware behavior beyond this dated snapshot; re-query GitHub.
+- `UNKNOWN`: branch-protection/ruleset enforcement. The GitHub integration could not read the fork's branch-protection settings. **Written instructions are not enforced GitHub permissions.** Owner should enable a `main` ruleset requiring reviewed PRs and the `check` + `agent-docs` checks, with force-push/deletion blocked. Confirm enforcement in GitHub Settings.
 - The historical experimental integration in the old fork lives at a different repository/branch; see LEGACY_CONTEXT.
 
 **Maintain this file:** Change the snapshot date when live facts are rechecked; record complete SHA, linked PR and CI, affected paths, confirmed tests, blockers, and immediate next action. Never silently overwrite earlier evidence; use EVIDENCE_LOG.

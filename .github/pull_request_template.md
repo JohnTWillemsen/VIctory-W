@@ -27,7 +27,7 @@ New behavior, flags, defaults and rollback:
 - [ ] Physical GPU synthetic test executed; state card, driver and limitations
 - [ ] Native RTX 5090 title/gameplay test completed privately; list sanitized visuals and comparison
 - [ ] No game content, title-derived material, credentials, private paths, or unredacted logs
-- [ ] Updated docs/agents/CURRENT_STATE.md and EVIDENCE_LOG/DECISIONS if applicable
+- [ ] Recorded the handoff in this PR; orchestrator will reconcile CURRENT_STATE/TASK_QUEUE and append-only evidence/decisions without clobbering parallel work
 
 **Not run or skipped:** (explicitly list)
 
