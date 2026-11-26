@@ -120,6 +120,23 @@ Owner's uploaded private PowerShell log for the pinned experimental #2121 execut
 
 This evidence is E-020 in the private owner/test record; E-019's **254/254 GPU passes and release build success** remain valid, as does the separate **shader stride FAIL** (E-018, NVIDIA #1835).
 
+
+### First confirmed native title execution under #2121 paging — 2026-11-26
+
+Following the inconclusive nested-`cmd.exe` attempt E-020, the owner directly invoked the isolated #2121 runtime from Windows PowerShell and supplied a **large native diagnostic report** (private; not committed). The full upload was decoded as UTF-16LE following an ASCII header: **4,514 logical lines**. It includes command-stage results:
+
+- `victory --version`: `victory 0.1.0`, **exit 0**.
+- `victory config`: isolated cache/data settings resolved, **exit 0**.
+- `victory run <private-title-path> --console series-x` (**no `--execute`**): title build identified, main image and four title DLLs mapped, **zero missing imports** from the bound images; **exit 0**, with the expected `not executing` notice.
+- `victory run <private-title-path> --execute --console series-x`: native runtime logs begin **2026-11-26T22:00:22.815Z**; a host D3D12 device initializes, archives open, a **3840x2160** window is reported. Actual `frame presented` logs include frame **2** (2 drawn), **1024** (9,028 draws / 514 dispatches since preceding sample), and **4096** (79,872 draws / 2,048 dispatches since preceding sample), with reports showing `draws=drawn` and `dispatches=dispatched`. Later pipeline first-bind logs reference **frame 6261**; **this is not a direct observed present count beyond frame 4096**.
+- **Paging not merely configured, but exercised:** `victory_gpu::descriptor::host` reports `view heap paged`, **1,245,184 logical title slots**, **1,000,000 host slots**, **3,906 logical pages**, 258 fixed. The pager reported **140 pages taken back** and then **134 pages taken back** in separate events; also placement again in groups of 1, 2, 4, 8 and 16, with `refused=0` in those events. No inference about visible-quality improvement or all texture slots is supported by this log.
+- **Important outstanding runtime warnings:** 87 `host pipeline refused` messages bearing HRESULT `0x80070057` (invalid argument); separate refused castable texture formats / no host texture for one resource; one `dispatch without a host pipeline dropped`; 16 slow host-submission warnings. These can materially affect rendering, but no screenshot was provided to prove which effect was visible; do not label the paging algorithm or one particular shader as root cause without controlled comparison.
+- At **2026-11-26T22:04:34.090Z**, `victory_hle::modules::lifecycle` reported `window closed: suspending the title`; ~1 second later reported `title did not finish suspending in time; ending the title`; host pipeline-library save followed at 22:04:35.126Z. The uploaded output **does not include the final `EXIT CODE (Actual title execution)`**. Do **not** claim the game crashed, completed cleanly, or that the user manually closed the window; only the window-close sequence is recorded.
+
+**Evidence level:** `GPU_PASS` for actual, running title + presented frame logs + exercised paging (sanitized [E-021](https://github.com/JohnTWillemsen/VIctory-W/pull/1)), **NOT** visually correct gameplay, stable completion, improved geometry or FPS. This **corrects the limitation of the earlier wrapper E-020**; it does not erase the previous failed shader-stride test E-018.
+
+**Next gate:** solicit the owner's firsthand **visible window/scene observation** (black screen, logo, menu, loading, geometry, visual artifacts, timing, how the window closed). Only then choose a controlled same-title baseline A/B; investigate repeated host-pipeline HRESULT `0x80070057` and resource format failures as a separate documented hypothesis. Retain raw logs, shader cache entries, shader hashes and title assets outside Git. Do not merge #2121 blindly or change original release executable.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
