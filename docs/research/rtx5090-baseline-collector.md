@@ -137,6 +137,19 @@ Following the inconclusive nested-`cmd.exe` attempt E-020, the owner directly in
 
 **Next gate:** solicit the owner's firsthand **visible window/scene observation** (black screen, logo, menu, loading, geometry, visual artifacts, timing, how the window closed). Only then choose a controlled same-title baseline A/B; investigate repeated host-pipeline HRESULT `0x80070057` and resource format failures as a separate documented hypothesis. Retain raw logs, shader cache entries, shader hashes and title assets outside Git. Do not merge #2121 blindly or change original release executable.
 
+
+### Owner-visible scene-transition stall — "Two Years Ago" card, audio continues (2026-11-26)
+
+After the previous 4m13 native #2121 session (E-021), the owner confirmed **what was actually visible**: the on-screen **"Two Years Ago"** title card appeared, then remained visually frozen, while audio continued and appeared to belong to the subsequent scene. This is **GAMEPLAY_OBSERVED (intro/title-card only)**, **NOT** proof that the world was rendered, interactive, or stable. No screenshot or exact onset timestamp was provided, and it is unknown whether the owner closed the window or the process was terminated externally.
+
+**Correlation, not a causal proof:** E-021 records `frame presented` counters through frame 4,096 at 22:02:44Z, then shader translation/pipeline creation continues. The **first of 87 refused compute host pipelines** with HRESULT `0x80070057` appears at **22:03:54Z**, with the last at ~22:04:33Z; 16 slow host-submission warnings also occur later. The log records **no explicit GPU device removal/panic**, but has **no final process exit code**. The visual freeze wasn't timestamped by the owner, so cannot assign that onset to 22:03:54Z or conclude Wave64, the page allocator, or texture fallback was the cause.
+
+**Relevant upstream observations:** [#887](https://github.com/Marvisak/VIctory/issues/887) reproduces the named card and severe world-transition rendering trouble on RTX 5060; [#468](https://github.com/Marvisak/VIctory/issues/468) documents black world with continuing audio and refused compute pipelines; [#49](https://github.com/Marvisak/VIctory/issues/49) collects multiple similar visible title-card and transition reports. NVIDIA Wave64-on-Wave32 incompatibility is a plausible explanation for at least some `0x80070057` compute PSOs, explained in [#817](https://github.com/Marvisak/VIctory/issues/817) and [#2220](https://github.com/Marvisak/VIctory/issues/2220). [#189](https://github.com/Marvisak/VIctory/pull/189) offers a **separate unmerged shader emulation experiment**. Neither that fix nor its compatibility with #2121 has been owner-tested. Recheck PR heads before any future trial; no unauthorized stacking.
+
+**Next evidence gate:** controlled D3D12 debug-enabled diagnostics build, separately compiled from the **same #2121 exact source** and isolated target directory, to identify why the first host compute pipelines are refused. Source `crates/victory-gpu/src/host.rs` shows `VICTORY_D3D12_DEBUG=1` only enables the debug layer when built with `--features diagnostics`; setting the variable on the old release binary alone will **not** enable those messages. Use separate cache/data and avoid posting any proprietary shader hashes, game logs, game archives or screenshots publicly. Preserve current runtime and build SHA. Do not raise system-wide TDR timeout without a specific safety reason.
+
+Recorded in the durable audit ledger as E-022.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
