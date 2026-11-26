@@ -30,6 +30,22 @@ These are **distinct and potentially conflicting approaches** on original `main`
 
 See [CURRENT_STATE](CURRENT_STATE.md) for owner test commands/results and [EVIDENCE_LOG](EVIDENCE_LOG.md) for durable evidence. Do not copy this dated table into an implementation PR without rechecking actual code and license.
 
+
+### 2026-11-26 — #189 Wave64 vs #2121 paging pre-integration hunk audit
+
+Source-read PR patches at exact upstream heads **#189 `3e39e34037915da6d0f10b58b2872799bd9f3ca8`** and **#2121 `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`**, both currently based on clean `63bcca43c6a00a758510398fa43096ce7e4f7df0`. Both sets have overlapping edits to **eight source paths**:
+
+- `apps/victory/src/translate.rs`: **same original hunk near line 568**; combine Wave64 translator options with pager-aware shader translation rather than selecting one change.
+- `crates/victory-gpu/src/draw.rs`: both touch a **source hunk originally around 3399**, while paging also adds ~260 shader/source lines earlier; inspect line-shift and the substantive mapping of draw-time Wave64 and view-page behavior.
+- `crates/victory-gpu/src/host.rs`: Wave64 host capability detection/recommendation, paging host/descriptors and tests; hunks largely separated by source range, but ensure host/device/shader mode initialization is still wired.
+- `crates/victory-gpu/src/shader_cache.rs`: **high semantic risk**: #189 includes Wave64 mode in translation/cache keys and changes converter creation; #2121 changes build-key/options projection and tests. Preserve **both** cache-key dimensions or a wrong cached shader might be reused across modes.
+- `crates/victory-shader/src/emit/host.rs`: Wave64 capability tests/features plus paging dispatcher view-marks; ensure shader emission retains both.
+- `crates/victory-shader/src/emit/lower.rs`: #189 extensively rewrites lowering and adds a new Wave64 module; #2121 contains smaller view-mark/dispatch lowering edits. Inspect context after line shifts; regression tests must cover both.
+- `crates/victory-shader/src/emit/mod.rs`: **options and emit_with interface** modified by both; propagate the Wave64 option **and** paging view-mark state through translation consistently.
+- `crates/victory-shader/src/emit/stride_tests.rs`: same test helper line changed by both, while #2121 adds host paging/texture recovery tests; avoid dropping either fixture change or new cases.
+
+These are **patch-intersection observations**, not an attempted merge or compilation. Actual textual conflicts must be determined from `git merge-tree --write-tree --name-only <paging-SHA> <wave64-SHA>` on the owner's Windows clone (requires both fetched commits); **no repo object-level merge or staged code has been performed by this session**. Even if Git auto-merges the text, the shader-cache/mode and lowering changes require careful semantic review. Once reviewed, use an isolated third integration worktree/branch only; validate Wave64 synthetic tests E-024, paging/regression suite E-017/E-019, and GPU driver/scene outcome E-023. No owner merge approval implied.
+
 ### Research record for each candidate
 
 Add a dated subsection containing (1) original PR and author, (2) checked exact source head SHA, (3) latest upstream `main` SHA, (4) actual file and implementation comparison, (5) dependencies/licensing, (6) user-visible symptom and negative test, (7) synthetic/GPU evidence by **environment**, (8) decision: `DUPLICATE`, `CANDIDATE`, `STAGED`, `TESTED`, `REJECTED`, `UNKNOWN`.
