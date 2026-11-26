@@ -98,6 +98,17 @@ This precise NVIDIA behavior and essentially identical array were **already docu
 
 **Next bounded experiment:** test the broader GPU suite and separately build the #2121 release binary in its own target directory without misreporting known shader-test failure as a pass. Any newly failing GPU test needs review *before gameplay*. Do not merge #2178 into #2121 without explicit owner decision and compatibility/regression review. Retain private logs outside Git.
 
+
+### Full #2121 GPU suite and separate release compilation — owner result (2026-11-26)
+
+Following the previously recorded shader stride failure (9/10; NVIDIA structured SRV double-stride in [#1835](https://github.com/Marvisak/VIctory/issues/1835)), the owner **continued with independent commands** in the *same pinned detached #2121 worktree*, upstream commit `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`. The Cargo target was isolated from original `main`, `VICTORY_VIEW_PAGES=1` was set in the PowerShell test/build session, and the log retained native test output.
+
+- `cargo test -p victory-gpu --lib --locked -- --test-threads=1 --nocapture`: **255 tests discovered; 254 passed, 0 failed, 1 ignored, 0 filtered; exit 0**. This includes selected GPU paging, take-back/reuse, cross-heap retained-read, resource and shader-cache checks, and `frame::tests::waits_end_on_ticks_and_count_frames` (passed here). The `pipeline::depth_bounds_test::depth_bounds_control_a_title_draw` readback explicitly identified **NVIDIA GeForce RTX 5090** and returned depth values `[0.25,0.5,0.25,0.25]`. One `pipeline::library` test intentionally emitted a handled panic and **passed**; the one ignored test is `object::tests::benchmark_private_data_release` (synthetic benchmark).
+- `cargo build --release --locked -p victory`: **SUCCEEDED, exit 0** in its independent build step. Built source-only experimental `victory.exe` in the `C:\\vtw\\test-pr2121\\release` target directory; **SHA-256 `23C448079195186D0401E73B96EBCFB706199D4CF79543597E3AA2DBC0FC4E68`**. This binary hash is for the open-source compatibility application, **not** any title asset.
+- **Evidence tier:** GPU full-suite `UNIT_PASS`, native RTX 5090 depth readback in one GPU test, and **RELEASE_BUILD_PASS** (new evidence, not `GAMEPLAY_OBSERVED`). The earlier `victory-shader stride_tests` failure **is unresolved and remains a separate FAIL**, and the complete shader test suite was **not run**. No title launched in this report and no scene/FPS/stability results claimed. Neither source `main` nor existing release exe were replaced. Full local report remains private.
+
+**Next meaningful gate:** run the experimental paging executable in a controlled private title session, with `VICTORY_VIEW_PAGES=1`, dedicated `VICTORY_CACHE_DIR` / `VICTORY_DATA_DIR` *outside source trees*, pinned source/executable hashes, and the same title/console mode/scene as the baseline. Collect concise startup/paging/frame observations while keeping proprietary title logs, dumps, screenshots and shader caches out of public GitHub. A build/green GPU suite alone cannot establish improved geometry.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
