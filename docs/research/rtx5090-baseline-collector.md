@@ -152,10 +152,10 @@ Recorded in the durable audit ledger as E-022.
 
 ## Evidence boundaries
 
-`SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
+`SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner subsequently supplied **actual synthetic test logs for main, #3300, #2683 and #2121, full #2121 GPU-suite and build logs, a native title runtime trace and firsthand visible-title-card observation**; the dated sections above distinguish these separate sources. **The collector script itself does not run a title or establish FPS**, and the later title-card freeze does not prove a working world or renderer fix.
 
 Private logs may include local source paths. Review before sharing, and **never upload title logs, captures, memory dumps, raw shader data or proprietary binaries to GitHub**. This collector intentionally does not enumerate untracked files, print git remote URLs, or collect game paths.
 
 ## Follow-on work
 
-Once an exact clean baseline and local test environment are known, the orchestrator can provide separate short-path test worktrees for [upstream PR #2683](https://github.com/Marvisak/VIctory/pull/2683) (descriptor clamp) and [#2121](https://github.com/Marvisak/VIctory/pull/2121) (view-heap paging), using **their latest heads** and separate build/cache directories. No wholesale merge; test correctness and scene visuals before FPS.
+**Current next experiment (E-022):** compile an isolated **diagnostics-feature** version of already-tested [#2121](https://github.com/Marvisak/VIctory/pull/2121) at pinned `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`, using separate `CARGO_TARGET_DIR` and `cargo build --profile diag -p victory --features diagnostics --locked`. Run with `VICTORY_D3D12_DEBUG=1` and paging enabled to identify NVIDIA compute PSO failure reasons. Independently investigate unimplemented device slot `0x218` against [#887](https://github.com/Marvisak/VIctory/issues/887) FSPX upscaler findings. Preserve the successful baseline and separated title cache/data; do not conflate actual title-card rendering with correct gameplay or FPS.
