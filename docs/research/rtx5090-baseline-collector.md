@@ -165,6 +165,21 @@ The owner compiled the **same pinned paging source [#2121](https://github.com/Ma
 
 This observation is recorded as **E-023** in the sanitized evidence ledger. Preserve older E-018 shader-stride failure, E-021 live native paging success, and E-022 title-card freeze as distinct milestones.
 
+
+### Wave64 PR #189 independent owner shader test — 40/40 passed (2026-11-26)
+
+Owner uploaded a private UTF-16LE PowerShell log of the exact-head-guarded upstream [PR #189](https://github.com/Marvisak/VIctory/pull/189) detached worktree test. GitHub last verified PR head is `3e39e34037915da6d0f10b58b2872799bd9f3ca8`, on base `63bcca43c6a00a758510398fa43096ce7e4f7df0`. The script first verifies fetched `FETCH_HEAD` equals that SHA before constructing an isolated, detached test worktree, and uses a distinct Cargo target; the uploaded log itself does not independently print the Git commit.
+
+Command: `cargo test -p victory-shader --locked -- wave64 --test-threads=1`.
+
+**Exact owner result:** Compilation finished, **40 Wave64-selected library tests passed, 0 failed, 0 ignored, 301 filtered, exit code 0**. Auxiliary `resource_tracking` selected 0 tests (4 filtered), and doc tests selected 0. The passing set includes native/split/emulated Wave64 lane behavior, GPU-named live synthetic D3D12 tests of 32/64/96/128-thread groups, cross-half ballot and shuffle, workgroup behavior, `v_readlane/v_writelane/readfirstlane`, uniform-fence handling, LDS conflict detection and divergent-control-flow refusal rather than hanging.
+
+**Boundaries:** The owner is testing on an RTX 5090-equipped Windows computer, but this particular log contains **no explicit selected GPU adapter line**; do not assert that each GPU-named subtest selected NVIDIA rather than an alternative device. These are **selected shader unit/GPU tests only**, not the full shader suite, not a `victory-gpu` regression sweep, not a combined #2121+#189 test, not a successful release build and **not proof of visible world rendering**. E-023's 91 Wave64 D3D12 runtime errors on the unmodified #2121 paging build remain valid until a combined runtime demonstrates otherwise.
+
+**Critical source integration detail:** Both [#2121](https://github.com/Marvisak/VIctory/pull/2121) and #189 are currently open against the same original upstream base. Their diffs overlap in **eight code paths** (including shader lowering/emission, host, shader cache, draw and the stride test fixture). Next use a separate experiment branch/worktree, preserve both known original commits, inspect automatic merge conflicts and semantic overlap, then run both Wave64 and descriptor/paging tests before a new live D3D12 run. Upstream #189 also documents partial coverage: divergent flow and some LDS-barrier hazards can be rejected safely rather than emulated. **Do not blindly merge unresolved conflicts or interpret fewer PSO errors alone as visually correct gameplay.** No proprietary logs or title artifacts committed.
+
+Tracked as E-024 in the shared evidence ledger.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner subsequently supplied **actual synthetic test logs for main, #3300, #2683 and #2121, full #2121 GPU-suite and build logs, a native title runtime trace and firsthand visible-title-card observation**; the dated sections above distinguish these separate sources. **The collector script itself does not run a title or establish FPS**, and the later title-card freeze does not prove a working world or renderer fix.
@@ -173,4 +188,4 @@ Private logs may include local source paths. Review before sharing, and **never 
 
 ## Follow-on work
 
-**Current next experiment (E-022):** compile an isolated **diagnostics-feature** version of already-tested [#2121](https://github.com/Marvisak/VIctory/pull/2121) at pinned `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`, using separate `CARGO_TARGET_DIR` and `cargo build --profile diag -p victory --features diagnostics --locked`. Run with `VICTORY_D3D12_DEBUG=1` and paging enabled to identify NVIDIA compute PSO failure reasons. Independently investigate unimplemented device slot `0x218` against [#887](https://github.com/Marvisak/VIctory/issues/887) FSPX upscaler findings. Preserve the successful baseline and separated title cache/data; do not conflate actual title-card rendering with correct gameplay or FPS.
+**Current next experiment after E-024:** the separate #2121 diagnostics run (E-023) already confirmed **91 D3D12 Wave64-on-Wave32 errors and an incorrect gray-purple frame**, and #189's **40/40 Wave64-selected tests passed** (E-024). Do not repeat either unchanged experiment for handoff. Source-review both exact PR heads and prepare a **third, isolated paging+Wave64 integration worktree** with independent build/cache and **no changes to original `main`, #2121 or #189 worktrees**. Inspect merge and semantic conflicts (eight overlapping files); do not auto-resolve. Before a game A/B, verify full selected Wave64, descriptor/page tests and GPU suite, then native debug layer with counts of D3D12 Wave64 errors, refused pipelines, dropped dispatches, and visual output. Missing FSPX device slot 0x218, sampler heap and unsupported texture formats remain independent open bugs.
