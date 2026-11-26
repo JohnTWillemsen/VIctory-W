@@ -4,7 +4,7 @@ Priority: **correct rendering → stability → usable frame time → broader GP
 
 | Phase | What qualifies as progress | Current status at initial snapshot |
 | --- | --- | --- |
-| 0. Project governance | Agent rules/index/handoff, PR template and a documentation integrity check reviewed on isolated branch | IN PROGRESS — docs-only; CI result unverified |
+| 0. Project governance | Agent rules/index/handoff, PR template, documentation integrity and restart simulation on isolated branch | PR #1 OPEN/DRAFT; synthetic [restart CI](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45867868772) passed on pinned head; **owner merge approval and latest-head CI still required** |
 | 1. Repeatable source baseline | Exact `main` SHA, Windows locked workspace tests/Clippy, asset policy, release and diagnostics compilation linked to an exact run | NOT YET VERIFIED for new-fork candidate |
 | 2. RTX 5090 baseline | Native GPU and driver identified, first menu/world/visual checklist, save/scene/settings, same-executable hash recorded, crash signature if any | NOT_RUN |
 | 3. Isolated compatibility work | One concrete bug, known-good baseline, synthetic regression, focused PR with provenance, negative case and rollback | PLANNED |

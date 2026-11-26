@@ -23,3 +23,15 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Owner intent:** User explicitly requested structured, anti-hallucination agent setup. **This decision does not itself authorize merging any runtime code**.
 
 **Revisit:** Adjust after real multi-session use and a reviewed governance PR, not by silently removing audit logs.
+
+### D-003 — 2026-11-26 — Make synthetic restart and conflict regression a required docs CI check
+
+**Decision:** Run [RESTART_TEST_PROTOCOL](RESTART_TEST_PROTOCOL.md) in the existing `agent-docs` workflow. Its test uses temporary local Git clones and a bare remote to check process restarts, SIGKILL recovery, stale claims, competing updates, missing onboarding and moved baseline refs.
+
+**Why:** Static Markdown checks do not exercise durable checkpoints or stale-writer conflicts. The test now fails closed on missing evidence paths and on session-HOME leakage; an intentionally broken shared-HOME fixture failed locally while the corrected script passed.
+
+**Limitations:** This is a deterministic Bash/Git rehearsal, **not** a restarted AI agent, a real GitHub PR concurrency test, protection-ruleset verification, or an RTX 5090 gameplay measurement. Those still require separately authorized operational tests.
+
+**Evidence:** [CI 45867868772](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45867868772), exact head `997152e30e57e0d810fbf4275ebfacf8b3370b73`. Owner requested a controlled restart test; no authorization to merge runtime changes or this draft PR is inferred.
+
+**Revisit:** If the protocol or AI execution model changes, add a focused negative regression. Keep GitHub branch protection and genuine independent AI-agent acceptance as separate gates.
