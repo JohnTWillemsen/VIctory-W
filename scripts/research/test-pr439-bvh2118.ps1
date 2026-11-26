@@ -62,7 +62,7 @@ try {
         $Path = Join-Path $TestRoot $Item.Name
         $SHA = $Item.SHA
         Note "=== PR #$Number exactly pinned at $SHA ==="
-        & git -C $Repository fetch --no-tags $Remote "refs/pull/$Number/head" 2>&1 | Out-Host
+        & git -C $Repository fetch --quiet --no-tags $Remote "refs/pull/$Number/head"
         if ($LASTEXITCODE -ne 0) { throw "Failed fetching upstream PR #$Number" }
         $Actual = (& git -C $Repository rev-parse FETCH_HEAD).Trim()
         if ($LASTEXITCODE -ne 0 -or $Actual -ne $SHA) {
@@ -77,7 +77,7 @@ try {
             Note "Using existing clean detached worktree: $Path"
         }
         else {
-            & git -C $Repository worktree add --detach $Path $SHA 2>&1 | Out-Host
+            & git -C $Repository worktree add --quiet --detach $Path $SHA
             if ($LASTEXITCODE -ne 0) { throw "Could not create isolated PR #$Number worktree" }
             Note "Created detached worktree: $Path"
         }
