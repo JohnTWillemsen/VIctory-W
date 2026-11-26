@@ -46,6 +46,14 @@ RTX 5090 (driver 617.42), clean main `63bcca43`, Rust 1.98.1:
 - Existing overlapping upstream PRs: [#3300](https://github.com/Marvisak/VIctory/pull/3300) (functional: keeps the full dynamic pool when the host takes the smaller heap; also corrects the test), [#3244](https://github.com/Marvisak/VIctory/pull/3244) (tests for host-specific capacity and copy-pair placement), [#2937](https://github.com/Marvisak/VIctory/pull/2937) (test skip for capped hosts), and [#2683](https://github.com/Marvisak/VIctory/pull/2683) / [#2121](https://github.com/Marvisak/VIctory/pull/2121) (separate shader bound/paged heap work). **Do not duplicate fixes or claim upstream test ownership.** `NEW-24` is already claimed in upstream #1633.
 - Next valuable independent test: fetch PR #3300 head `01f91fea96de7c6fe47d5dd9f302e51a2403cac7` into a detached worktree, compare its host descriptor unit tests with untouched `main` on the same RTX 5090, and retain logs privately. No merging or proprietary data.
 
+### Owner verification of #3300 at 2026-11-26 21:23 UTC
+
+Owner fetched and SHA-verified upstream PR #3300 head `01f91fea96de7c6fe47d5dd9f302e51a2403cac7` in a **detached separate worktree**, `C:\\VIctory-Tests\\pr3300`, with a separate Cargo target. Owner's Windows PowerShell transcript identifies this SHA and records `Test exit code: 0` for `cargo test -p victory-gpu --lib --locked descriptor::host::tests:: -- --test-threads=1 --nocapture`. Contrast clean `main`: the narrower descriptor filter had 21 passed, 1 failed (`dynamic_slots_are_held_until_released`) on the same RTX 5090.
+
+**Evidence tier: command exit 0, exact test lines not captured.** The PowerShell 5.1 transcript contained the invocation label and exit status only, not Cargo's native test output. It is *not yet* verified how many tests ran or what adapter was selected. Follow up by running the same filtered test command in the same detached worktree with native `cmd /D /C '... 2>&1'` stdout piped through `Tee-Object`, saving actual `running N tests` and `test result: ok` lines. Do not report a pass count, title correctness, or runtime/gameplay benefit until supported.
+
+The owner baseline `C:\\VIctory-W` and release `C:\\vtw\\release\\victory.exe` remain untouched. PR #3300 is still **open upstream** and should not be merged automatically; its dynamic-pool tradeoff keeps fewer title slots, so #2121 paging requires independent review.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to script/PR source inspection only. Tests on the owner's machine remain `NOT_RUN` until their log is provided. No title test or FPS claim follows from this collector.
