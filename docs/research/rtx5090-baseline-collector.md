@@ -54,6 +54,12 @@ Owner fetched and SHA-verified upstream PR #3300 head `01f91fea96de7c6fe47d5dd9f
 
 The owner baseline `C:\\VIctory-W` and release `C:\\vtw\\release\\victory.exe` remain untouched. PR #3300 is still **open upstream** and should not be merged automatically; its dynamic-pool tradeoff keeps fewer title slots, so #2121 paging requires independent review.
 
+### Owner full native-output verification of upstream #3300
+
+Same pinned detached worktree commit `01f91fea96de7c6fe47d5dd9f302e51a2403cac7`; separate target `C:\\vtw\\test-pr3300`; Windows 11 Pro, NVIDIA RTX 5090 host; default `VICTORY_D3D12_WARP` unset. The command `cargo test -p victory-gpu --lib --locked descriptor::host::tests:: -- --test-threads=1 --nocapture` reported **`running 16 tests`**, **16 passed / 0 failed**, **217 filtered**, exit code 0. Crucially `descriptor::host::tests::dynamic_slots_are_held_until_released ... ok`, where untouched main `63bcca43` failed its larger descriptor selection. Evidence tier **owner-run native output confirmed**, not gameplay, rendering, FPS, or descriptor paging proof. Private log: `pr3300-detailed-tests.txt`. PR #3300 remains unmerged upstream.
+
+Next candidate, separately: upstream #2683 after its 2026-11-26 rebase to main, head `aecd60423c4673233104afaba1bde81f40d78a93`, uses a conservative capped shader view index (`HEAP_VIEWS = 1,000,000`) and carries null-buffer boundary tests. Keep as its own worktree and Cargo target; do not merge with #3300 or #2121 at this stage. Then upstream #2121 at `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608` (paging) is the separately controlled alternative. Both may have revised heads; always reverify pin.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to script/PR source inspection only. Tests on the owner's machine remain `NOT_RUN` until their log is provided. No title test or FPS claim follows from this collector.
