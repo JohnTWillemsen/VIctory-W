@@ -37,6 +37,21 @@ Acceptance order:
 
 Keep release and diagnostics FPS separate; do not compare debug capture/DRED slowdown with normal release. Change one flag/patch at a time and retain an executable+cache separation across source revisions.
 
+## Hardware baseline actually observed on 2026-11-26 (do not extrapolate)
+
+Owner-supplied Win11/RTX5090 driver 617.42 synthetic reports, clean `main` `63bcca43c6a00a758510398fa43096ce7e4f7df0`: `cargo test -p victory-gpu --lib --locked descriptor -- --test-threads=1 --nocapture` yielded **21 pass / 1 fail** (`dynamic_slots_are_held_until_released`). After exact-SHA upstream PR #3300 `01f91fea96de7c6fe47d5dd9f302e51a2403cac7` was fetched to a *separate detached worktree* (with a different Cargo target directory), the narrower `descriptor::host::tests::` selection yielded **16 pass / 0 fail / 217 filtered**, including the previous failure and newly added test. Neither result tested actual gameplay or visual output; not identical test filters. `cargo xtask policy` passed 191 files; `cargo fmt --all -- --check` found 925 existing formatting hunks across 66 source files in a clean main checkout.
+
+For Windows PowerShell **5.1**, `Start-Transcript` did **not** capture Cargo's native test output reliably even though it captured a successful exit code. For subsequent owner runs, capture native stdout/stderr together in **cmd** and pipe into `Tee-Object`; always include the actual `running N tests` and `test result`, then the native exit code:
+
+```powershell
+$Log = "C:\vtw\verification\example-native-tests.txt"
+& $env:ComSpec /D /C 'cargo test -p victory-gpu --lib --locked descriptor::host::tests:: -- --test-threads=1 --nocapture 2>&1' |
+    Tee-Object -FilePath $Log
+"Test exit code: $LASTEXITCODE" | Tee-Object -FilePath $Log -Append
+```
+
+Run from an **already verified, exact-commit, detached test worktree**, not casually from main; restore `CARGO_TARGET_DIR` in `finally`. Review logs for private local paths before sharing. Never commit native logs directly. Record original main and upstream test-filter differences honestly. See [EVIDENCE_LOG](EVIDENCE_LOG.md) entries E-011–E-014 and [CURRENT_STATE](CURRENT_STATE.md).
+
 ## Promotion gate
 
 A green CI result **never** proves gameplay. Unit/WARP pass does not prove RTX 5090 execution; RTX 5090 synthetic test does not prove lighting correctness; another developer's gameplay does not prove ours. Record outcome in EVIDENCE_LOG, and do not merge experimental runtime behavior without owner authorization and the scope-appropriate test gate.
