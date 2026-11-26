@@ -69,6 +69,20 @@ In a **separate, detached worktree** from original clean main, the owner ran the
 
 **Next independent experiment:** [#2121](https://github.com/Marvisak/VIctory/pull/2121) paged view heaps at last-verified `0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`; recheck live head, create separate worktree and separate Cargo target, run targeted paging/readback tests before any game build. Do not stack #2121 with #2683 or #3300. Preserve original release and source-clean main.
 
+
+### Owner synthetic confirmation of upstream #2121 — November 26
+
+The owner fetched pinned upstream [#2121](https://github.com/Marvisak/VIctory/pull/2121) **`0bc5edbd2e1c5836bab00dc0af9f186bdd56c608`** into a **third detached worktree**, using a distinct Cargo target directory. `VICTORY_VIEW_PAGES=1` was set, and the `VICTORY_D3D12_WARP` setting was empty. The uploaded detailed local text log states:
+
+- `cargo test -p victory-gpu --lib --locked descriptor:: -- --test-threads=1 --nocapture`: **37 passed, 0 failed, 0 ignored, 218 filtered; exit 0**. Includes `descriptor::host::tests::a_paged_heap_of_every_slot_shaders_index_is_capped`, `dynamic_slots_are_held_until_released`, and page recycling, refused-room and read-pressure tests.
+- `cargo test -p victory-gpu --lib --locked a_placed_texture_in_a_page_taken_back_is_made_after_one_submission_reads_it -- --test-threads=1 --nocapture`: **1 passed, 0 failed, 254 filtered; exit 0**. Shows the selected single recovery regression passed.
+- The owner machine has RTX 5090 and driver 617.42, but this particular log lacks an explicit selected-D3D12-adapter line. **UNIT_PASS** on that host; do not silently promote to independently verified physical-device readback.
+- Tested source changes are not in VIctory-W main. **No title/gameplay run, visual-quality improvement, FPS or long-duration stability has been verified by this log**. All detailed local logs retained privately; public GitHub records only this non-proprietary summary.
+
+**Current synthetic evidence set:** main `63bcca43`: 21/22 selected descriptor tests; #3300 `01f91fea`: 16/16 descriptor-host; #2683 `aecd6042`: 24/24 descriptor; #2121 `0bc5edbd`: 37/37 descriptor plus 1/1 recovery. **Filters are not identical, so pass counts are not rankings.**
+
+**Next decision gate:** independently inspect the rest of #2121's GPU/shader regression coverage and determine whether a full Rust GPU/shader test sweep is warranted before an isolated release build. Preserve the existing executable and separate target/cache; keep game files outside Git. Validate actual correctness in comparable scenes before any FPS claim. [#2121](https://github.com/Marvisak/VIctory/pull/2121) may advance: recheck its head before new work.
+
 ## Evidence boundaries
 
 `SOURCE_READ` and `CODE_REVIEWED` apply to source inspection. The owner has provided **actual synthetic test logs for main, #3300, and #2683**, with results above; future experiments remain `NOT_RUN` until their own logs are supplied. No title test or FPS claim follows from this collector.
