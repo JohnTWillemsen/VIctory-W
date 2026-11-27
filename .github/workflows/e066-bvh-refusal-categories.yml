@@ -1,0 +1,52 @@
+name: E-066 anonymous BVH refusal categories — isolated six-PR research
+on:
+  push:
+    branches:
+      - experiment/e066-bvh-refusal-categories-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e066-bvh-refusal-categories.sh"
+      - ".github/workflows/e066-bvh-refusal-categories.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e066-bvh-refusal-categories.sh"
+      - ".github/workflows/e066-bvh-refusal-categories.yml"
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Parse scripts, apply fail-closed source patch in disposable checkout
+        shell: bash
+        env:
+          E066_BVH_DIAG: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e066-bvh-refusal-categories.sh
+          grep -Fq 'E066_BVH_DIAG' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'e066_refusal_category_tests' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Workspace all-targets, strict Clippy, six-PR filters, E066 synthetic tests, optimized release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E066_BVH_DIAG: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
