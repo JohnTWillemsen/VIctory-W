@@ -17,7 +17,7 @@ $Scripts = Join-Path $Folder 'scripts\research'
 $Private = Join-Path $Folder 'PRIVATE-raw-logs-do-not-upload'
 $Public = Join-Path $Folder 'upload-only'
 $BinaryFolder = Join-Path $ReportRoot ($RunId + '-binary')
-$Binary = Join-Path $BinaryFolder 'victory-six-pr-e068.exe'
+$Binary = Join-Path $BinaryFolder 'victory-six-pr-e075.exe'
 $Zip = Join-Path $ReportRoot ($RunId + '-summary.zip')
 $Status = 'NOT_STARTED'
 $BuildExit = 99
@@ -174,7 +174,7 @@ try {
                 throw 'E-075 offline numeric summary missing; raw logs remain private.'
             }
             $AnonymousSummary = Get-Content -LiteralPath $Aggregates -Raw
-            if ($AnonymousSummary -match '(?m)^bvh_reason_complete=([1-9][0-9]*)\\s*$') {
+            if ($AnonymousSummary -match '(?m)^bvh_reason_complete=([1-9][0-9]*)') {
                 $Status = 'TITLE_EXITED_BVH_REASON_HISTOGRAM_FOUND'
             }
             else {
