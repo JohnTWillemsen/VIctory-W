@@ -62,20 +62,35 @@ function Read-CheckedZip([string]$Path,[string]$Folder,[string]$ManifestName) {
     $Archive=[IO.Compression.ZipFile]::OpenRead($Path)
     try {
         $Entries=@($Archive.Entries)
-        $Names=@($Entries | ForEach-Object {$_.FullName})
+        # Windows PowerShell 5.1's ZipFile may use backslashes for nested paths.
+        # Normalize ZIP metadata only; never use archive paths as extraction destinations.
+        $Names=@($Entries | ForEach-Object {$_.FullName.Replace('\','/')})
         if($Entries.Count -ne 2 -or @($Names|Select-Object -Unique).Count -ne 2){
             throw 'Expected exactly two unique artifact members'
         }
-        $ExeName=if($Names -ccontains 'victory.exe'){'victory.exe'}elseif($Names -ccontains 'target/release/victory.exe'){'target/release/victory.exe'}else{throw 'Missing expected executable member'}
+        $ExeNames=@($Names | Where-Object {$_ -ceq 'victory.exe' -or $_ -ceq 'target/release/victory.exe'})
+        if($ExeNames.Count -ne 1){throw 'Missing expected executable member'}
+        $ExeName=$ExeNames[0]
         if($Names -cnotcontains $ManifestName -or @($Names|Where-Object{$_ -cne $ManifestName -and $_ -cne $ExeName}).Count -ne 0){
             throw 'Unexpected archive members or manifest'
         }
-        foreach($Entry in $Entries) {
-            if($Entry.FullName -ceq $ManifestName -and $Entry.Length -gt 8192){throw 'Oversized build manifest'}
-            if($Entry.FullName -ceq $ExeName -and $Entry.Length -gt 209715200){throw 'Oversized candidate executable'}
+        foreach($Entry in $Entries){
+            $SafeName=if($Entry.FullName.Replace('\','/') -ceq $ManifestName){$ManifestName}else{'victory.exe'}
+            if($SafeName -ceq $ManifestName -and $Entry.Length -gt 8192){throw 'Oversized build manifest'}
+            if($SafeName -ceq 'victory.exe' -and $Entry.Length -gt 209715200){throw 'Oversized candidate executable'}
+            # Extract each entry into a fixed filename. No source archive path may
+            # influence a filesystem destination (blocks ZIP path traversal).
+            $InputStream=$null;$OutputStream=$null
+            try {
+                $InputStream=$Entry.Open()
+                $OutputStream=[IO.File]::Create((Join-Path $Folder $SafeName))
+                $InputStream.CopyTo($OutputStream)
+            } finally {
+                if($null -ne $OutputStream){$OutputStream.Dispose()}
+                if($null -ne $InputStream){$InputStream.Dispose()}
+            }
         }
-        [IO.Compression.ZipFile]::ExtractToDirectory($Path,$Folder)
-        return $ExeName.Replace('/',[IO.Path]::DirectorySeparatorChar)
+        return 'victory.exe'
     } finally {
         $Archive.Dispose()
     }
