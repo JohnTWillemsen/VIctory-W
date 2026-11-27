@@ -59,3 +59,13 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Evidence:** E-049 through E-051; [six-PR green CI 45928372350](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45928372350), [upstream #2626 comparison](https://github.com/moe-miau/VIctory/compare/c8cc83e22702aa46dc1855c0f9df890fc5496238...6092548b147639bd5c46e896bcc0cc08fff71542), [PR #5](https://github.com/JohnTWillemsen/VIctory-W/pull/5).
 
 **Revisit:** The new hostless fix at `e536b366` is NOT yet CI proven at the time of this decision. Require exact-head source/Windows run, then native RTX5090 private GPU and game comparison before changing defaults or main. A safer upstream implementation supersedes this experiment only after source review.
+
+### D-006 — 2026-11-26 MST — Two reviewed Python research paths allowed without relaxing game-asset scans
+
+**Decision:** The existing type allowlist is extended ONLY for `scripts/research/e045-reconcile-pr2628.py` and `scripts/research/e049-guard-hostless-portable-probe.py`, both synthetic/public-source exact-preimage helpers. These are **not** entries in the broad binary EXCEPTIONS exemption; unchanged policy still rejects files over 512 KiB, binary magic/NUL, encoded payloads, and every unapproved Python path. Added negative tests. An unrelated repo-wide CI failure should be fixed at the governance level without suppressing tests or publishing title material.
+
+**Evidence:** E-053, [CI policy failure 45932656189](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45932656189) and exact-path PR #5 correction at `6a9787190de810ba560195608f0fc1ee3ce044f3`. Latest CI for fix must be read before calling it PASS.
+
+**Alternatives rejected:** wildcard `py` type approval, EXCEPTIONS (would skip all content checks), renaming executable Python to misleading `.txt`, suppressing policy test, or merging scripts to main before validation.
+
+**Revisit:** If a better script architecture removes the need for these helper files, revoke the two exact paths. Any further path still needs a new review and regression.
