@@ -1,0 +1,58 @@
+name: E-074 anonymous BVH shader translator reasons, isolated pinned source
+on:
+  push:
+    branches:
+      - experiment/e074-bvh-shader-reason-counts-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e074-bvh-shader-reasons.sh"
+      - ".github/workflows/e074-bvh-shader-reasons.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e074-bvh-shader-reasons.sh"
+      - ".github/workflows/e074-bvh-shader-reasons.yml"
+permissions:
+  contents: read
+jobs:
+  public-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Bash syntax and exact pinned public-source reconstruction
+        shell: bash
+        env:
+          E065_HEAP_WARN_DIAG: "1"
+          E066_BVH_DIAG: "1"
+          E074_BVH_REASON_DIAG: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e065-bucket-heap-warning.sh
+          bash -n scripts/research/e066-bvh-refusal-categories.sh
+          bash -n scripts/research/e074-bvh-shader-reasons.sh
+          grep -Fq 'VICTORY_BVH_TRANSLATION_REASONS' scripts/research/e074-bvh-shader-reasons.sh
+          grep -Fq 'e074_' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows-hosted:
+    needs: public-source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: All-target check, strict Clippy, E065/E066/E074 synthetic regressions and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E065_HEAP_WARN_DIAG: "1"
+          E066_BVH_DIAG: "1"
+          E074_BVH_REASON_DIAG: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
