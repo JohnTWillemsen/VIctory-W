@@ -42,10 +42,10 @@ $Counts=[ordered]@{
     d3d12_id_940_descriptor_dimension=0
 }
 $IdCounts=@{}
-$IdPattern=[regex]::new('\\bid\\s*=\\s*(?<id>[0-9]+)\\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$SeverityPattern=[regex]::new('\\bseverity\\s*=\\s*(?<n>[0-9]+)\\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$DispatchLine=[regex]::new('(?:^|;\\s*)command\\s+[0-9]+\\s+\\(op\\s+6\\):\\s*dispatch\\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$DispatchPattern=[regex]::new('(?:^|;\\s*)command\\s+[0-9]+\\s+\\(op\\s+6\\):\\s*dispatch\\s+(?<x>[0-9]+)x(?<y>[0-9]+)x(?<z>[0-9]+)(?=\\s|$)',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$IdPattern=[regex]::new('\bid\s*=\s*(?<id>[0-9]+)\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$SeverityPattern=[regex]::new('\bseverity\s*=\s*(?<n>[0-9]+)\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$DispatchLine=[regex]::new('(?:^|;\s*)command\s+[0-9]+\s+\(op\s+6\):\s*dispatch\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$DispatchPattern=[regex]::new('(?:^|;\s*)command\s+[0-9]+\s+\(op\s+6\):\s*dispatch\s+(?<x>[0-9]+)x(?<y>[0-9]+)x(?<z>[0-9]+)(?=\s|$)',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
 foreach($Name in @('title-stdout-private.txt','title-stderr-private.txt')){
     $P=Join-Path $Private $Name
     if(-not(Test-Path -LiteralPath $P -PathType Leaf)){continue}
