@@ -88,3 +88,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Not established:** In-game D3D12 debug error 523 behavior, world rendering, title stability/FPS and any performance gain. Initial E-060 Bash typo and its failed CI remain historical (corrected). No auto-merge to main or public proprietary artifact uploads.
 
+## D-009 · 2026-11-26 MST / 2026-11-27 UTC — Do not promote D3D12 barrier fix based on unmatched visuals
+
+**Decision:** Maintain isolated E056 barrier candidate PRs #7–#9 as experiments; E062 owner actual runs reached intro/audio but no correct world, and D3D12 debug layer was not enabled so error ID 523 remains untested. Visible sequence differences can be due to warmed/shared cache or the progress of each run; not enough to claim E056 fixes RTX5090 rendering. Independent research priorities: (1) source evidence for BVH builder **7/53 refused** pipelines and unavailable NVIDIA native wave64, (2) deterministic 507331 warnings from descriptor `HIGHEST` max-only logger, and whether host heap capability affects actual reachable slots, (3) optional later owner-approved debug-layer A/B on the same title scene.
+
+**Privacy:** Raw private game logs and identifiers must not be put into the public repository, including shader hashes originating from title content, addresses or screenshots. Sanitize aggregation only.
+
+**Revisit:** After bounded source fix/gate with synthetic tests and stable owner hardware evidence; a no-scene or gray result alone is not proof of a specific subsystem cause. Main untouched.
+
