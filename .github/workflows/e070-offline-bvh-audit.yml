@@ -1,0 +1,82 @@
+name: E-070 offline E068 anonymous BVH log audit, no title execution
+on:
+  push:
+    branches:
+      - test/e070-offline-bvh-count-audit-20261126
+    paths:
+      - "scripts/research/owner-e070-offline-bvh-log-audit.ps1"
+      - ".github/workflows/e070-offline-bvh-audit.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e070-offline-bvh-log-audit.ps1"
+      - ".github/workflows/e070-offline-bvh-audit.yml"
+permissions:
+  contents: read
+jobs:
+  windows-powershell-5-1:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse PS5.1 and function-test synthetic log aggregation and redaction only
+        shell: powershell
+        run: |
+          $Script = 'scripts/research/owner-e070-offline-bvh-log-audit.ps1'
+          $Tokens = $null
+          $Errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile($Script,[ref]$Tokens,[ref]$Errors)
+          if ($Errors.Count -gt 0) {
+            $Errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          $Code = Get-Content -Raw -LiteralPath $Script
+          foreach ($Need in @(
+            'System.IO.StreamReader',
+            'PRIVATE-raw-logs-do-not-upload',
+            'Read-IntegerField',
+            'anonymous_category_marker_lines',
+            'source_files_read',
+            'Compress-Archive -Path (Join-Path $Upload',
+            'no game run'
+          )) {
+            if (-not $Code.Contains($Need)) { throw "Missing E-070 safety marker: $Need" }
+          }
+          foreach ($Forbidden in @('Start-Process', 'Invoke-WebRequest', 'Invoke-RestMethod', 'Stop-Process', 'game_scarlett_master', 'GTA6.Xbox')) {
+            if ($Code.Contains($Forbidden)) { throw "E-070 offline-only invariant violated: $Forbidden" }
+          }
+          $Root = Join-Path $env:RUNNER_TEMP 'e070-synthetic'
+          New-Item -ItemType Directory -Force -Path $Root | Out-Null
+          $Fixture = Join-Path $Root 'synthetic-input.txt'
+          @(
+            '2026 INFO frame=40 pipelines=53 made=46 refused=7 dropped=0 BVH builder held back: not all its pipelines are made secret=synthetic-private-string',
+            '2026 INFO frame=40 shader_translation=5 host_pipeline=2 pending=0 BVH builder unavailable pipeline categories (anonymous)',
+            '2026 WARN shader does not translate; its pipelines' + "'" + ' draws are dropped secret=synthetic-private-string',
+            '2026 WARN index=999999 title slot past the host heap secret=synthetic-private-string'
+          ) | Set-Content -LiteralPath $Fixture
+          & $Script -ReportRoot $Root -LogFile $Fixture
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "E070 test invocation failed" }
+          $Zips = @(Get-ChildItem -LiteralPath $Root -Filter 'E070-offline-BVH-log-audit-*-summary.zip' -File)
+          if ($Zips.Count -ne 1) { throw "Expected exactly one synthetic ZIP" }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $Zip = [System.IO.Compression.ZipFile]::OpenRead($Zips[0].FullName)
+          try {
+            $Entry = $Zip.Entries | Where-Object { $_.Name -eq 'E070-anonymous-counts.txt' }
+            if ($null -eq $Entry) { throw 'Missing sanitized numeric-only summary' }
+            $Reader = New-Object System.IO.StreamReader($Entry.Open())
+            try { $Summary = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+          }
+          finally { $Zip.Dispose() }
+          foreach ($Expected in @(
+            'last_bvh_refused=7',
+            'last_shader_translation=5',
+            'last_host_pipeline=2',
+            'last_pending=0',
+            'anonymous_category_marker_lines=1',
+            'anonymous_complete_count_records=1',
+            'heap_overflow_warning_lines=1'
+          )) {
+            if (-not $Summary.Contains($Expected)) { throw "Missing synthetic diagnostic: $Expected" }
+          }
+          if ($Summary.Contains('synthetic-private-string')) { throw 'Raw input leaked into sanitized ZIP' }
+          if ($Summary.Contains('synthetic-input.txt')) { throw 'Private input name leaked into ZIP' }
+          Write-Host 'E-070 PS5.1 syntax, synthetic BVH parser, numeric-only privacy PASS; no title launched.'
