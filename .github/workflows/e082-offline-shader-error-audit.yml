@@ -1,0 +1,76 @@
+name: E082 offline E078 warning audit (Windows PowerShell 5.1)
+on:
+  push:
+    branches:
+      - test/e082-offline-shader-error-audit-20261127
+  pull_request:
+    paths:
+      - "scripts/research/owner-e082-offline-shader-error-audit.ps1"
+      - ".github/workflows/e082-offline-shader-error-audit.yml"
+permissions:
+  contents: read
+jobs:
+  synthetic-winps:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Offline-only source, PS5.1 syntax, synthetic categories, ZIP privacy
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Path = (Resolve-Path 'scripts/research/owner-e082-offline-shader-error-audit.ps1').ProviderPath
+          $Tokens = $null
+          $Errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            $Path, [ref]$Tokens, [ref]$Errors)
+          if ($Errors.Count -ne 0) { throw 'PowerShell parser failed' }
+          $Body = Get-Content -LiteralPath $Path -Raw
+          foreach ($Forbidden in @('Start-Process','Invoke-WebRequest','Invoke-RestMethod','cargo build')) {
+            if ($Body.Contains($Forbidden)) { throw 'Offline-only source guard failed' }
+          }
+          $Root = Join-Path $env:RUNNER_TEMP 'E082-fixture'
+          $Private = Join-Path $Root 'E078-RTX5090-BVH-reason-reuse-SYNTHETIC\PRIVATE-raw-logs-do-not-upload'
+          New-Item -ItemType Directory -Force -Path $Private | Out-Null
+          $Esc = [char]27
+          $Warning = "shader does not translate; its pipelines' draws are dropped"
+          $Lines = @(
+            ($Esc + '[36merror=console wave64 lanes in a group of more than 64 threads ' + $Esc + '[0m' + $Warning + ' PRIVATE_ID_ABC'),
+            ('error=ds_permute across the halves of a wave64 ' + $Warning + ' PRIVATE_PATH_ABC'),
+            ('error=an LDS memory sharing failure ' + $Warning),
+            ('error=an implicit-derivative sample ' + $Warning),
+            ('error=lane mask read as data ' + $Warning),
+            ('error=some unrelated synthetic failure ' + $Warning),
+            ($Esc + '[32mlarge_group=5 implicit_sample=0 cross_half_lds=2 mask_data=0 other=0 ' + $Esc + '[0mBVH shader translator failure classes (anonymous)')
+          )
+          $Lines | Set-Content -LiteralPath (Join-Path $Private 'title-stderr-private.txt')
+          'synthetic stdout line' | Set-Content -LiteralPath (Join-Path $Private 'title-stdout-private.txt')
+          & $Path -ReportRoot $Root
+          $Results = @(Get-ChildItem -LiteralPath $Root -Filter 'E082-offline-shader-error-audit-*-summary.zip' -File)
+          if ($Results.Count -ne 1) { throw 'Exactly one sanitized ZIP expected' }
+          $Extract = Join-Path $Root 'extract'
+          Expand-Archive -LiteralPath $Results[0].FullName -DestinationPath $Extract -Force
+          $Files = @(Get-ChildItem -LiteralPath $Extract -File)
+          if ($Files.Count -ne 1 -or $Files[0].Name -ne 'E082-anonymous-counts.txt') {
+            throw 'Unexpected files in ZIP'
+          }
+          $Text = Get-Content -LiteralPath $Files[0].FullName -Raw
+          foreach ($Expected in @(
+            'title_shader_warning_lines=6',
+            'title_warning_large_group=1',
+            'title_warning_implicit_derivative=1',
+            'title_warning_lane_mask_data=1',
+            'title_warning_ds_permute=1',
+            'title_warning_other_lds_phrase=1',
+            'title_warning_other_unclassified=1',
+            'bvh_reason_complete=1',
+            'last_bvh_large_group=5',
+            'last_bvh_cross_half_lds=2',
+            'no_game_or_gpu_execution=true'
+          )) {
+            if (-not $Text.Contains($Expected)) { throw ('Expected metric absent: ' + $Expected) }
+          }
+          foreach ($Forbidden in @('PRIVATE_ID_ABC','PRIVATE_PATH_ABC','E078-RTX5090-BVH-reason-reuse-SYNTHETIC','error=','shader does not translate')) {
+            if ($Text.Contains($Forbidden)) { throw 'Private text leaked into ZIP' }
+          }
+          Write-Host 'E082 Windows PS5.1 synthetic classification, privacy and no-title guard PASS'
