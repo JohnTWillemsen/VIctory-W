@@ -1,0 +1,74 @@
+name: E105 D3D12 numeric-ID source Windows acceptance and artifact
+
+on:
+  push:
+    branches: [fix/e105-d3d12-numeric-id-visible-pr3409-20261127]
+  pull_request:
+    paths:
+      - crates/victory-gpu/src/host.rs
+      - .github/workflows/e105-numeric-d3d12-windows.yml
+
+permissions:
+  contents: read
+
+jobs:
+  win-source-and-artifact:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install repository-pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Fail closed if reviewed D3D12 host source changed
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $Expected='b0fcc50a95efe6d93779dd402c86198599d094f0'
+          $Actual=(& git hash-object -- crates/victory-gpu/src/host.rs).Trim()
+          if($LASTEXITCODE -ne 0 -or $Actual -cne $Expected){throw "Source hash not reviewed: $Actual"}
+          $C=Get-Content -LiteralPath 'crates/victory-gpu/src/host.rs' -Raw
+          if(-not $C.Contains('d3d12_report_line(m.ID.0, m.Severity.0, text)')){throw 'Numeric diagnostic field absent'}
+          if(-not $C.Contains('fn plain_text_d3d12_debug_id_survives_log_formatting()')){throw 'Numeric metadata test absent'}
+          Write-Host 'Exact reviewed host source and unit-test guard PASS'
+      - name: Clippy default full workspace
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Clippy all features full workspace
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Locked full workspace tests
+        shell: cmd
+        run: cargo test --workspace --locked
+      - name: Release diagnostics candidate (no title assets)
+        shell: cmd
+        run: cargo build --release --locked -p victory --features diagnostics
+      - name: Verify executable and record reproducible manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $Exe='target/release/victory.exe'
+          if(-not (Test-Path -LiteralPath $Exe -PathType Leaf)){throw 'Missing victory.exe after completed gates'}
+          $Hash=(Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $Sha=(& git rev-parse HEAD).Trim()
+          $Manifest=@(
+             'format=E105-public-source-d3d12-numeric-logs-v1'
+             ('source_commit='+$Sha)
+             'source_upstream_pr3409_commit=965d93823587932e8f40b152b8d4faab5f7a9c85'
+             'source_host_rs_blob=b0fcc50a95efe6d93779dd402c86198599d094f0'
+             ('binary_sha256='+$Hash)
+             'rust_profile=release'
+             'rust_features=diagnostics'
+             'title_test=NOT_RUN'
+             'physical_rtx5090_test=NOT_RUN'
+             'contains_game_files=false'
+          )
+          [IO.File]::WriteAllLines('BUILD-MANIFEST.txt',$Manifest,[Text.UTF8Encoding]::new($false))
+          Write-Host ('Public source only, release diagnostics SHA256 '+$Hash)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e105-d3d12-numeric-logs-${{ github.sha }}
+          path: |
+            target/release/victory.exe
+            BUILD-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 7
