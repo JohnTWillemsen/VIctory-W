@@ -58,6 +58,21 @@ The owner supplied two separate private files: the 14-line `pr439-bvh2118-merge-
 
 **Next exact-source gate:** `scripts/research/validate-pr439-bvh2118-integration.ps1` in this draft branch verifies the **pending, uncommitted** HEAD/MERGE_HEAD/branch, all six expected staged source statuses, and exact `git write-tree` = `9f8bb36f497fdfffd9d68f2f2b22b0284899ae10`. It runs a workspace all-target Cargo check, 36 split-wave GPU tests, 2 lane-loop GPU tests, 4 BVH unit tests, an independently isolated optimized release build, and a **separate, non-blocking diagnostic full GPU suite** (the original source already has a known NVIDIA descriptor-cap unit failure). Record all exit codes and release SHA. **Script has NOT run on owner Windows yet; no combined build/GPU result/graphics or BVH live safety claim.** No source commit/push/merge into `main` is authorized. The old #2121+#189 experiments remain untouched.
 
+## E-032 — first combined compile blocked by test-helper API mismatch (2026-11-26)
+
+**Owner result: COMPILE_FAIL, exit 101, not a shader/GPU runtime failure.** The owner ran our E-031 exact-staged-tree validation script in the local third worktree (HEAD #439, MERGE_HEAD #2118). `cargo check --workspace --all-targets --locked` reported **a single `E0061`** in `crates/victory-gpu/src/pipeline.rs` line **876**, inside a **#2118-only test helper** `ending_shader()`. It calls `victory_shader::emit::emit` with six arguments, but upstream #439 changed the signature to take **seven**, including a `victory_shader::emit::Target`. The compiler stopped **before** Wave64 split/loop tests, BVH tests, full GPU suite or optimized release build: **all subsequent gates NOT_RUN**. Thus, E-031's automatic conflict-free merge **is not** evidence of compile compatibility.
+
+**Source-confirmed minimal resolution:** Preserve #439's runtime API and update only the test helper call from `emit::emit(&c, &native, &p, &st, &io, &res).unwrap()` to `emit::emit(&c, &native, &p, &st, &io, &res, emit::Target::ANY).unwrap()`. #439 defines `emit::Target::ANY` as the **default unrestricted target**, appropriate for this tiny one-thread, non-wave64 `s_endpgm` compute test. Don't change production shaders or disable host Wave64 safety guards.
+
+**Owner ZIP source hashes used by the guard:**
+- Original `pipeline.rs` SHA-256: `BE8CA499438B8D89B869D58D0749171F62CE92F5860BE2A3A788B5C08D0687AF`.
+- Proposed single-line file SHA-256: `7F172A4D048FE74F8DBFA250F49DB2FD5A816456A849CC824FAA237B52B3CB73`.
+- Pending source pre-fix Git staged tree: `9f8bb36f497fdfffd9d68f2f2b22b0284899ae10`.
+
+**Next owner action:** Run `scripts/research/fix-and-validate-pr439-bvh2118-emit-target.ps1` from THIS draft PR. It checks pinned third-worktree HEAD/MERGE_HEAD/branch/status/index and original source hash, backs up the one public Rust file externally, applies exactly one test-only call change, verifies SHA, stages **only** that change (NO commit), and runs workspace all-target Cargo check → #439 split/loop GPU tests → BVH gate unit tests → separate optimized release build → independent full GPU suite. Any failure is recorded in a **new** private log `C:\vtw\verification\pr439-bvh2118-api-fix-validation.txt`. The test runner **has NOT been run** by owner at time of writing. The previous failing report remains immutable historical evidence; do not overwrite it or claim that compilation is already fixed.
+
+**Caveats:** This minimal API correction does not establish title BVH safety or a rendered world. A known main-derived RTX5090 descriptor-capacity unit failure may recur on the full GPU suite and must be identified by exact failing test rather than suppressed. No source commit, push or main merge authorized.
+
 ## First bounded experiment (no game)
 
 Run the code-only `scripts/research/test-pr439-bvh2118.ps1` on the owner's Windows 11 RTX 5090 machine. It:
