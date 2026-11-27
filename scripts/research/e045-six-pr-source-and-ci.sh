@@ -63,7 +63,7 @@ if [[ "${E081_WAVE64_LDS_GATE:-0}" == "1" ]]; then
     echo "E081 expected exactly one added #2118 commit" >&2; exit 81;
   }
   stat="$(git diff --numstat "$bvh" "$observed")"
-  expected="$(printf '4\\t1\\tcrates/victory-gpu/src/draw.rs')"
+  expected="$(printf '4\t1\tcrates/victory-gpu/src/draw.rs')"
   [[ "$stat" == "$expected" ]] || {
     echo "E081 unexpected #2118 changed paths or line count" >&2; exit 81;
   }
