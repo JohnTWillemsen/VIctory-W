@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 3
+          fetch-depth: 0
       - name: Install repository-pinned Rust toolchain
         run: rustup toolchain install
       - name: Fail closed on source drift and mismatched upstream integration
@@ -22,7 +22,9 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           & git cat-file -e '712325801d17466c5ce6ff85d96065a5a22814e1^{commit}'
-          if($LASTEXITCODE -ne 0){throw 'Expected PR27 parent missing'}
+          if($LASTEXITCODE -ne 0){throw 'Expected PR27 ancestor missing'}
+          & git merge-base --is-ancestor 712325801d17466c5ce6ff85d96065a5a22814e1 HEAD
+          if($LASTEXITCODE -ne 0){throw 'Unexpected PR27 source ancestry'}
           $Got=(& git hash-object -- 'crates/victory-shader/src/emit/barrier_tests.rs').Trim()
           if($LASTEXITCODE -ne 0 -or $Got -cne '9645361df2939c80fee7f75d64e0ebeae2d24ffa'){throw 'E108 source changed: crates/victory-shader/src/emit/barrier_tests.rs'}
           $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower.rs').Trim()
