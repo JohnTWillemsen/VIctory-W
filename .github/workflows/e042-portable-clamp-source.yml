@@ -1,0 +1,22 @@
+name: E-042 portable descriptor clamp source conflict audit
+
+on:
+  push:
+    branches:
+      - research/pr439-console-wave64-bvh-gate-20261126
+    paths:
+      - ".github/workflows/e042-portable-clamp-source.yml"
+      - "scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-pr2628-source.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  detect-upstream-overlap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fail closed on raw patch conflicts, no auto merge or compile
+        shell: bash
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-pr2628-source.sh
