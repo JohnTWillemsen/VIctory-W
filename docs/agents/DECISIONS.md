@@ -120,3 +120,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **No main merge** and no attribution of visual difference without comparable scene/time/cache-controlled baseline.
 
+## D-013 · 2026-11-26 MST / 2026-11-27 UTC — Target BVH shader translator semantics, not D3D12 PSO refusals
+
+**Decision and evidence:** Corrected private E070 offline report (owner RTX5090 E068 logs) proves **7 of 7 BVH builder refused pipelines are failed shader translations**, host-pipeline refusal=0, pending=0. BVH safety predicate remains necessary and unmodified. This narrows the immediate investigation away from host D3D12 pipeline creation; it does **not** establish which unsupported wave64/implicit-derivative/LDS/lane-mask operation accounts for the seven, or that the BVH work alone causes missing geometry.
+
+**Implementation:** Keep E074 independent and opt-in. Classify original shader error text into anonymous broad enum in memory on translation failure, report per-BVH-refused-pipeline count only with explicit flags, no shader hashes, game-derived identifiers, raw errors or title assets. Preserve all original translator/host behavior and all-or-nothing BVH gate. Reject workarounds that simply force acceptance of unknown wave64 group semantics. After strict Windows CI PASS, one bounded owner-approved diagnostic build may be appropriate.
+
+**Privacy:** Private raw E068 logs and screenshots are outside public GitHub; only numeric E070 category totals appear in E073 evidence. Main unchanged.
+
