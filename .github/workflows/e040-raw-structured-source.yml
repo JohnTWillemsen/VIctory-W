@@ -20,3 +20,17 @@ jobs:
       - name: Check NVIDIA two-file raw view source patch against four pinned PRs
         shell: bash
         run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-source.sh
+
+  five-pr-hosted-windows:
+    needs: guarded-public-source
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install pinned Windows MSVC Rust
+        run: rustup toolchain install
+      - name: Validate pinned source with clippy and focused tests
+        shell: bash
+        env:
+          E041_WINDOWS_COMPILE: "1"
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-source.sh
