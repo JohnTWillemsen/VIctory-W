@@ -31,6 +31,7 @@ PATHS
 
 reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
+e077="$PWD/scripts/research/e077-bvh-walk-unbuilt-safety.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
 work="$(mktemp -d)"
@@ -192,6 +193,10 @@ echo "E-045 partial git apply exit $rejected_exit (expected)"
 grep -E 'Rejected hunk|with [0-9]+ reject|Applied patch|Hunk #[0-9]+ applied' "$work/reject.log" || true
 python "$reconciler" "$PWD"
 python "$e049" "$PWD"
+if [[ "${E077_BVH_WALK_GUARD:-0}" == "1" ]]; then
+  [[ -f "$e077" ]] || { echo "E077 reviewed guard patch missing" >&2; exit 77; }
+  bash "$e077" "$PWD"
+fi
 [[ "$(find apps crates -name '*.rej' -type f | wc -l)" -eq 0 ]] || {
   echo "E-045 an unhandled rejected hunk remains" >&2
   exit 42
@@ -223,6 +228,10 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked the_probe_selects_the_heap_layout_before_translation -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked mirrored_and_dynamic_slots_end_before_the_shader_null_views -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
+  if [[ "${E077_BVH_WALK_GUARD:-0}" == "1" ]]; then
+    cargo test -p victory-gpu --lib --locked programs_that_intersect_rays_walk_the_structures -- --test-threads=1 --nocapture
+    cargo test -p victory-gpu --lib --locked walks_wait_for_the_builder_to_run_whole -- --test-threads=1 --nocapture
+  fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
   echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
