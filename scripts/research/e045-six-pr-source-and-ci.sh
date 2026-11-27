@@ -6,6 +6,7 @@ set -euo pipefail
 
 wave=e2d3cfd50715954fb89ff462edb37a0c4395ecd0
 bvh=999a8f67125865fcc0b3aa23cdc8a93b10ef9974
+bvh_live=78f36cfa69211edbfa87d44e92ab93bd795f74a7
 addr=543d8688068b658ca4bf9602887097b215fec838
 # E-050: upstream #2626 advanced by one test-only commit (mip-1 packed copy).
 # Compared c8cc83e...6092548; one path: list/packed_copy_tests.rs; no runtime edits.
@@ -49,7 +50,7 @@ git fetch --quiet origin \
   refs/pull/2628/head:refs/remotes/origin/e045-2628
 for pair in \
   "refs/remotes/origin/e045-439:$wave" \
-  "refs/remotes/origin/e045-2118:$bvh" \
+  "refs/remotes/origin/e045-2118:$bvh_live" \
   "refs/remotes/origin/e045-2098:$addr" \
   "refs/remotes/origin/e045-2626:$fmt" \
   "refs/remotes/origin/e045-2464:$raw" \
@@ -59,6 +60,16 @@ for pair in \
     exit 3
   }
 done
+# Public #2118 HEAD advanced once, exactly a warning-only draw.rs change.
+# Retain the already validated older implementation SHA for E045; never
+# auto-import a newer BVH algorithm without revalidation.
+[[ "$(git merge-base "$bvh" "$bvh_live")" == "$bvh" ]] || {
+  echo "Unexpected #2118 lineage; refusing silent update" >&2; exit 94;
+}
+[[ "$(git diff --name-only "$bvh" "$bvh_live")" == "crates/victory-gpu/src/draw.rs" ]] || {
+  echo "#2118 changed more than previously reviewed warning path" >&2; exit 94;
+}
+echo "E095 audited #2118 warning-only live-head drift; retaining pinned old BVH source"
 
 # The same two-PR source and test-only API repair as E-034/E-037.
 git checkout --quiet --detach "$wave"
