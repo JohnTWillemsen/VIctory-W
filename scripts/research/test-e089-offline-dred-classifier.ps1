@@ -25,17 +25,17 @@ $EvilHash = 'deadbeefdeadbeef'
 [IO.File]::WriteAllLines(
     (Join-Path $Private 'title-stderr-private.txt'),
     [string[]]@(
-'2026-11-27T08:57:00Z WARN victory_gpu::host: slow host submission ms=11654 lists=1 pipelines={"[compute '+$EvilHash+']"}',
+('2026-11-27T08:57:00Z WARN victory_gpu::host: slow host submission ms=11654 lists=1 pipelines={"[compute '+$EvilHash+']"}'),
 '2026-11-27T08:57:01Z ERROR victory_gpu::host: host GPU device removed after a submission of 1 lists; no breadcrumbs 0x887A0004; device removed: 0x887A0006',
-'2026-11-27T08:57:02Z INFO DRED stopped at command 514 of 1304 (op 5) in '+$Secret,
-'2026-11-27T08:57:03Z INFO DRED page fault 0x148981EF0 '+$EvilHash,
+('2026-11-27T08:57:02Z INFO DRED stopped at command 514 of 1304 (op 5) in '+$Secret),
+('2026-11-27T08:57:03Z INFO DRED page fault 0x148981EF0 '+$EvilHash),
 '2026-11-27T08:57:04Z ERROR D3D12 debug layer: ERROR descriptor slot null',
-'2026-11-27T08:57:05Z WARN shader does not translate '+$EvilHash,
-'2026-11-27T08:57:06Z WARN host pipeline refused '+$Secret
+('2026-11-27T08:57:05Z WARN shader does not translate '+$EvilHash),
+('2026-11-27T08:57:06Z WARN host pipeline refused '+$Secret)
 ),[Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllLines(
     (Join-Path $Private 'title-stdout-private.txt'),
-    [string[]]@('Private content '+$Secret, 'title exit 0x887A0005', 'DROPPED indirect kind 2 (no host pipeline)'),
+    [string[]]@( ('Private content '+$Secret), 'title exit 0x887A0005', 'DROPPED indirect kind 2 (no host pipeline)' ),
     [Text.UTF8Encoding]::new($false))
 $FixtureStreamLines = @(
     (Get-Content -LiteralPath (Join-Path $Private 'title-stdout-private.txt')).Count,
