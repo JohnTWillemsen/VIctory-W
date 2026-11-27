@@ -5,7 +5,7 @@ param([string]$ReportRoot = (Join-Path $env:USERPROFILE 'VIctory-Tests'))
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$Pin = '668bb0b83e4889bbb114522eabaffd51f51147e4'
+$Pin = '0c5a2813eec908954f1ccc37da0fe136efed5def'
 $RunId = 'E060-six-PR-barrier-RTX5090-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 $Folder = Join-Path $ReportRoot $RunId
 $Scripts = Join-Path $Folder 'scripts\research'
