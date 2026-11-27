@@ -1,0 +1,39 @@
+name: E083 public-only group barrier rendezvous safety model
+on:
+  push:
+    branches:
+      - research/e083-multiwave-barrier-rendezvous-model-20261127
+    paths:
+      - "scripts/research/e083_multiwave_barrier_model.py"
+      - "scripts/research/test_e083_multiwave_barrier_model.py"
+      - ".github/workflows/e083-multiwave-rendezvous-model.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e083_multiwave_barrier_model.py"
+      - "scripts/research/test_e083_multiwave_barrier_model.py"
+      - ".github/workflows/e083-multiwave-rendezvous-model.yml"
+permissions:
+  contents: read
+jobs:
+  model-synthetics:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Pure 16-case synthetic barrier site and scope model
+        working-directory: scripts/research
+        run: python -m unittest -v test_e083_multiwave_barrier_model
+      - name: Syntax compile
+        working-directory: scripts/research
+        run: python -m py_compile e083_multiwave_barrier_model.py test_e083_multiwave_barrier_model.py
+      - name: Offline-only imported-module allowlist (source only)
+        working-directory: scripts/research
+        run: |
+          python -c "import ast,pathlib; p=pathlib.Path('e083_multiwave_barrier_model.py'); tree=ast.parse(p.read_text()); allowed={'__future__','dataclasses','enum','typing'}; names={n.module for n in ast.walk(tree) if isinstance(n,ast.ImportFrom)}; assert names<=allowed,(names-allowed); assert not [n for n in ast.walk(tree) if isinstance(n,ast.Import)]; print('E083 model imports are source-only')"
