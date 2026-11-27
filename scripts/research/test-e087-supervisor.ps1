@@ -18,6 +18,19 @@ function WaitFor([scriptblock]$Condition,[int]$Seconds=60) {
         if(& $Condition){return}
         Start-Sleep -Milliseconds 250
     }
+    # Synthetic-only diagnostics; no game assets or real title logs in hosted CI.
+    if (-not [string]::IsNullOrWhiteSpace($Folder)) {
+        $Log=Join-Path $Folder 'PRIVATE-logs-do-not-upload\monitor-stderr-private.txt'
+        if (Test-Path -LiteralPath $Log -PathType Leaf) {
+            Write-Host ('Synthetic monitor stderr: '+(Get-Content -LiteralPath $Log -Raw))
+        }
+        Write-Host ('Synthetic last status: '+(Status $Folder))
+        $Wp=Join-Path $Folder 'PRIVATE-logs-do-not-upload\worker-pid.txt'
+        if(Test-Path -LiteralPath $Wp){
+            $WpId=(Get-Content -LiteralPath $Wp -Raw).Trim()
+            Write-Host ('Synthetic worker alive: '+[bool](Get-Process -Id $WpId -ErrorAction SilentlyContinue))
+        }
+    }
     throw ('Timeout after '+$Seconds+' seconds')
 }
 function Status([string]$Folder) {
