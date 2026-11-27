@@ -96,3 +96,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Revisit:** After bounded source fix/gate with synthetic tests and stable owner hardware evidence; a no-scene or gray result alone is not proof of a specific subsystem cause. Main untouched.
 
+## D-010 · 2026-11-26 MST / 2026-11-27 UTC — Diagnose NVIDIA BVH blockers before changing shader semantics
+
+**Decision:** Do not convert seven missing BVH pipelines into unconditional dispatches; [Marvisak #2118](https://github.com/Marvisak/VIctory/blob/999a8f67125865fcc0b3aa23cdc8a93b10ef9974/crates/victory-gpu/src/pipeline/builder.rs) intentionally suppresses all builder work if any pipeline is absent to prevent corrupt acceleration-structure writes. Source inspection of [#439](https://github.com/Marvisak/VIctory/blob/e2d3cfd50715954fb89ff462edb37a0c4395ecd0/crates/victory-shader/src/emit/lower.rs) shows why arbitrary wave64 groups larger than 64 threads, implicit derivatives and LDS/title-memory operations are guarded on 32-lane NVIDIA. Replacing guards with success without semantically sound emulation is rejected.
+
+**Implementation:** Separate independently gated source-only research PR10 (optional rate limiting of repetitive descriptor warnings; runtime return unchanged) from PR11 (opt-in anonymous missing-builder pipeline category counter using shader translation/pipeline state; all-or-none predicate unchanged). Both source jobs passed, Windows full gates pending as of initial observation. No merging to main and no game title assets.
+
+**Next:** Verify exact-head CI; if green, plan one bounded RTX5090 build to collect *anonymous* builder-category evidence, rather than full unfocused visual A/B loops. Keep E065 warning rate limiting separate in the first hardware comparison, or explicitly document a later combined experiment.
+
