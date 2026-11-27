@@ -48,7 +48,9 @@ jobs:
           if($LASTEXITCODE -ne 0 -or $Got -cne '15e39f952c0c77a695bab9b10e930ca79c8a6381'){throw 'E109 source drift: crates/victory-shader/src/emit/mod.rs'}
           $Got=(& git hash-object -- 'crates/victory-shader/src/emit/shader.rs').Trim()
           if($LASTEXITCODE -ne 0 -or $Got -cne 'ae81c44ed2b0bccde41e311a98796e4814d6c231'){throw 'E109 source drift: crates/victory-shader/src/emit/shader.rs'}
-          Write-Host 'E109 full #3426+#3561 stacked source passed 13-blob verification'
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/pipeline/host.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'ff9dc7108597909d79fbe178f073b6f0582cd0c8'){throw 'E109 updated Translated test fixture source drift'}
+          Write-Host 'E109 full #3426+#3561 stacked source plus test fixture passed 14-blob verification'
       - name: Clippy default full workspace
         shell: cmd
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
