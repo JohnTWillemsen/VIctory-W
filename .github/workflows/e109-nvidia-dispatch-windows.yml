@@ -1,0 +1,100 @@
+name: E109 1D DispatchX Windows acceptance and candidate
+
+on:
+  push:
+    branches: [experiment/e109-nvidia-dispatch-thread-guard-3561-20261127]
+permissions:
+  contents: read
+
+jobs:
+  e109-windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install repository-pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Fail closed on source blobs and reviewed PR27 ancestry
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & git merge-base --is-ancestor 712325801d17466c5ce6ff85d96065a5a22814e1 HEAD
+          if($LASTEXITCODE -ne 0){throw 'Expected PR27 source ancestor missing'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/descriptor/host.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'f15f4342dfbeffbc1edda1b568e0840547f98165'){throw 'E109 source drift: crates/victory-gpu/src/descriptor/host.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/draw.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'a5c919d0fe2843cd1946067665a936405e4aee81'){throw 'E109 source drift: crates/victory-gpu/src/draw.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/list.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'adc7bc9141a4e04e1eb70becacba3bb63a8a9c14'){throw 'E109 source drift: crates/victory-gpu/src/list.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/pipeline.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '4e748c0667ac5a885425063dce030034275cef6b'){throw 'E109 source drift: crates/victory-gpu/src/pipeline.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/pipeline/depth_bounds_test.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'f1a9d48c78b43ff286a0ea88ce593953e6f7a42b'){throw 'E109 source drift: crates/victory-gpu/src/pipeline/depth_bounds_test.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/pipeline/placed_uav_tests.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'c21f4dec2e703b5add922f2a19dbb20d5ed95349'){throw 'E109 source drift: crates/victory-gpu/src/pipeline/placed_uav_tests.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/bitcode.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'b61132d6c35cb1889bef26759a861e0c89ef4cb0'){throw 'E109 source drift: crates/victory-shader/src/emit/bitcode.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/host.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'cd791ff2665746cae8431e50bf7a576d5b0d2c02'){throw 'E109 source drift: crates/victory-shader/src/emit/host.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'f161fd70dc9f61e9ba178ddf5d37c35335636511'){throw 'E109 source drift: crates/victory-shader/src/emit/lower.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower/partial.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '4b7710136de7a87c122fff019b610cfbbdd4621d'){throw 'E109 source drift: crates/victory-shader/src/emit/lower/partial.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower/view_tests.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'dd0330f740a6598d4eea0f1bfbc0e0cde0995d48'){throw 'E109 source drift: crates/victory-shader/src/emit/lower/view_tests.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/mod.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '15e39f952c0c77a695bab9b10e930ca79c8a6381'){throw 'E109 source drift: crates/victory-shader/src/emit/mod.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/shader.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'ae81c44ed2b0bccde41e311a98796e4814d6c231'){throw 'E109 source drift: crates/victory-shader/src/emit/shader.rs'}
+          $Got=(& git hash-object -- 'crates/victory-gpu/src/pipeline/host.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'ff9dc7108597909d79fbe178f073b6f0582cd0c8'){throw 'E109 updated Translated test fixture source drift'}
+          Write-Host 'E109 full #3426+#3561 stacked source plus test fixture passed 14-blob verification'
+      - name: Clippy default full workspace
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Clippy diagnostics full workspace
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Full workspace locked tests
+        shell: cmd
+        run: cargo test --workspace --locked
+      - name: Repository asset policy
+        shell: cmd
+        run: cargo xtask policy
+      - name: Release diagnostics (no game assets)
+        shell: cmd
+        run: cargo build --release --locked -p victory --features diagnostics
+      - name: Record public-source only provenance and executable hash
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $Exe='target/release/victory.exe'
+          if(-not(Test-Path -LiteralPath $Exe -PathType Leaf)){throw 'Missing release diagnostics exe'}
+          $Hash=(Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $Commit=(& git rev-parse HEAD).Trim()
+          $M=@(
+            'format=E109-public-source-1d-thread-dispatch-v1'
+            ('git_commit='+$Commit)
+            'experiment_patch_commit=94e3871de5a8625f2e6580a47d9612802656ffd9'
+            'parent_fork_pr27=712325801d17466c5ce6ff85d96065a5a22814e1'
+            'upstream_pr3409=965d93823587932e8f40b152b8d4faab5f7a9c85'
+            'upstream_pr3426=3f477b13b05cb8812dfc1f808e54b5230aac11ac'
+            'upstream_pr3561=b9000218cc129b88af1be4bd536b2c215517aaf4'
+            ('binary_sha256='+$Hash)
+            'profile=release'
+            'feature=diagnostics'
+            'owner_rtx5090_test=NOT_RUN'
+            'contains_game_assets=false'
+          )
+          [IO.File]::WriteAllLines('E109-BUILD-MANIFEST.txt',$M,[Text.UTF8Encoding]::new($false))
+          Write-Host ('E109 diagnostics exe SHA256 '+$Hash)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e109-1d-thread-dispatch-${{ github.sha }}
+          path: |
+            target/release/victory.exe
+            E109-BUILD-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 7

@@ -1022,6 +1022,8 @@ float4 ps(Vertex input) : SV_Target { return input.color; }
                             view_marks: false,
                         },
                         used: Vec::new(),
+                        compute_threads: None,
+                        partial_dispatch: false,
                     }))
                     .is_ok()
             );
