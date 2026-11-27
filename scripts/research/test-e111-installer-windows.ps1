@@ -28,7 +28,7 @@ function SpecLines([string]$Candidate,[string]$Hash) {
     }
     return @(
         'format=E109-public-source-1d-thread-dispatch-v1'
-        'git_commit=8c8498e72f4bd46925ed07cf562947fccfc33bf1'
+        'git_commit=572ee99e43993244f7f2f28094f704a14ae88dc7'
         'experiment_patch_commit=94e3871de5a8625f2e6580a47d9612802656ffd9'
         'parent_fork_pr27=712325801d17466c5ce6ff85d96065a5a22814e1'
         'upstream_pr3409=965d93823587932e8f40b152b8d4faab5f7a9c85'
