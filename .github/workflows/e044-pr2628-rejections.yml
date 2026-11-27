@@ -1,0 +1,19 @@
+name: E-044 inspect rejected portable-heap patches
+on:
+  push:
+    branches:
+      - experiment/pr2628-wave64-portable-heap-reconciliation-20261126
+    paths:
+      - "scripts/research/e044-inventory-pr2628-rejections.sh"
+      - ".github/workflows/e044-pr2628-rejections.yml"
+permissions:
+  contents: read
+jobs:
+  enumerate-rejected-hunks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check and print each rejected public-source hunk
+        shell: bash
+        run: bash scripts/research/e044-inventory-pr2628-rejections.sh

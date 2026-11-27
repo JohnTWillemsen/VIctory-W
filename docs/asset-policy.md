@@ -48,6 +48,14 @@ user's dump), `test_titles`, and `cache_dir` for everything derived
    type, be under 512 KiB, contain no binary data or known binary
    signatures, and hold no long hex/base64 runs. Exceptions need an entry
    with a reason in `xtask/src/policy.rs`.
+   Two explicitly reviewed public-source Python research helpers are path-
+   allowlisted in `xtask/src/policy.rs`:
+   `scripts/research/e045-reconcile-pr2628.py` and
+   `scripts/research/e049-guard-hostless-portable-probe.py`. They are **not**
+   asset exemptions: both must still pass the same 512 KiB size, file
+   signature, binary and encoded-data checks. Every other `.py` path
+   remains disallowed. This is not a new exception to the prohibition on
+   game-derived material.
 3. At runtime, everything that writes derived data calls
    `victory_core::ensure_outside_repo`.
 4. Tests that need real files take their paths from environment variables

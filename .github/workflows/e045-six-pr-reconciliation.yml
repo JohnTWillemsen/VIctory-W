@@ -1,0 +1,40 @@
+name: E-045 reconcile portable view heap and Wave64
+on:
+  push:
+    branches:
+      - experiment/pr2628-wave64-portable-heap-reconciliation-20261126
+    paths:
+      - "scripts/research/e045-reconcile-pr2628.py"
+      - "scripts/research/e049-guard-hostless-portable-probe.py"
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - ".github/workflows/e045-six-pr-reconciliation.yml"
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Reconstruct public source and check explicit rejects
+        shell: bash
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Check, Clippy, packed/BVH/heap unit gates and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
