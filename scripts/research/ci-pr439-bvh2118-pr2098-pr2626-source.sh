@@ -106,4 +106,15 @@ git diff --cached --check
 }
 
 echo "E-038 source-only gate PASS: #2626 nine-file patch applies after #439+#2118+#2098."
-echo "No Rust compile, GPU test, title execution, persistent integration commit or push."
+if [[ "${E038_WINDOWS_COMPILE:-0}" == '1' ]]; then
+  echo "E-039: now compiling EXACT source on hosted Windows runner; no native RTX5090 claim"
+  cargo check --workspace --all-targets --locked
+  cargo test -p victory-gpu --lib --locked packed -- --test-threads=1 --nocapture
+  cargo test -p victory-gpu --lib --locked an_acceleration_structures_view_address_is_its_location -- --test-threads=1 --nocapture
+  cargo test -p victory-gpu --lib --locked builder -- --test-threads=1 --nocapture
+  cargo build --release --locked -p victory
+  echo "E-039 hosted Windows packed-format, descriptor and BVH targeted gates completed."
+  echo "No private title or physical RTX5090 was tested. No persistent integration commit or binary."
+else
+  echo "No Rust compile, GPU test, title execution, persistent integration commit or push in source-only E-038."
+fi
