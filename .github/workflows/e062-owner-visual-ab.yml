@@ -1,0 +1,59 @@
+name: E-062 owner-gated RTX5090 private visual A-B harness static validation
+on:
+  push:
+    branches:
+      - test/e062-rtx5090-visual-ab-20261126
+    paths:
+      - 'scripts/research/owner-e062-rtx5090-visual-ab.ps1'
+      - '.github/workflows/e062-owner-visual-ab.yml'
+  pull_request:
+    paths:
+      - 'scripts/research/owner-e062-rtx5090-visual-ab.ps1'
+      - '.github/workflows/e062-owner-visual-ab.yml'
+permissions:
+  contents: read
+jobs:
+  parser-and-isolation:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Real Windows PowerShell 5.1 AST parse and owner-consent protocol (NO game execution)
+        shell: powershell
+        run: |
+          $File = 'scripts/research/owner-e062-rtx5090-visual-ab.ps1'
+          $Tokens = $null
+          $Errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile($File,[ref]$Tokens,[ref]$Errors)
+          if ($Errors.Count -gt 0) {
+            $Errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          $Code = Get-Content -Raw -LiteralPath $File
+          foreach ($required in @(
+            "cne 'LAUNCH'",
+            'Read-Host',
+            '--execute --console series-x',
+            'ExpectedBase',
+            'ExpectedE056',
+            'Get-FileHash',
+            'nvidia-smi.exe',
+            'Start-Process',
+            'VICTORY_D3D12_WARP',
+            'Compress-Archive',
+            'PREFLIGHT_ONLY_NO_GAME_RUN',
+            'No title binary, cache, screenshot, save or game-generated file copied into ZIP.'
+          )) {
+            if (-not $Code.Contains($required)) { throw "Missing E062 review gate: $required" }
+          }
+          foreach ($forbidden in @(
+            'CYBERLEEK',
+            'GTA6.Xbox',
+            'Remove-Item ',
+            'Stop-Process',
+            'Invoke-WebRequest',
+            'Invoke-RestMethod'
+          )) {
+            if ($Code.Contains($forbidden)) { throw "Unsafe or unnecessary E062 source marker found: $forbidden" }
+          }
+          Write-Host 'E-062 PS5.1 syntax, owner gates, no-private-path markers PASS. Title NOT_RUN.'
