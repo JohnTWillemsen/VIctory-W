@@ -40,15 +40,15 @@ function PutText([string]$File,[string[]]$Lines) {
 }
 function LogSummary([string]$Folder) {
     $counts=@{ files=0; lines=0; host_seen=0; host_5090=0; host_other=0; removed=0; hung=0; fault=0; slow=0; gpu_errors=0; warmup=0 }
-    $home=Join-Path $Folder 'home'
+    $appHome=Join-Path $Folder 'home'
     $paths=@()
-    $logs=Join-Path $home 'logs'
+    $logs=Join-Path $appHome 'logs'
     if (Test-Path -LiteralPath $logs -PathType Container) {
         $paths+=@(Get-ChildItem -LiteralPath $logs -File -Filter '*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 6 -ExpandProperty FullName)
     }
-    $crashes=Join-Path $home 'data\7952987A\crashes.log'
+    $crashes=Join-Path $appHome 'data\7952987A\crashes.log'
     if (Test-Path -LiteralPath $crashes -PathType Leaf) { $paths+=@($crashes) }
-    $temp=Join-Path $home 'data\7952987A\temp'
+    $temp=Join-Path $appHome 'data\7952987A\temp'
     if (Test-Path -LiteralPath $temp -PathType Container) {
         $paths+=@(Get-ChildItem -LiteralPath $temp -File -Filter '*.crash.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 2 -ExpandProperty FullName)
     }
