@@ -23,7 +23,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $Expected='b0fcc50a95efe6d93779dd402c86198599d094f0'
+          $Expected='fb12487b3863ec98e9e109aee23b908e78422099'
           $Actual=(& git hash-object -- crates/victory-gpu/src/host.rs).Trim()
           if($LASTEXITCODE -ne 0 -or $Actual -cne $Expected){throw "Source hash not reviewed: $Actual"}
           $C=Get-Content -LiteralPath 'crates/victory-gpu/src/host.rs' -Raw
@@ -54,7 +54,7 @@ jobs:
              'format=E105-public-source-d3d12-numeric-logs-v1'
              ('source_commit='+$Sha)
              'source_upstream_pr3409_commit=965d93823587932e8f40b152b8d4faab5f7a9c85'
-             'source_host_rs_blob=b0fcc50a95efe6d93779dd402c86198599d094f0'
+             'source_host_rs_blob=fb12487b3863ec98e9e109aee23b908e78422099'
              ('binary_sha256='+$Hash)
              'rust_profile=release'
              'rust_features=diagnostics'

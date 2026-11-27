@@ -21,6 +21,14 @@ use windows::Win32::System::Threading::{CreateEventW, INFINITE, WaitForSingleObj
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::{Interface, PCSTR, PCWSTR, s, w};
 
+/// Debug-layer message with a numeric id/severity in the text itself.
+/// This is intentionally redundant with tracing fields: some subscribers
+/// display only the message and drop structured fields. A source-side stable
+/// prefix lets the existing *local-only* E100 classifier count public IDs.
+fn d3d12_report_line(id: i32, severity: i32, detail: &str) -> String {
+    format!("D3D12: id={id} severity={severity}: {detail}")
+}
+
 /// Resource states without the console's own bits (compression hints from
 /// bit 25 up), which the host rejects.
 pub(crate) fn pc_state(state: u32) -> u32 {
@@ -1773,14 +1781,6 @@ impl Host {
 
     /// Moves the debug layer's messages into our log; returns the first
     /// error among them.
-/// Debug-layer message with a numeric id/severity in the text itself.
-/// This is intentionally redundant with tracing fields: some subscribers
-/// display only the message and drop structured fields. A source-side stable
-/// prefix lets the existing *local-only* E100 classifier count public IDs.
-fn d3d12_report_line(id: i32, severity: i32, detail: &str) -> String {
-    format!("D3D12: id={id} severity={severity}: {detail}")
-}
-
     pub(crate) fn log_messages(&self) -> Option<String> {
         let Some(queue) = &self.messages else {
             return None;
