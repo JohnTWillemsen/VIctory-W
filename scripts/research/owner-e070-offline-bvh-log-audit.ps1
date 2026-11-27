@@ -124,12 +124,12 @@ foreach ($File in $Source) {
             if ($Line.Contains('BVH builder unavailable pipeline categories (anonymous)')) {
                 $Stats['anonymous_category_marker_lines']++
                 $Translated = Read-IntegerField $Line 'shader_translation'
-                $Host = Read-IntegerField $Line 'host_pipeline'
+                $HostCount = Read-IntegerField $Line 'host_pipeline'
                 $Pending = Read-IntegerField $Line 'pending'
-                if ($null -ne $Translated -and $null -ne $Host -and $null -ne $Pending) {
+                if ($null -ne $Translated -and $null -ne $HostCount -and $null -ne $Pending) {
                     $Stats['anonymous_complete_count_records']++
                     $Stats['last_shader_translation'] = $Translated
-                    $Stats['last_host_pipeline'] = $Host
+                    $Stats['last_host_pipeline'] = $HostCount
                     $Stats['last_pending'] = $Pending
                 }
                 else {
