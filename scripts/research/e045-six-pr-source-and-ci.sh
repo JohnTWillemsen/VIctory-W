@@ -35,6 +35,7 @@ e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
 e095="$PWD/scripts/research/e095-e094-upstream-overlay.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
+checkout_root="$PWD"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 git -c core.autocrlf=false clone --quiet --no-tags https://github.com/Marvisak/VIctory.git "$work/source"
@@ -244,6 +245,26 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   if [[ "${E095_COMBINED_GATE:-0}" == "1" ]]; then
     cargo test -p victory-gpu --lib --locked raw_views_start_on_16_bytes_of_their_copy -- --test-threads=1
     cargo test -p victory-hle --lib --all-features --locked scripted_hold_ends_are_exclusive_even_near_duration_max -- --test-threads=1
+    if [[ "${E095_EXPORT_PUBLIC_BINARY:-0}" == "1" ]]; then
+      [[ -f target/release/victory.exe ]] || { echo "E095 no release exe: abort artifact"; exit 96; }
+      out="$checkout_root/e095-built-public-bin"
+      mkdir -p "$out"
+      cp target/release/victory.exe "$out/victory.exe"
+      {
+        echo "format=E095-public-source-binary-v1"
+        echo "workflow_source_commit=${GITHUB_SHA:-not-in-GitHub-Actions}"
+        echo "baseline_main=63bcca43c6a00a758510398fa43096ce7e4f7df0"
+        echo "six_pr_base=6a9787190de810ba560195608f0fc1ee3ce044f3"
+        echo "upstream_2634=a9eca1430a0b2a133ee5ebc4ec07062ae6c562ba"
+        echo "upstream_3540=ee3d12dc356df92a2da49133f11a5f0c98b0291f"
+        echo "upstream_3392=72d5370455e3fcd95f9daf672daa03ff862d4293"
+        echo "binary_sha256=$(sha256sum target/release/victory.exe | cut -d' ' -f1)"
+        echo "rustc=$(rustc --version)"
+        echo "owner_title_test=NOT_RUN"
+        echo "contains_game_files=NO"
+      } > "$out/BUILD-MANIFEST.txt"
+      echo "E095 PUBLIC_SOURCE_ONLY_ARTIFACT_STAGED: checkout/e095-built-public-bin"
+    fi
     echo "E095 upstream source patches + E045 six-PR hosted Windows source/Clippy/tests/release PASS (if reached)"
   fi
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"

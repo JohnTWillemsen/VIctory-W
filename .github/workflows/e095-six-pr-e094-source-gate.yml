@@ -39,4 +39,13 @@ jobs:
         env:
           E045_WINDOWS_BUILD: "1"
           E095_COMBINED_GATE: "1"
+          E095_EXPORT_PUBLIC_BINARY: "1"
         run: bash scripts/research/e045-six-pr-source-and-ci.sh
+      - name: Upload only the checked public-source release binary and manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e095-public-source-windows-${{ github.sha }}
+          path: e095-built-public-bin/
+          if-no-files-found: error
+          retention-days: 7
