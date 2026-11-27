@@ -381,6 +381,17 @@ pub(crate) fn video_memory() -> Option<[(f64, f64); 2]> {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    #[test]
+    fn plain_text_d3d12_debug_id_survives_log_formatting() {
+        let line = super::d3d12_report_line(940, 2, "[synthetic text]");
+        assert!(line.starts_with("D3D12: id=940 severity=2: "));
+        assert!(line.contains("[synthetic text]"));
+        assert_eq!(
+            super::d3d12_report_line(622, 1, "synthetic").split(':').next(),
+            Some("D3D12")
+        );
+    }
+
     thread_local! {
         /// Every transition barrier built on this thread (resource, before,
         /// after), in order.
@@ -1762,6 +1773,14 @@ impl Host {
 
     /// Moves the debug layer's messages into our log; returns the first
     /// error among them.
+/// Debug-layer message with a numeric id/severity in the text itself.
+/// This is intentionally redundant with tracing fields: some subscribers
+/// display only the message and drop structured fields. A source-side stable
+/// prefix lets the existing *local-only* E100 classifier count public IDs.
+fn d3d12_report_line(id: i32, severity: i32, detail: &str) -> String {
+    format!("D3D12: id={id} severity={severity}: {detail}")
+}
+
     pub(crate) fn log_messages(&self) -> Option<String> {
         let Some(queue) = &self.messages else {
             return None;
@@ -1782,7 +1801,12 @@ impl Host {
                     let text = std::slice::from_raw_parts(m.pDescription, m.DescriptionByteLength);
                     let text = String::from_utf8_lossy(text);
                     let text = text.trim_end_matches('\0');
-                    tracing::warn!(id = m.ID.0, severity = m.Severity.0, "D3D12: {text}");
+                    tracing::warn!(
+                        id = m.ID.0,
+                        severity = m.Severity.0,
+                        "{}",
+                        d3d12_report_line(m.ID.0, m.Severity.0, text)
+                    );
                     if m.Severity.0 <= D3D12_MESSAGE_SEVERITY_ERROR.0 && first_error.is_none() {
                         first_error = Some(text.to_owned());
                     }
