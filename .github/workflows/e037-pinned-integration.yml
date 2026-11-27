@@ -1,0 +1,27 @@
+name: E-037 pinned Wave64 BVH and view-address integration smoke
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/e037-pinned-integration.yml"
+      - "scripts/research/ci-pr439-bvh2118-pr2098.sh"
+      - "docs/research/pr439-remaining-render-blockers-20261126.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e037-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-public-source:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install repository-pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Reconstruct and validate pinned upstream source in a disposable checkout
+        shell: bash
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098.sh
