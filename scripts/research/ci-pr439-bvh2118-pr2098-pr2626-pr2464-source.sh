@@ -139,4 +139,16 @@ git diff --cached --check
   exit 14
 }
 echo "E-040 SOURCE-ONLY PASS: #2464 raw structured NVIDIA SRV patch applies after #439+#2118+#2098+#2626."
-echo "No compilation, native GPU test, game launch, persistent multi-PR code or push."
+if [[ "${E041_WINDOWS_COMPILE:-0}" == "1" ]]; then
+  echo "E-041 Windows hosted (NOT RTX5090): workspace, clippy, packed/BVH unit gates and release"
+  cargo check --workspace --all-targets --locked
+  cargo clippy --workspace --all-targets --locked -- -D warnings
+  cargo test -p victory-gpu --lib --locked packed -- --test-threads=1 --nocapture
+  cargo test -p victory-gpu --lib --locked an_acceleration_structures_view_address_is_its_location -- --test-threads=1 --nocapture
+  cargo test -p victory-gpu --lib --locked builder -- --test-threads=1 --nocapture
+  cargo build --release --locked -p victory
+  echo "E-041 five-PR hosted Windows compile, clippy, focused tests and release completed."
+  echo "No title, physical NVIDIA raw-structured behavior, persistent integration source, or public game data."
+else
+  echo "No compilation, native GPU test, game launch, persistent multi-PR code or push in E-040."
+fi
