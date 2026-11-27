@@ -1,0 +1,52 @@
+name: E-065 isolated diagnostic-only out-of-range heap log sampling
+on:
+  push:
+    branches:
+      - experiment/e065-bucketed-heap-warning-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e065-bucket-heap-warning.sh"
+      - ".github/workflows/e065-bucketed-heap-warning.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e065-bucket-heap-warning.sh"
+      - ".github/workflows/e065-bucketed-heap-warning.yml"
+permissions:
+  contents: read
+jobs:
+  public-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Parse Bash and validate strict public-source preimages only
+        shell: bash
+        env:
+          E065_HEAP_WARN_DIAG: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e065-bucket-heap-warning.sh
+          grep -Fq 'E065_HEAP_WARN_DIAG' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'e065_heap_warning_tests' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  hosted-windows:
+    needs: public-source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Use pinned Rust toolchain
+        run: rustup toolchain install
+      - name: All-targets check, strict Clippy, existing six-PR filters, three E065 tests, release build
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E065_HEAP_WARN_DIAG: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
