@@ -71,7 +71,7 @@ def main(root):
     # Preserve the #439 numeric-select retry, console-flow handling and
     # conservative Wave64 failure gates, propagate the new heap limit.
     s=edit(s,"pub(crate) fn lower(parts: &Parts) -> Result<Lowered, ShaderError> {\n    match lower_program(parts, false) {",
-        "#[cfg(test)]\npub(crate) fn lower(parts: &Parts) -> Result<Lowered, ShaderError> {\n"
+        "#[cfg(any(test, all(windows, feature = \"host\")))]\npub(crate) fn lower(parts: &Parts) -> Result<Lowered, ShaderError> {\n"
         "    lower_with_limit(parts, super::HEAP_VIEWS)\n}\n\n"
         "pub(crate) fn lower_with_limit(parts: &Parts, view_limit: u32) -> Result<Lowered, ShaderError> {\n"
         "    match lower_program(parts, false, view_limit) {",p)
