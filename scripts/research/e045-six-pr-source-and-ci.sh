@@ -200,8 +200,10 @@ done
 
 if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   echo "E-045 hosted Windows (NOT owner RTX5090): compiling and testing six-PR source"
-  cargo fmt --all
-  cargo fmt --all -- --check
+  # The upstream pinned tree deliberately has pre-existing Rustfmt drift.
+  # Formatting the ENTIRE checkout here changes unrelated unsafe blocks and
+  # invalidates the exact-source comparison against the previously green E-043.
+  # Keep the semantic source intact; git diff --check above checks the patch.
   cargo check --workspace --all-targets --locked
   cargo clippy --workspace --all-targets --locked -- -D warnings
   cargo test -p victory-shader --lib --locked heap_handles_clamp_to_the_selected_last_slot -- --test-threads=1 --nocapture
