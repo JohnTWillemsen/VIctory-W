@@ -1,5 +1,7 @@
 # PR #439 console-flow Wave64 + PR #2118 BVH gate: isolated RTX 5090 probe
 
+**CURRENT E-034/E-036 OVERRIDE (2026-11-26):** The below E-032/E-033 `NOT_RUN` and repair-script next-action descriptions are historical. The owner *did run* the corrected script on the pinned #439+#2118 pending merge with one test-only `emit::Target::ANY` patch: workspace check PASS, RTX5090 shader 36/36 + 2/2 PASS, BVH unit 4/4 PASS, release build PASS, full GPU **234 passed/2 failed/1 ignored (EXIT 101)** with both NVIDIA descriptor-cap tests failing. Local release SHA256 `B9671D6E63BF300BDD83E9C44E3CBD08115BF4F42C7432E2D590DDB1F0486B6E`, **no title launched and no Git integration commit/merge**. The next source-only review of the RTX5080 stack is in [E-036 remaining renderer dependencies](pr439-remaining-render-blockers-20261126.md), based on exact upstream PR heads and actual file patches. Do not rerun E-034 simply to repeat successful gates or call full GPU green.
+
 **Status:** `GPU_PASS` **on RTX 5090 for #439 targeted split/loop tests**, `UNIT_PASS` for #2118 standalone BVH unit tests (E-030, 2026-11-26). **Combined source integration, build and title are NOT_RUN.** Task VW-004. Original fork `main`: `63bcca43c6a00a758510398fa43096ce7e4f7df0`.
 
 ## Why this separate path exists
