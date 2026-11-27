@@ -13,17 +13,17 @@ $Expected='965d93823587932e8f40b152b8d4faab5f7a9c85'
 $Prior='1e25b230d6572f08e718a1df31a619bb43070481'
 $Main='63bcca43c6a00a758510398fa43096ce7e4f7df0'
 function CheckedGit {
-    param([string[]]$Args)
-    & git.exe @Args
+    param([Parameter(Mandatory=$true)][string[]]$GitArguments)
+    & git.exe @GitArguments
     if($LASTEXITCODE -ne 0){throw ('E096 git operation failed (code '+$LASTEXITCODE+')')}
 }
 if(Test-Path -LiteralPath $SourceDirectory){throw 'E096 refuses to overwrite an existing source directory'}
 if($SourceDirectory -eq $OutputDirectory){throw 'Source and output directories must differ'}
-CheckedGit @('clone','--quiet','--no-tags','https://github.com/Marvisak/VIctory.git',$SourceDirectory)
-CheckedGit @('-C',$SourceDirectory,'fetch','--quiet','--no-tags','origin','refs/pull/3409/head')
+CheckedGit -GitArguments @('clone','--quiet','--no-tags','https://github.com/Marvisak/VIctory.git',$SourceDirectory)
+CheckedGit -GitArguments @('-C',$SourceDirectory,'fetch','--quiet','--no-tags','origin','refs/pull/3409/head')
 $Got=(& git.exe -C $SourceDirectory rev-parse FETCH_HEAD | Out-String).Trim()
 if($LASTEXITCODE -ne 0 -or $Got -cne $Expected){throw ('E096 source drift: pinned '+$Expected+' got '+$Got)}
-CheckedGit @('-C',$SourceDirectory,'checkout','--quiet','--detach',$Expected)
+CheckedGit -GitArguments @('-C',$SourceDirectory,'checkout','--quiet','--detach',$Expected)
 $Sha=(& git.exe -C $SourceDirectory rev-parse HEAD | Out-String).Trim()
 if($LASTEXITCODE -ne 0 -or $Sha -cne $Expected){throw 'E096 checkout mismatch'}
 $Ancestor=(& git.exe -C $SourceDirectory merge-base $Prior $Expected | Out-String).Trim()
