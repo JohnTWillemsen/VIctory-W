@@ -153,7 +153,7 @@ try {
     Note "COMBINED RUNTIME SHA256: $((Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash)"
     $GPU = CargoStep 'FULL GPU LIB SUITE (INDEPENDENT)' 'cargo test -p victory-gpu --lib --locked -- --test-threads=1 --nocapture' $false
     if ($GPU -ne 0) {
-        Note "FULL GPU EXIT $GPU: inspect all failed names; source-clean RTX5090 descriptor cap test may predate this merge."
+        Note "FULL GPU EXIT ${GPU}: inspect all failed names; source-clean RTX5090 descriptor cap test may predate this merge."
     } else {
         Note 'FULL GPU SUITE PASS.'
     }
