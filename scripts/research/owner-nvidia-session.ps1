@@ -165,6 +165,12 @@ if ($Mode -eq 'SelfTest') {
     exit 0
 }
 if ($Mode -eq 'Start') {
+    # The NVIDIA fork's documented graphics/shader-cache baseline is a normal user session.
+    $who=[Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal=[Security.Principal.WindowsPrincipal]::new($who)
+    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'Launch from a normal, non-administrator PowerShell window; nothing launched.'
+    }
     $VictoryExe=RequiredFile $VictoryExe
     $GameExe=RequiredFile $GameExe
     if (-not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $GameExe) 'appdata0.rpf') -PathType Leaf)) {
