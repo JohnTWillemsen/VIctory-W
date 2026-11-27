@@ -69,3 +69,13 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Alternatives rejected:** wildcard `py` type approval, EXCEPTIONS (would skip all content checks), renaming executable Python to misleading `.txt`, suppressing policy test, or merging scripts to main before validation.
 
 **Revisit:** If a better script architecture removes the need for these helper files, revoke the two exact paths. Any further path still needs a new review and regression.
+
+### D-007 — 2026-11-26 America/Phoenix / 2026-11-27 UTC — Cross-vendor fixes require exact source proof and separate draft gates
+
+**Decision:** Treat GPU-vendor labels as clues, not compatibility boundaries: Kelvaroq contains public NVIDIA-related patches and user RTX5080/4090 reports; Belobug targets AMD but RTX3090/RTX5070Ti reports expose NVIDIA-relevant behavior. Prioritize **correctness** (illegal host barrier states) ahead of memory/mesh/FPS optimization. Preserve the previous E-047 Kelvaroq audit because its main SHA is unchanged. Port only Belobug PR #449's exact semantics into the **disposable six-PR** reconstruction behind `E056_PATCH=1` in new draft PR #7, with pure synthetic tests and CI, not a merged engine fork.
+
+**Evidence:** E-055/E-056; independent raw-before/legal-after mismatch in VIctory-W `63bcca4`, [Belobug issue #13](https://github.com/Belobug/VIctory-Belobug-AMD/issues/13) NVIDIA D3D12 error, [Belobug PR #449](https://github.com/Belobug/VIctory-Belobug-AMD/pull/449), [E-055 audit](https://github.com/JohnTWillemsen/VIctory-W/blob/3df1d2a1cd141f677106956be1ee775504cc2217/docs/research/e055-kelvaroq-belobug-nvidia-source-audit-20261126.md), [PR #7](https://github.com/JohnTWillemsen/VIctory-W/pull/7).
+
+**Alternatives rejected:** wholesale AMD fork merge (hundreds of divergent commits), Kelvaroq private DXR/UMA claims as proof, importing 64 patch files, blindly replacing Wave64 #439 with PR #442, changing rendering and performance settings simultaneously, or treating synthetic CI PASS as a visible title.
+
+**Revisit:** Wait for E-056 exact-head hosted Windows results; then **after** E-052 private RTX5090 six-PR baseline and owner approval, perform separate A/B debug-layer test. Rollback means close draft PR #7, not reset or alter main. Never publish title artifacts to GitHub.
