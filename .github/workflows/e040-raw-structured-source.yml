@@ -1,0 +1,22 @@
+name: E-040 NVIDIA raw structured SRV source applicability
+
+on:
+  push:
+    branches:
+      - research/pr439-console-wave64-bvh-gate-20261126
+    paths:
+      - ".github/workflows/e040-raw-structured-source.yml"
+      - "scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-source.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  guarded-public-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check NVIDIA two-file raw view source patch against four pinned PRs
+        shell: bash
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-pr2464-source.sh
