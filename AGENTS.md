@@ -1,6 +1,11 @@
 # VIctory-W — mandatory instructions for coding agents
 
-This file is the **entry point** for every ChatGPT, Codex, Copilot, Claude, Cursor or other automated contributor. The project is [JohnTWillemsen/VIctory-W](https://github.com/JohnTWillemsen/VIctory-W), a clean fork of [Marvisak/VIctory](https://github.com/Marvisak/VIctory). **Read this before proposing, changing or merging anything.**
+**ACTIVE FOUNDATION CHANGE — E126/E127 (2026-11-27 AZ):** User authorized a complete switch to [VIctory-NVIDIA](https://github.com/trustno1-coder/VIctory-NVIDIA), not isolated patch cherry-picks. First inspect live [migration PR #37](https://github.com/JohnTWillemsen/VIctory-W/pull/37), [source pin](docs/migration/NVIDIA_SOURCE_PIN.md), [new gameplay/upload protocol](docs/research/E127-TESTING-AND-UPLOAD-PROTOCOL.md), source CI and the exact selected branch. The new source is on `migration/nvidia-foundation-v20261127-8`; `main` may still show the old source until migration is explicitly merged, so **do not select the older main as active engineering baseline by habit**. Pre-NVIDIA source snapshot is preserved in `archive/pre-nvidia-foundation-20261127`. Old continuity docs describe historical experiments, not automatically validated fixes on this base.
+
+**Non-negotiable milestones:** exact-source Rust release build vs synthetic/WARP tests **reported separately**, then one owner-consented RTX5090 launch using the upstream built-in launcher and an anonymous E127 ZIP; the owner's **observed actual host adapter, visible world and working controls** determine playability. Never interpret GitHub CI, successful exit, audio, a logo, or an RTX5090 presence check as playable gameplay. Do not submit private title paths, title executable archives/hashes, shader dumps, screenshots, crash dumps or raw logs to this PUBLIC repository. The existing owner protocol uploads only the allowlisted ZIP and keeps detailed logs local.
+
+
+This file is the **entry point** for every ChatGPT, Codex, Copilot, Claude, Cursor or other automated contributor. The project is [JohnTWillemsen/VIctory-W](https://github.com/JohnTWillemsen/VIctory-W). **The active NVIDIA foundation source on migration PR #37 comes from [trustno1-coder/VIctory-NVIDIA](https://github.com/trustno1-coder/VIctory-NVIDIA) v2026.11.27.8, which includes foxhound and Marvisak VIctory ancestry.** Our pre-migration Marvisak source is archived; do not follow old AMD/E108/E109 code paths as active source. **Read this before proposing, changing or merging anything.**
 
 ## Start here (in order)
 
