@@ -1,0 +1,51 @@
+name: E-077 isolated BVH walker held until builder fully built
+on:
+  push:
+    branches:
+      - experiment/e077-bvh-walk-unbuilt-safety-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e077-bvh-walk-unbuilt-safety.sh"
+      - ".github/workflows/e077-bvh-walk-unbuilt-safety.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e077-bvh-walk-unbuilt-safety.sh"
+      - ".github/workflows/e077-bvh-walk-unbuilt-safety.yml"
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Syntax, exact source pin, conflict-free three-file upstream final delta only
+        shell: bash
+        env:
+          E077_BVH_WALK_GUARD: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e077-bvh-walk-unbuilt-safety.sh
+          grep -Fq 'E077_BVH_WALK_GUARD' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: All target checks, strict Clippy, BVH walker regressions and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E077_BVH_WALK_GUARD: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
