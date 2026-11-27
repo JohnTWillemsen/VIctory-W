@@ -51,6 +51,17 @@ else {
     }
 }
 
+# Console tracing may style field names, '=' and numbers with independent ANSI
+# SGR control sequences even when stderr is redirected. Strip formatting ONLY
+# in transient memory; never copy raw game output into summary ZIP.
+function Remove-TerminalControls {
+    param([string]$Line)
+    # CSI / SGR escape families emitted by the existing renderer logger.
+    $Clean = [regex]::Replace($Line, '\x1b\[[0-?]*[ -/]*[@-~]', '')
+    # OSC escape strings (BEL or ESC-backslash terminator) if ever emitted.
+    return [regex]::Replace($Clean, '\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)', '')
+}
+
 function Read-IntegerField {
     param([string]$Line, [string]$Name)
     $Pattern = '(?<![A-Za-z0-9_])' + [regex]::Escape($Name) + '\s*[=:]\s*(\d+)'
@@ -63,6 +74,7 @@ $Stats = [ordered]@{
     source_files_read = 0
     bytes_scanned = [uint64]0
     lines_scanned = [uint64]0
+    terminal_control_lines = 0
     bvh_builder_info_lines = 0
     bvh_builder_holdback_lines = 0
     bvh_builder_runs_lines = 0
@@ -75,6 +87,9 @@ $Stats = [ordered]@{
     anonymous_category_marker_lines = 0
     anonymous_complete_count_records = 0
     anonymous_missing_count_fields = 0
+    anonymous_missing_shader_translation = 0
+    anonymous_missing_host_pipeline = 0
+    anonymous_missing_pending = 0
     last_shader_translation = 'not_observed'
     last_host_pipeline = 'not_observed'
     last_pending = 'not_observed'
@@ -90,8 +105,10 @@ foreach ($File in $Source) {
         [uint64](Get-Item -LiteralPath $File).Length
     $Reader = New-Object System.IO.StreamReader($File)
     try {
-        while ($null -ne ($Line = $Reader.ReadLine())) {
+        while ($null -ne ($RawLine = $Reader.ReadLine())) {
             $Stats['lines_scanned']++
+            $Line = Remove-TerminalControls $RawLine
+            if ($Line -cne $RawLine) { $Stats['terminal_control_lines']++ }
             if ($Line.Contains('title slot past the host heap')) {
                 $Stats['heap_overflow_warning_lines']++
             }
@@ -134,6 +151,9 @@ foreach ($File in $Source) {
                 }
                 else {
                     $Stats['anonymous_missing_count_fields']++
+                    if ($null -eq $Translated) { $Stats['anonymous_missing_shader_translation']++ }
+                    if ($null -eq $HostCount) { $Stats['anonymous_missing_host_pipeline']++ }
+                    if ($null -eq $Pending) { $Stats['anonymous_missing_pending']++ }
                 }
             }
         }
