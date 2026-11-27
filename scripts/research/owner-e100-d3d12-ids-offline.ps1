@@ -22,6 +22,15 @@ $Counts=[ordered]@{
     d3d12_debug_lines=0
     d3d12_id_parsed_lines=0
     d3d12_id_unparsed_lines=0
+    d3d12_id_source_structured=0
+    d3d12_id_source_bracketed=0
+    d3d12_id_source_hash_fallback=0
+    d3d12_line_has_hash=0
+    d3d12_line_has_bracket=0
+    d3d12_severity_text_error=0
+    d3d12_severity_text_warning=0
+    d3d12_severity_text_info=0
+    d3d12_severity_text_corruption=0
     d3d12_severity_0_corruption=0
     d3d12_severity_1_error=0
     d3d12_severity_2_warning=0
@@ -42,7 +51,12 @@ $Counts=[ordered]@{
     d3d12_id_940_descriptor_dimension=0
 }
 $IdCounts=@{}
-$IdPattern=[regex]::new('\bid\s*=\s*(?<id>[0-9]+)\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$IdPattern=[regex]::new('\b(?:message[\s_-]*id|id)\s*(?:=|:)\s*(?<id>[0-9]{1,6})\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+# D3D12 debug-layer text often embeds '[ EXECUTION WARNING #940: ...]' rather
+# than tracing structured 'id=940'. Public numeric IDs only, no message text.
+$BracketIdPattern=[regex]::new('\[[^\]\r\n]{0,160}\b(?:ERROR|WARNING|INFO|CORRUPTION|MESSAGE)\s+#(?<id>[0-9]{1,5})\s*:',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$HashIdPattern=[regex]::new('(?<![a-zA-Z0-9])#(?<id>[0-9]{1,5})(?![0-9])',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$SeverityTextPattern=[regex]::new('\b(?<kind>CORRUPTION|ERROR|WARNING|INFO|MESSAGE)\b(?=\s*(?:#\d{1,5}|:))',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
 $SeverityPattern=[regex]::new('\bseverity\s*=\s*(?<n>[0-9]+)\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
 $DispatchLine=[regex]::new('(?:^|;\s*)command\s+[0-9]+\s+\(op\s+6\):\s*dispatch\b',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
 $DispatchPattern=[regex]::new('(?:^|;\s*)command\s+[0-9]+\s+\(op\s+6\):\s*dispatch\s+(?<x>[0-9]+)x(?<y>[0-9]+)x(?<z>[0-9]+)(?=\s|$)',[Text.RegularExpressions.RegexOptions]::IgnoreCase)
@@ -58,17 +72,38 @@ foreach($Name in @('title-stdout-private.txt','title-stderr-private.txt')){
             $Counts['scanned_lines']++
             if($Line -match '(?i)\bD3D12:'){
                 $Counts['d3d12_debug_lines']++
+                if($Line.Contains('#')){$Counts['d3d12_line_has_hash']++}
+                if($Line.Contains('[')){$Counts['d3d12_line_has_bracket']++}
                 $I=$IdPattern.Match($Line)
+                $Source='structured'
+                if(-not $I.Success){
+                    $I=$BracketIdPattern.Match($Line)
+                    $Source='bracketed'
+                }
+                if(-not $I.Success){
+                    $I=$HashIdPattern.Match($Line)
+                    $Source='hash_fallback'
+                }
                 if($I.Success){
                     $IntId=0
                     if([int]::TryParse($I.Groups['id'].Value,[ref]$IntId) -and $IntId -ge 0 -and $IntId -le 65535) {
                         $Counts['d3d12_id_parsed_lines']++
+                        $Counts['d3d12_id_source_'+$Source]++
                         if(-not $IdCounts.ContainsKey($IntId)){$IdCounts[$IntId]=0}
                         $IdCounts[$IntId]++
                         if($IntId -eq 622){$Counts['d3d12_id_622_wave_lane_count']++}
                         if($IntId -eq 940){$Counts['d3d12_id_940_descriptor_dimension']++}
                     } else {$Counts['d3d12_id_unparsed_lines']++}
                 } else {$Counts['d3d12_id_unparsed_lines']++}
+                $Label=$SeverityTextPattern.Match($Line)
+                if($Label.Success){
+                    switch($Label.Groups['kind'].Value.ToUpperInvariant()){
+                        'ERROR' {$Counts['d3d12_severity_text_error']++}
+                        'WARNING' {$Counts['d3d12_severity_text_warning']++}
+                        'INFO' {$Counts['d3d12_severity_text_info']++}
+                        'CORRUPTION' {$Counts['d3d12_severity_text_corruption']++}
+                    }
+                }
                 $S=$SeverityPattern.Match($Line)
                 if($S.Success){
                     switch($S.Groups['n'].Value){
@@ -115,12 +150,14 @@ foreach($Name in @('title-stdout-private.txt','title-stderr-private.txt')){
 if($Counts['scanned_files'] -eq 0){throw 'Missing expected private E087 logs; no output generated'}
 $Rows=[Collections.Generic.List[string]]::new()
 foreach($S in @(
-    'format=E100-anonymous-d3d12-ids-dispatch-geometry-v1'
+    'format=E100-anonymous-d3d12-ids-dispatch-geometry-v2'
     'mode=existing_logs_only'
     'title_launched=false'
     'privacy=fixed_integer_fields_no_source_text'
     'd3d12_id_source=public_D3D12_MESSAGE_ID'
     'note=counts_are_log_occurrences_not_unique_gpu_events'
+    'note=zero_occurrences_do_not_prove_absence_when_id_unparsed_lines_positive'
+    'note=hash_fallback_ids_are_unverified_numeric_candidates'
 )){$Rows.Add($S)}
 foreach($Key in $Counts.Keys){$Rows.Add(('{0}={1}' -f $Key,[long]$Counts[$Key]))}
 $Top=@($IdCounts.GetEnumerator() | Sort-Object -Property @{Expression={$_.Value};Descending=$true},@{Expression={$_.Key};Descending=$false} | Select-Object -First 12)
