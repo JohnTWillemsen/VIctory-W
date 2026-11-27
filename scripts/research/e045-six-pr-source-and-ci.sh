@@ -7,7 +7,9 @@ set -euo pipefail
 wave=e2d3cfd50715954fb89ff462edb37a0c4395ecd0
 bvh=999a8f67125865fcc0b3aa23cdc8a93b10ef9974
 addr=543d8688068b658ca4bf9602887097b215fec838
-fmt=c8cc83e22702aa46dc1855c0f9df890fc5496238
+# E-050: upstream #2626 advanced by one test-only commit (mip-1 packed copy).
+# Compared c8cc83e...6092548; one path: list/packed_copy_tests.rs; no runtime edits.
+fmt=6092548b147639bd5c46e896bcc0cc08fff71542
 raw=b9dc4b037a87bf6919ce92eae7c79a36c0307e48
 clamp=e2cdafe560fb6b601757a8ec921e352726e6662e
 source_tree=9f8bb36f497fdfffd9d68f2f2b22b0284899ae10
