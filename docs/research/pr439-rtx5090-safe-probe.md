@@ -1,6 +1,6 @@
 # PR #439 console-flow Wave64 + PR #2118 BVH gate: isolated RTX 5090 probe
 
-**Status:** `SOURCE_READ` / `UPSTREAM_REPORTED`; owner tests of these pinned PR heads `NOT_RUN` as of 2026-11-26. **This is NOT a working-game or merge claim.** Task VW-004. Original fork `main`: `63bcca43c6a00a758510398fa43096ce7e4f7df0`.
+**Status:** `GPU_PASS` **on RTX 5090 for #439 targeted split/loop tests**, `UNIT_PASS` for #2118 standalone BVH unit tests (E-030, 2026-11-26). **Combined source integration, build and title are NOT_RUN.** Task VW-004. Original fork `main`: `63bcca43c6a00a758510398fa43096ce7e4f7df0`.
 
 ## Why this separate path exists
 
@@ -10,6 +10,22 @@ The owner's **local and uncommitted** paging [#2121](https://github.com/Marvisak
 
 **Safety dependency:** #439 explicitly warns that partial BVH builder pipeline activation can corrupt title memory or crash. The [#2118](https://github.com/Marvisak/VIctory/pull/2118) source, pinned `999a8f67125865fcc0b3aa23cdc8a93b10ef9974`, is a separately reviewed candidate all-or-none safeguard. Do **not** run a title using #439 unless this guard (or a verified equivalent) is integrated and tested.
 
+
+## Owner RTX 5090 targeted evidence — E-030 (2026-11-26)
+
+The owner ran the exact-head test script in this draft PR on Windows 11 with **NVIDIA GeForce RTX 5090**. The private UTF-16LE 268-line report (start 17:08:23, end 17:09:33 America/Phoenix) verifies the two independent detached worktrees at the exact PR hashes above, isolated Cargo targets, and all three command exit codes **0**.
+
+| Actual owner test | Source SHA | Result |
+| --- | --- | --- |
+| `cargo test -p victory-shader --lib --locked split_tests -- --test-threads=1 --nocapture` | #439 `e2d3cfd` | **36 pass, 0 fail, 315 filtered** |
+| `cargo test -p victory-shader --lib --locked lane_read_loop_tests -- --test-threads=1 --nocapture` | #439 `e2d3cfd` | **2 pass, 0 fail, 349 filtered** |
+| `cargo test -p victory-gpu --lib --locked builder -- --test-threads=1 --nocapture` | #2118 `999a8f67` | **4 pass, 0 fail, 232 filtered** |
+
+**Why this is GPU_PASS for shader cases:** The shader's `--nocapture` output explicitly names `NVIDIA GeForce RTX 5090` (98 such lines), and reports exact compute readback under `split true`: cross-half shuffles, masked ballots, 64-lane reduction, partial group counts, DPP, diverging loop exits, shared-LDS ordering, and nested masks. No missing-adapter skips were logged. The **four builder cases are pure/unit-oriented correctness tests**; the log does **not** demonstrate the BVH gate operating in a real title or executing on the GPU.
+
+**Boundary:** This verifies two separately compiled upstream heads, **not the combined #439+#2118 source**. No cross-PR merge, full GPU suite, title launch or world-rendering result. The existing local #2121/#189 paging+Wave64 branch still fails the real 3D scene (E-028) and is untouched.
+
+**Next source-only gate:** Create a fresh, isolated #439-based integration worktree and merge #2118 `--no-commit --no-ff` using a **command-scoped temporary Git identity** and `rerere.enabled=false` (do not set `git config --global`). Collect the 3 overlapping source paths plus the full six-file BVH patch and any Git conflict markers; review semantic coupling of shader compilation vs builder dispatch suppression **before compiling or considering a title run**. The RTX5080 full-stack dependencies still need separate assessment, especially #2628 vs our #2121 paging and packed formats. Keep the current source/main/release untouched. A source-only preparation script is bundled in this PR.
 
 ## Integration collision map (source patches reviewed, not merged)
 
