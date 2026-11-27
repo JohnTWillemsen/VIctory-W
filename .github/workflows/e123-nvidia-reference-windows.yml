@@ -1,4 +1,4 @@
-name: E123 NVIDIA source reference Windows validation
+name: E123 NVIDIA reference independent lint and source build
 
 on:
   push:
@@ -13,8 +13,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pinned-nvidia-reference:
-    name: Windows source-only ${{ matrix.release }}
+  strict-lint:
+    name: Strict upstream Clippy ${{ matrix.release }}
+    runs-on: windows-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: v2026.11.27.7
+            commit: df2daafeb1b2170931cf7a6eddff6de254841d9c
+          - release: v2026.11.27.8
+            commit: 64d4931b3dd90305134512b805fc98f04119fb6e
+    steps:
+      - name: Checkout untouched pinned source
+        uses: actions/checkout@v5
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: ${{ matrix.commit }}
+          path: nvidia-reference
+          persist-credentials: false
+      - name: Verify source SHA and inherited upstream fixture identity
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ matrix.commit }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $got=(& git -C nvidia-reference rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $got -cne $env:EXPECTED_SHA) { throw 'Unpinned source selected' }
+          $fixture=(& git -C nvidia-reference hash-object -- 'crates/victory-formats/src/texture.rs').Trim()
+          if ($fixture -cne 'e52d639ed9a0fcdc03436e258c95fdcbae460a91') {
+            throw 'Expected upstream test fixture changed; review source again'
+          }
+          Write-Host "SOURCE_SHA=$got. Lint is reported independently; no rules disabled."
+      - name: Install source-pinned Rust
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: rustup toolchain install
+      - name: Strict default Clippy (all warnings fatal)
+        id: clippy_default
+        continue-on-error: true
+        working-directory: nvidia-reference
+        shell: pwsh
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Strict diagnostics Clippy (all warnings fatal)
+        id: clippy_all_features
+        continue-on-error: true
+        working-directory: nvidia-reference
+        shell: pwsh
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Report strict lint separately (failed lint remains RED)
+        if: ${{ always() }}
+        shell: pwsh
+        env:
+          CLIPPY_DEFAULT: ${{ steps.clippy_default.outcome }}
+          CLIPPY_ALL: ${{ steps.clippy_all_features.outcome }}
+        run: |
+          Write-Host "STRICT_CLIPPY_DEFAULT=$env:CLIPPY_DEFAULT"
+          Write-Host "STRICT_CLIPPY_ALL_FEATURES=$env:CLIPPY_ALL"
+          if ($env:CLIPPY_DEFAULT -cne 'success' -or $env:CLIPPY_ALL -cne 'success') {
+            throw 'Original unmodified upstream Clippy contains warnings/errors; source tests/build evaluated in a separate job'
+          }
+
+  source-build:
+    name: Untouched source tests and release ${{ matrix.release }}
     runs-on: windows-latest
     timeout-minutes: 110
     strategy:
@@ -25,111 +87,81 @@ jobs:
             commit: df2daafeb1b2170931cf7a6eddff6de254841d9c
           - release: v2026.11.27.8
             commit: 64d4931b3dd90305134512b805fc98f04119fb6e
-
     steps:
-      - name: Checkout exact upstream release source (not this project's main)
+      - name: Checkout untouched pinned NVIDIA release source
         uses: actions/checkout@v5
         with:
           repository: trustno1-coder/VIctory-NVIDIA
           ref: ${{ matrix.commit }}
           path: nvidia-reference
           persist-credentials: false
-
-      - name: Fail closed on source identity and prohibited title artifacts
+      - name: Verify source hash and absence of title files
         shell: pwsh
         env:
           EXPECTED_SHA: ${{ matrix.commit }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $got = (& git -C nvidia-reference rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $got -cne $env:EXPECTED_SHA) { throw 'Exact upstream release SHA mismatch' }
-          $tracked = @(& git -C nvidia-reference ls-files)
-          $bad = @($tracked | Where-Object { $_ -match '(?i)(?:^|/)(?:game_scarlett_master\.exe|appdata\d+\.rpf|.*\.(?:xvd|xci|nsp))$' })
-          if ($bad.Count -gt 0) { throw 'Proprietary title files appear in upstream source: refusing build' }
-          if (-not (Test-Path -LiteralPath 'nvidia-reference/LICENSE' -PathType Leaf)) { throw 'Upstream licence missing' }
-          Write-Host "SOURCE_PIN_VERIFIED=$got"
-          Write-Host "UPSTREAM_TRACKED_FILES=$($tracked.Count)"
-          Write-Host 'TITLE_FILES_PRESENT=false'
-
-      - name: Install upstream-pinned Rust toolchain
+          $ErrorActionPreference='Stop'
+          $got=(& git -C nvidia-reference rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $got -cne $env:EXPECTED_SHA) { throw 'Unpinned source selected' }
+          $paths=@(& git -C nvidia-reference ls-files)
+          if (@($paths | Where-Object { $_ -match '(?i)(?:^|/)(?:game_scarlett_master\.exe|appdata\d+\.rpf|.*\.(?:xvd|xci|nsp))$' }).Count -gt 0) {
+            throw 'Title content found; refusing build'
+          }
+          if (-not (Test-Path -LiteralPath 'nvidia-reference/LICENSE')) { throw 'Licence missing' }
+          Write-Host "SOURCE_SHA=$got TITLE_CONTENT=false"
+      - name: Install source-pinned Rust
         shell: pwsh
         working-directory: nvidia-reference
         run: rustup toolchain install
-
-      - name: Verify the sole expected upstream cosmetic precedence lint site
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $file = 'nvidia-reference/crates/victory-formats/src/texture.rs'
-          $hash = (& git -C nvidia-reference hash-object -- 'crates/victory-formats/src/texture.rs').Trim()
-          if ($LASTEXITCODE -ne 0 -or $hash -cne 'e52d639ed9a0fcdc03436e258c95fdcbae460a91') {
-            throw 'Expected pinned upstream test source changed; do not waive cosmetic lint'
-          }
-          $text = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $file).ProviderPath)
-          if (-not $text.Contains('(i * 7 >> 3) as u8')) {
-            throw 'Expected upstream test-only expression absent'
-          }
-          Write-Host 'Source is untouched. Pinned upstream test fixture uses an unparenthesized multiplication/shift.'
-          Write-Host 'Only clippy::precedence is allowed; all other Clippy warnings remain errors.'
-
-      - name: Clippy all targets, default features
-        shell: pwsh
-        working-directory: nvidia-reference
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings -A clippy::precedence
-
-      - name: Clippy all targets, diagnostics and all features
-        shell: pwsh
-        working-directory: nvidia-reference
-        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings -A clippy::precedence
-
-      - name: Full workspace synthetic tests
+      - name: All locked workspace tests (independent of cosmetic Clippy warnings)
         shell: pwsh
         working-directory: nvidia-reference
         run: cargo test --workspace --locked
-
-      - name: Upstream source asset policy
+      - name: Repository asset policy
         shell: pwsh
         working-directory: nvidia-reference
         run: cargo run --locked -p xtask -- policy
-
-      - name: Build release source-only executable
+      - name: Build unmodified pinned source in release mode
         shell: pwsh
         working-directory: nvidia-reference
         run: cargo build --release --locked -p victory
-
-      - name: Emit exact upstream and derived executable manifest
+      - name: Record source and executable SHA-256 without title data
         shell: pwsh
         working-directory: nvidia-reference
         env:
           EXPECTED_SHA: ${{ matrix.commit }}
           EXPECTED_TAG: ${{ matrix.release }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $exe = 'target/release/victory.exe'
-          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No source-built executable' }
-          $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          $lines = @(
-            'format=E123-public-source-nvidia-reference-v1'
-            'upstream=trustno1-coder/VIctory-NVIDIA'
-            ('upstream_release=' + $env:EXPECTED_TAG)
-            ('upstream_commit=' + $env:EXPECTED_SHA)
-            ('built_executable_sha256=' + $hash)
-            'build=release-locked'
-            'title_execution=NOT_RUN'
-            'owner_rtx5090_hardware=NOT_RUN'
-            'selected_runtime_gpu=NOT_VERIFIED'
-            'visual_world=NOT_VERIFIED'
-            'contains_title_assets=false'
-            'main_branch_modified=false'
+          $ErrorActionPreference='Stop'
+          $exe='target/release/victory.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No source-built EXE' }
+          $hash=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $got=(& git rev-parse HEAD).Trim()
+          if ($got -cne $env:EXPECTED_SHA) { throw 'Source moved while building' }
+          $tree=@(& git status --porcelain)
+          if ($tree.Count -gt 0) { throw 'Source dirty after build; provenance not established' }
+          $lines=@(
+            'format=E123-public-NVIDIA-source-build-v2'
+            'source=trustno1-coder/VIctory-NVIDIA'
+            ('source_tag='+$env:EXPECTED_TAG)
+            ('source_sha='+$got)
+            ('built_executable_sha256='+$hash)
+            'source_modifications=none'
+            'strict_clippy=SEPARATE_JOB_CHECK'
+            'game_executed=false'
+            'actual_adapter_verified=false'
+            'owner_rtx5090_test=NOT_RUN'
+            'world_and_controls=NOT_VERIFIED'
+            'private_game_assets_present=false'
+            'main_branch_changed=false'
           )
-          [IO.File]::WriteAllLines('E123-SOURCE-MANIFEST.txt', $lines, [Text.UTF8Encoding]::new($false))
-          Write-Host "BUILT_FROM=$($env:EXPECTED_SHA) EXE_SHA256=$hash"
-          Write-Host 'This is a source-validation artifact ONLY, not a gameplay-approved binary'
-
-      - name: Archive source-only artifact for provenance
+          [IO.File]::WriteAllLines('E123-SOURCE-MANIFEST.txt',$lines,[Text.UTF8Encoding]::new($false))
+          Write-Host "SOURCE_BUILT=$($env:EXPECTED_TAG) SOURCE_SHA=$got EXE_SHA256=$hash"
+          Write-Host 'This proves source tests/build ONLY; no claim of RTX5090 gameplay or clean Clippy'
+      - name: Upload public-source executable for provenance only
         uses: actions/upload-artifact@v4
         with:
-          name: e123-nvidia-${{ matrix.release }}-${{ matrix.commit }}
+          name: e123-source-${{ matrix.release }}-${{ matrix.commit }}
           path: |
             nvidia-reference/target/release/victory.exe
             nvidia-reference/E123-SOURCE-MANIFEST.txt
