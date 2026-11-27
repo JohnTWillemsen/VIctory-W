@@ -16,10 +16,10 @@ foreach($Forbidden in @('Start-Process','Invoke-WebRequest','Invoke-RestMethod',
 [IO.File]::WriteAllLines((Join-Path $Safe 'E087-anonymous-status.txt'),[string[]]@('format=E087-durable-gpu-supervisor-v1','status=TITLE_EXITED'),[Text.UTF8Encoding]::new($false))
 $Secret='fake-private-title-shader-dd11447700aabbee'
 [IO.File]::WriteAllLines((Join-Path $Priv 'title-stderr-private.txt'),[string[]]@(
-  '2026 WARN victory_gpu::host: slow host submission ms=11777 lists=1 private: '+$Secret,
+  ('2026 WARN victory_gpu::host: slow host submission ms=11777 lists=1 private: '+$Secret),
   '2026 ERROR device removed: page fault at 0x987654321; inside freed [private object]; inside [other object]',
-  ('DRED: a list stopped at command 4 of 10 (op 6); commands 2..8 between its barriers; command 5 (op 6): dispatch 5x4 [compute '+$Secret+']; command 6 (op 5): execute indirect '+$Secret),
-  ('DRED: a list stopped at command 4993 of 11602 (op 0); commands 4900..5000 between its barriers; command 4990 (op 3): draw 3 vertices ['+$Secret+']; command 4991 (op 9): copy resource'),
+  (('DRED: a list stopped at command 4 of 10 (op 6); commands 2..8 between its barriers; command 5 (op 6): dispatch 5x4 [compute '+$Secret+']; command 6 (op 5): execute indirect '+$Secret),
+  (('DRED: a list stopped at command 4993 of 11602 (op 0); commands 4900..5000 between its barriers; command 4990 (op 3): draw 3 vertices ['+$Secret+']; command 4991 (op 9): copy resource'),
   'WARN no breadcrumb node named one of our lists',
   'WARN D3D12: debug text id=55 severity=1',
   'WARN fault at source +0xabc'
