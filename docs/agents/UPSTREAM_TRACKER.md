@@ -1,5 +1,10 @@
 # Upstream candidate tracker — research queue, NOT merge approvals
 
+**E-050 LIVE UPSTREAM ADVANCE (2026-11-26 MST / 2026-11-27 UTC):** [Marvisak #2626](https://github.com/Marvisak/VIctory/pull/2626) now HEAD `6092548b147639bd5c46e896bcc0cc08fff71542`, up one commit from previously integrated `c8cc83e22702aa46dc1855c0f9df890fc5496238`. Source comparison: ONLY `crates/victory-gpu/src/list/packed_copy_tests.rs`, adds a mip-1 synthetic packed texture copy regression; no runtime Rust diff. Our E-049 runner failed closed on moved head as intended, re-pinned in PR #5 at `e536b366`; latest resulting CI status must be verified. All six upstream PRs #439/#2118/#2098/#2626/#2464/#2628 remain open and unmerged at verification. [#2683](https://github.com/Marvisak/VIctory/pull/2683), [#2121](https://github.com/Marvisak/VIctory/pull/2121), [#3300](https://github.com/Marvisak/VIctory/pull/3300) heads unchanged; owner tests E-013/E-015/E-017–E-019 already recorded, no duplicate runs.
+
+**E-051 SOURCE CANDIDATE:** [#2628](https://github.com/Marvisak/VIctory/pull/2628) exact `e2cdafe560fb6b601757a8ec921e352726e6662e` `descriptor/host.rs::portable_view_heap()` uses `OnceLock::get_or_init` with optional host; host absence can permanently cache wrong 2M heap choice. Current PR #5 E-049 targeted source-script workaround preserves the real host probe, tests hostless→host cached decision and explicitly exercises two original layout invariants. Source reviewed, test result PENDING; **not upstream merged** and no title/owner GPU proof.
+
+
 **Snapshot date:** 2026-11-26 (E-036 source review updated). Upstream PR heads, dispositions, implementation and test claims change; **requery live GitHub before taking action**. Every row is an idea to investigate, not proof of absence in current Marvisak `main`. Work on one at a time.
 
 | Candidate | Why investigate | Required first check | Disposition at this snapshot |

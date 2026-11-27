@@ -47,3 +47,15 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Evidence:** E-011 through E-014, including a reproducible baseline failure and 16/16 host tests on [upstream #3300](https://github.com/Marvisak/VIctory/pull/3300); draft governance [PR #1](https://github.com/JohnTWillemsen/VIctory-W/pull/1) and test [PR #3](https://github.com/JohnTWillemsen/VIctory-W/pull/3).
 
 **Revisit:** Update workflow if PR #1 is merged or a real independently resumed agent exposes gaps. The owner must separately authorize any merge, game artifact upload or upstream submission.
+
+### D-005 — 2026-11-26 MST — Fail closed on moving upstream refs and hostless cached device assumptions
+
+**Decision:** Keep the six-PR experimental renderer reconstructible only from explicit upstream SHAs in a disposable checkout. If any upstream PR head moves, stop and compare old/new source and authorship before updating a pin. For #2628 on a capped NVIDIA host, ensure `portable_view_heap` never freezes a host-absent fallback in `OnceLock`; add a pure lifecycle regression and two explicit original portable layout tests to CI.
+
+**Why:** #2626 advanced by exactly one test-only commit after E-049 green CI, correctly triggering an upstream ref mismatch; #2628 previously cached `host().is_some_and(...)` as an irreversible false. A green build and a zero-match filtered test are insufficient for native title safety.
+
+**Alternatives rejected:** silently following changed PR heads, force-applying a changed patch, merging the portable stack into main, disabling strict Clippy, or claiming full descriptor tests after `portable` matched zero.
+
+**Evidence:** E-049 through E-051; [six-PR green CI 45928372350](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45928372350), [upstream #2626 comparison](https://github.com/moe-miau/VIctory/compare/c8cc83e22702aa46dc1855c0f9df890fc5496238...6092548b147639bd5c46e896bcc0cc08fff71542), [PR #5](https://github.com/JohnTWillemsen/VIctory-W/pull/5).
+
+**Revisit:** The new hostless fix at `e536b366` is NOT yet CI proven at the time of this decision. Require exact-head source/Windows run, then native RTX5090 private GPU and game comparison before changing defaults or main. A safer upstream implementation supersedes this experiment only after source review.
