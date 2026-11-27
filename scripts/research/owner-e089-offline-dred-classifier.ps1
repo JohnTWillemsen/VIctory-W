@@ -88,7 +88,7 @@ function Analyze([string]$Line) {
         $Counts.dred_stopped_command_marker_lines++
         $Counts.dred_last_stopped_command_index = [int]$Matches[1]
         $Counts.dred_last_stopped_command_total = [int]$Matches[2]
-        if ($Matches.ContainsKey(3) -and $Matches[3]) { $Counts.dred_last_stopped_op_code = [int]$Matches[3] }
+        if ($Matches.ContainsKey('3') -and $Matches[3]) { $Counts.dred_last_stopped_op_code = [int]$Matches[3] }
     }
     if ($Line -match '(?i)host pipeline refused') { $Counts.gpu_pipeline_refused_lines++ }
     if ($Line -match '(?i)(shader does not translate|shader translation (?:failed|refused))') { $Counts.shader_translation_refused_lines++ }
