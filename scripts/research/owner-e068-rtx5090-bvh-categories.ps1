@@ -215,7 +215,7 @@ finally {
         'Share this summary ZIP in private ChatGPT only, NOT public GitHub.'
     ) | Set-Content -LiteralPath (Join-Path $Public 'RESULT.txt') -Encoding UTF8
     try {
-        Compress-Archive -LiteralPath (Join-Path $Public '*') -DestinationPath $Zip -Force -ErrorAction Stop
+        Compress-Archive -Path (Join-Path $Public '*') -DestinationPath $Zip -Force -ErrorAction Stop
         Write-Host ('UPLOAD ONLY THIS SUMMARY ZIP IN CHATGPT: ' + $Zip)
         Write-Host ('Result: ' + $Status)
         Write-Host ('Isolated source-built executable (local only): ' + $Binary)
