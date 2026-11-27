@@ -128,3 +128,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Privacy:** Private raw E068 logs and screenshots are outside public GitHub; only numeric E070 category totals appear in E073 evidence. Main unchanged.
 
+## D-014 · 2026-11-26 MST / 2026-11-27 UTC — Run only one opt-in RTX5090 E075 histogram after strict CI, continue GitHub engineering independently
+
+**Decision:** E073 measured exactly seven BVH shader-translation failures, zero host D3D12 PSO or pending. E074 shader-operation category source patch has passed both exact-head source and hosted Windows checks/strict Clippy/tests/release. Before attempting any semantic wave64 implementation, use an **E075 one-run owner-gated** source-generated diagnostic build that reports only broad per-refused-builder classes. Do not force acceptance of unsupported wave64 groups, bypass all-made BVH safety, or transplant broad upstream PRs without isolated code + regression validation.
+
+**Boundaries:** Owner approves only the title launch when explicitly typing LAUNCH; no automatic title execution. Never upload raw game logs, paths, shader hashes or game-derived screenshots publicly. Anonymous counts and code provenance are sufficient. User has authorized autonomous engineering/orchestration within interactive session; only request their machine for downloads and commands, not routine source review/PR approvals. No promises of asynchronous coding between turns without a configured scheduler. Main untouched.
+
+**Next:** Verify exact E075 Windows CI, provide one pinned PowerShell command when safe, interpret only anonymized reasons observed. If numbers missing, use the already preserved private logs and offline parser; avoid repeating title unnecessarily.
+
