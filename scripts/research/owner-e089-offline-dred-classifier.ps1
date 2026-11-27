@@ -62,40 +62,40 @@ $Counts = [ordered]@{
 }
 $Tail = [Collections.Generic.Queue[string]]::new()
 function Analyze([string]$Line) {
-    $Counts['scanned_lines'] = [long]$Counts['scanned_lines'] + 1
-    if ($Line -match '(?i)\bERROR\b') { $Counts['error_level_lines'] = [long]$Counts['error_level_lines'] + 1 }
-    if ($Line -match '(?i)ERROR victory_gpu::host') { $Counts['gpu_host_error_lines'] = [long]$Counts['gpu_host_error_lines'] + 1 }
+    $script:Counts['scanned_lines'] = [long]$script:Counts['scanned_lines'] + 1
+    if ($Line -match '(?i)\bERROR\b') { $script:Counts['error_level_lines'] = [long]$script:Counts['error_level_lines'] + 1 }
+    if ($Line -match '(?i)ERROR victory_gpu::host') { $script:Counts['gpu_host_error_lines'] = [long]$script:Counts['gpu_host_error_lines'] + 1 }
     if ($Line -match '(?i)slow host submission') {
-        $Counts['host_slow_submission_lines'] = [long]$Counts['host_slow_submission_lines'] + 1
+        $script:Counts['host_slow_submission_lines'] = [long]$script:Counts['host_slow_submission_lines'] + 1
         if ($Line -match 'ms=([0-9]+)\s+lists=([0-9]+)') {
             $Ms = [long]$Matches[1]
-            if ($Ms -gt $Counts.host_max_slow_ms) {
-                $Counts.host_max_slow_ms=$Ms
-                $Counts.host_lists_at_max_slow=[long]$Matches[2]
+            if ($Ms -gt $script:Counts.host_max_slow_ms) {
+                $script:Counts.host_max_slow_ms=$Ms
+                $script:Counts.host_lists_at_max_slow=[long]$Matches[2]
             }
         }
     }
-    if ($Line -match '(?i)(0x887a0005|DXGI_ERROR_DEVICE_REMOVED)') { $Counts['dxgi_device_removed_code_lines'] = [long]$Counts['dxgi_device_removed_code_lines'] + 1 }
-    if ($Line -match '(?i)(0x887a0006|DXGI_ERROR_DEVICE_HUNG)') { $Counts['dxgi_device_hung_code_lines'] = [long]$Counts['dxgi_device_hung_code_lines'] + 1 }
-    if ($Line -match '(?i)0x887a0004') { $Counts['dxgi_unsupported_code_lines'] = [long]$Counts['dxgi_unsupported_code_lines'] + 1 }
-    if ($Line -match '(?i)device removed') { $Counts['device_removed_text_lines'] = [long]$Counts['device_removed_text_lines'] + 1 }
-    if ($Line -match '(?i)device hung') { $Counts['device_hung_text_lines'] = [long]$Counts['device_hung_text_lines'] + 1 }
-    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $Counts['dred_marker_lines'] = [long]$Counts['dred_marker_lines'] + 1 }
-    if ($Line -match '(?i)no breadcrumbs') { $Counts['dred_no_breadcrumbs_lines'] = [long]$Counts['dred_no_breadcrumbs_lines'] + 1 }
-    if ($Line -match '(?i)(auto.?breadcrumb|breadcrumbs.*(completed|stopped))') { $Counts['dred_auto_breadcrumb_lines'] = [long]$Counts['dred_auto_breadcrumb_lines'] + 1 }
-    if ($Line -match '(?i)page fault') { $Counts['dred_page_fault_marker_lines'] = [long]$Counts['dred_page_fault_marker_lines'] + 1 }
+    if ($Line -match '(?i)(0x887a0005|DXGI_ERROR_DEVICE_REMOVED)') { $script:Counts['dxgi_device_removed_code_lines'] = [long]$script:Counts['dxgi_device_removed_code_lines'] + 1 }
+    if ($Line -match '(?i)(0x887a0006|DXGI_ERROR_DEVICE_HUNG)') { $script:Counts['dxgi_device_hung_code_lines'] = [long]$script:Counts['dxgi_device_hung_code_lines'] + 1 }
+    if ($Line -match '(?i)0x887a0004') { $script:Counts['dxgi_unsupported_code_lines'] = [long]$script:Counts['dxgi_unsupported_code_lines'] + 1 }
+    if ($Line -match '(?i)device removed') { $script:Counts['device_removed_text_lines'] = [long]$script:Counts['device_removed_text_lines'] + 1 }
+    if ($Line -match '(?i)device hung') { $script:Counts['device_hung_text_lines'] = [long]$script:Counts['device_hung_text_lines'] + 1 }
+    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $script:Counts['dred_marker_lines'] = [long]$script:Counts['dred_marker_lines'] + 1 }
+    if ($Line -match '(?i)no breadcrumbs') { $script:Counts['dred_no_breadcrumbs_lines'] = [long]$script:Counts['dred_no_breadcrumbs_lines'] + 1 }
+    if ($Line -match '(?i)(auto.?breadcrumb|breadcrumbs.*(completed|stopped))') { $script:Counts['dred_auto_breadcrumb_lines'] = [long]$script:Counts['dred_auto_breadcrumb_lines'] + 1 }
+    if ($Line -match '(?i)page fault') { $script:Counts['dred_page_fault_marker_lines'] = [long]$script:Counts['dred_page_fault_marker_lines'] + 1 }
     if ($Line -match '(?i)(?:stopped at )?command\s+([0-9]+)\s+of\s+([0-9]+)(?:\s*\(op\s*([0-9]+)\))?') {
-        $Counts['dred_stopped_command_marker_lines'] = [long]$Counts['dred_stopped_command_marker_lines'] + 1
-        $Counts.dred_last_stopped_command_index = [int]$Matches[1]
-        $Counts.dred_last_stopped_command_total = [int]$Matches[2]
-        if ($Line -match '\(op\s*([0-9]+)\)') { $Counts['dred_last_stopped_op_code'] = [int]$Matches[1] }
+        $script:Counts['dred_stopped_command_marker_lines'] = [long]$script:Counts['dred_stopped_command_marker_lines'] + 1
+        $script:Counts.dred_last_stopped_command_index = [int]$Matches[1]
+        $script:Counts.dred_last_stopped_command_total = [int]$Matches[2]
+        if ($Line -match '\(op\s*([0-9]+)\)') { $script:Counts['dred_last_stopped_op_code'] = [int]$Matches[1] }
     }
-    if ($Line -match '(?i)host pipeline refused') { $Counts['gpu_pipeline_refused_lines'] = [long]$Counts['gpu_pipeline_refused_lines'] + 1 }
-    if ($Line -match '(?i)(shader does not translate|shader translation (?:failed|refused))') { $Counts['shader_translation_refused_lines'] = [long]$Counts['shader_translation_refused_lines'] + 1 }
-    if ($Line -match '(?i)(DROPPED indirect|dropped .*without a host pipeline)') { $Counts['dropped_pipeline_marker_lines'] = [long]$Counts['dropped_pipeline_marker_lines'] + 1 }
-    if ($Line -match '(?i)(no descriptor slots|descriptor slot.*(?:null|missing)|no host pipeline)') { $Counts['descriptor_missing_marker_lines'] = [long]$Counts['descriptor_missing_marker_lines'] + 1 }
-    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $Counts['d3d12_debug_error_marker_lines'] = [long]$Counts['d3d12_debug_error_marker_lines'] + 1 }
-    if ($Line -match '(?i)(?:D3D12|debug layer).*\bWARNING\b') { $Counts['d3d12_debug_warning_marker_lines'] = [long]$Counts['d3d12_debug_warning_marker_lines'] + 1 }
+    if ($Line -match '(?i)host pipeline refused') { $script:Counts['gpu_pipeline_refused_lines'] = [long]$script:Counts['gpu_pipeline_refused_lines'] + 1 }
+    if ($Line -match '(?i)(shader does not translate|shader translation (?:failed|refused))') { $script:Counts['shader_translation_refused_lines'] = [long]$script:Counts['shader_translation_refused_lines'] + 1 }
+    if ($Line -match '(?i)(DROPPED indirect|dropped .*without a host pipeline)') { $script:Counts['dropped_pipeline_marker_lines'] = [long]$script:Counts['dropped_pipeline_marker_lines'] + 1 }
+    if ($Line -match '(?i)(no descriptor slots|descriptor slot.*(?:null|missing)|no host pipeline)') { $script:Counts['descriptor_missing_marker_lines'] = [long]$script:Counts['descriptor_missing_marker_lines'] + 1 }
+    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $script:Counts['d3d12_debug_error_marker_lines'] = [long]$script:Counts['d3d12_debug_error_marker_lines'] + 1 }
+    if ($Line -match '(?i)(?:D3D12|debug layer).*\bWARNING\b') { $script:Counts['d3d12_debug_warning_marker_lines'] = [long]$script:Counts['d3d12_debug_warning_marker_lines'] + 1 }
     $Tail.Enqueue($Line)
     if ($Tail.Count -gt 512) { [void]$Tail.Dequeue() }
 }
