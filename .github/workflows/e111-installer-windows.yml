@@ -1,0 +1,17 @@
+name: E111 offline candidate install WinPS5.1 synthetic contract
+
+on:
+  push:
+    branches: [test/e111-verified-e108-e109-installer-20261127]
+
+permissions:
+  contents: read
+
+jobs:
+  e111-winps51:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify synthetic E108 and E109 ZIP installs and security refusal
+        shell: powershell
+        run: .\scripts\research\test-e111-installer-windows.ps1
