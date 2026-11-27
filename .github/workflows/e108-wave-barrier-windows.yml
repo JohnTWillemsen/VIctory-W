@@ -1,0 +1,80 @@
+name: E108 NVIDIA wave-barrier Windows acceptance and candidate
+
+on:
+  push:
+    branches: [experiment/e108-nvidia-wave-barriers-upstream2920-20261127]
+
+permissions:
+  contents: read
+
+jobs:
+  e108-win-check-build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install repository-pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Fail closed on source drift and mismatched upstream integration
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & git cat-file -e 712325801d17466c5ce6ff85d96065a5a22814e1^{commit}
+          if($LASTEXITCODE -ne 0){throw 'Expected PR27 parent missing'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/barrier_tests.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '9645361df2939c80fee7f75d64e0ebeae2d24ffa'){throw 'E108 source changed: crates/victory-shader/src/emit/barrier_tests.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '8dbc45f396d7b5101c4c4f2e38a1ef196d0feddb'){throw 'E108 source changed: crates/victory-shader/src/emit/lower.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/lower/barriers.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '8d15c65eaf31489edec603534201d643a90aa3ab'){throw 'E108 source changed: crates/victory-shader/src/emit/lower/barriers.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/emit/mod.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne 'ac0cdbb26797a3d2cf83b5a847bea4977447c1b8'){throw 'E108 source changed: crates/victory-shader/src/emit/mod.rs'}
+          $Got=(& git hash-object -- 'crates/victory-shader/src/structure.rs').Trim()
+          if($LASTEXITCODE -ne 0 -or $Got -cne '580fcbf400c3a04300f37ac5258be3b187f2d484'){throw 'E108 source changed: crates/victory-shader/src/structure.rs'}
+          Write-Host 'E108 exactly pinned five-file upstream #2920 source patch verified'
+      - name: Clippy default (full workspace)
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Clippy diagnostics (full workspace)
+        shell: cmd
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Full workspace locked tests (includes new barrier fixtures)
+        shell: cmd
+        run: cargo test --workspace --locked
+      - name: Asset policy
+        shell: cmd
+        run: cargo xtask policy
+      - name: Release diagnostics executable (no game or title data)
+        shell: cmd
+        run: cargo build --release --locked -p victory --features diagnostics
+      - name: Write public-source-only SHA256 provenance
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $Exe='target/release/victory.exe'
+          if(-not(Test-Path -LiteralPath $Exe -PathType Leaf)){throw 'No compiled victory.exe'}
+          $Hash=(Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $Sha=(& git rev-parse HEAD).Trim()
+          $Manifest=@(
+            'format=E108-public-source-nvidia-wave-barrier-v1'
+            ('git_commit='+$Sha)
+            'experiment_patch_commit=b66e63d6a1869151e5729eec5584026991c5676b'
+            'parent_fork_pr27=712325801d17466c5ce6ff85d96065a5a22814e1'
+            'base_upstream_pr3409=965d93823587932e8f40b152b8d4faab5f7a9c85'
+            'wave_barrier_upstream_pr2920=ef794e8c32ce92365775eaeea16abb912a07f324'
+            ('binary_sha256='+$Hash)
+            'profile=release'
+            'feature=diagnostics'
+            'owner_rtx5090_test=NOT_RUN'
+            'title_in_artifact=false'
+          )
+          [IO.File]::WriteAllLines('E108-BUILD-MANIFEST.txt',$Manifest,[Text.UTF8Encoding]::new($false))
+          Write-Host ('E108 source-only binary SHA256 '+$Hash)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e108-nvidia-wave-barriers-${{ github.sha }}
+          path: |
+            target/release/victory.exe
+            E108-BUILD-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 7
