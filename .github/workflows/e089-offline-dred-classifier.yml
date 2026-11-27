@@ -1,0 +1,28 @@
+name: E089 offline DRED classifier anonymous Windows tests
+on:
+  push:
+    branches:
+      - test/e089-offline-dred-classification-20261127
+    paths:
+      - "scripts/research/owner-e089-offline-dred-classifier.ps1"
+      - "scripts/research/test-e089-offline-dred-classifier.ps1"
+      - ".github/workflows/e089-offline-dred-classifier.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e089-offline-dred-classifier.ps1"
+      - "scripts/research/test-e089-offline-dred-classifier.ps1"
+      - ".github/workflows/e089-offline-dred-classifier.yml"
+permissions:
+  contents: read
+jobs:
+  windows-powershell51-synthetic:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse Windows PowerShell 5.1 and verify synthetic offline privacy/failure contracts
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/research/test-e089-offline-dred-classifier.ps1
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw 'Test script nonzero.' }
