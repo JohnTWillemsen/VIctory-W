@@ -79,3 +79,12 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 **Alternatives rejected:** wholesale AMD fork merge (hundreds of divergent commits), Kelvaroq private DXR/UMA claims as proof, importing 64 patch files, blindly replacing Wave64 #439 with PR #442, changing rendering and performance settings simultaneously, or treating synthetic CI PASS as a visible title.
 
 **Revisit:** Wait for E-056 exact-head hosted Windows results; then **after** E-052 private RTX5090 six-PR baseline and owner approval, perform separate A/B debug-layer test. Rollback means close draft PR #7, not reset or alter main. Never publish title artifacts to GitHub.
+
+## D-008 · 2026-11-26 MST / 2026-11-27 UTC — E-056 passes synthetic RTX5090 but requires visual A/B before promotion
+
+**Decision:** Accept E-060/PR #8 (Belobug #449 legal BEFORE/AFTER D3D12 state correction under `E056_PATCH=1`) as a passing **isolated synthetic owner RTX 5090 hardware experiment**, not a verified game graphics correction. Use the successful independently preserved E-052 six-PR baseline and separately built E-060 candidate for a controlled *owner-performed* E-062 title visual A/B, with identical title bytes and graphics settings, one executable at a time, unchanged driver and no background GPU load where feasible. Record whether first rendered scene appears, relevant errors, crash/stall, qualitative differences; ask owner to upload only private ZIP/log/screenshot evidence within ChatGPT, never publicly.
+
+**Evidence:** E-058 baseline 303 executed tests pass and one ignored; E-061 E-060 barrier synthetic 311 executions pass and one ignored on RTX5090 driver 617.42, four additional E-056 tests per focused and full library run. [PR #8](https://github.com/JohnTWillemsen/VIctory-W/pull/8), [CI 45936578198](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45936578198) all jobs pass. Candidate source-generated binary hash `5e378b0e3673059cbbffcee54f0d83cedbde00ff0f40522136022e2dc469c723`.
+
+**Not established:** In-game D3D12 debug error 523 behavior, world rendering, title stability/FPS and any performance gain. Initial E-060 Bash typo and its failed CI remain historical (corrected). No auto-merge to main or public proprietary artifact uploads.
+
