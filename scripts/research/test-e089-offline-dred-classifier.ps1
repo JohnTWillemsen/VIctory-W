@@ -22,7 +22,9 @@ Set-Content -LiteralPath (Join-Path $Public 'E087-anonymous-status.txt') -Encodi
 )
 $Secret = 'private-cat-pretend-title-secret-verydistinct'
 $EvilHash = 'deadbeefdeadbeef'
-@(
+[IO.File]::WriteAllLines(
+    (Join-Path $Private 'title-stderr-private.txt'),
+    [string[]]@(
 '2026-11-27T08:57:00Z WARN victory_gpu::host: slow host submission ms=11654 lists=1 pipelines={"[compute '+$EvilHash+']"}',
 '2026-11-27T08:57:01Z ERROR victory_gpu::host: host GPU device removed after a submission of 1 lists; no breadcrumbs 0x887A0004; device removed: 0x887A0006',
 '2026-11-27T08:57:02Z INFO DRED stopped at command 514 of 1304 (op 5) in '+$Secret,
@@ -30,9 +32,19 @@ $EvilHash = 'deadbeefdeadbeef'
 '2026-11-27T08:57:04Z ERROR D3D12 debug layer: ERROR descriptor slot null',
 '2026-11-27T08:57:05Z WARN shader does not translate '+$EvilHash,
 '2026-11-27T08:57:06Z WARN host pipeline refused '+$Secret
-) | Set-Content -LiteralPath (Join-Path $Private 'title-stderr-private.txt') -Encoding UTF8
-@('Private content '+$Secret, 'title exit 0x887A0005', 'DROPPED indirect kind 2 (no host pipeline)') |
-    Set-Content -LiteralPath (Join-Path $Private 'title-stdout-private.txt') -Encoding UTF8
+),[Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllLines(
+    (Join-Path $Private 'title-stdout-private.txt'),
+    [string[]]@('Private content '+$Secret, 'title exit 0x887A0005', 'DROPPED indirect kind 2 (no host pipeline)'),
+    [Text.UTF8Encoding]::new($false))
+$FixtureStreamLines = @(
+    (Get-Content -LiteralPath (Join-Path $Private 'title-stdout-private.txt')).Count,
+    (Get-Content -LiteralPath (Join-Path $Private 'title-stderr-private.txt')).Count
+)
+if ([int]$FixtureStreamLines[0] -ne 3 -or [int]$FixtureStreamLines[1] -ne 7) {
+    throw ('Synthetic fixture line count unexpectedly merged: ' + ($FixtureStreamLines -join ','))
+}
+
 & $Script -RunFolder $Run
 $Zip=Join-Path $Run 'E089-offline-dred-counts.zip'
 if (-not (Test-Path -LiteralPath $Zip -PathType Leaf)) { throw 'No E089 ZIP' }
