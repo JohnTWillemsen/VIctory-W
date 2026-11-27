@@ -198,11 +198,20 @@ if ($Mode -eq 'Worker') {
             $Secs = [math]::Floor(([DateTime]::UtcNow - $Started).TotalSeconds)
             Report $RunFolder $Status 'PENDING' 'UNKNOWN' $PidText ([string]$Secs) (EmptyCounts)
         }
-        $App.Refresh()
-        $ExitText = [string]$App.ExitCode
+        # A final no-timeout wait makes the process handle's terminal state explicit.
+        # Do not use Refresh() before reading ExitCode (some WinPS5.1 wrappers
+        # lose the cached code after a timed WaitForExit).
+        [void]$App.WaitForExit()
+        $Code = $App.ExitCode
         $Status = 'TITLE_EXITED'
-        if ($App.ExitCode -eq 0) { $Result = 'EXIT_ZERO_NOT_VISUALLY_VERIFIED' }
-        else { $Result = 'EXIT_NONZERO_OR_CRASH' }
+        if ($null -eq $Code) {
+            $ExitText = 'UNKNOWN'
+            $Result = 'EXIT_CODE_UNAVAILABLE'
+        } else {
+            $ExitText = [string]$Code
+            if ([int]$Code -eq 0) { $Result = 'EXIT_ZERO_NOT_VISUALLY_VERIFIED' }
+            else { $Result = 'EXIT_NONZERO_OR_CRASH' }
+        }
     } catch {
         $Status = 'SUPERVISOR_EXCEPTION'
         $Result = 'MONITOR_ERROR_OR_LAUNCH_FAILURE'
