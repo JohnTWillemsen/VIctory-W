@@ -136,6 +136,7 @@ catch {
     if ($Status -eq 'NOT_STARTED') { $Status = 'WRAPPER_ERROR_OR_PRECHECK_FAILED' }
     ($_ | Out-String) | Set-Content -LiteralPath (Join-Path $Folder 'wrapper-error.txt') -Encoding UTF8
     Write-Warning ('E-062 stopped: ' + $_.Exception.Message)
+    throw
 }
 finally {
     foreach ($name in $Vars) {
