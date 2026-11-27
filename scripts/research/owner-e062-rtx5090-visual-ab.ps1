@@ -58,8 +58,8 @@ try {
         if (-not (Test-Path -LiteralPath $item.Path -PathType Leaf)) {
             throw ('Missing ' + $item.Name + ' release executable. Use -BaselineExe or -CandidateExe to specify it.')
         }
-        $item.Actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $item.Path).Hash.ToLowerInvariant()
-        if ($item.Actual -ne $item.Expected) {
+        $ActualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $item.Path).Hash.ToLowerInvariant()
+        if ($ActualHash -ne $item.Expected) {
             throw ('Executable SHA256 mismatch for ' + $item.Name + '. Refusing A/B of unknown binary.')
         }
     }
