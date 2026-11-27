@@ -216,6 +216,10 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked builder -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked portable -- --test-threads=1 --nocapture
   # E-049 hostless->host lifecycle regression is included in the portable filter above.
+  # Previous hosted E-045 run had zero tests matched by the generic portable filter.
+  # Explicitly exercise both original #2628 layout invariants, not just the new lifecycle test.
+  cargo test -p victory-gpu --lib --locked the_probe_selects_the_heap_layout_before_translation -- --test-threads=1 --nocapture
+  cargo test -p victory-gpu --lib --locked mirrored_and_dynamic_slots_end_before_the_shader_null_views -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
