@@ -152,3 +152,8 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Parallel engineering:** E077 upstream #2311-derived safe walker holdback passed strict source+Windows CI; remains opt-in, not a title-tested graphics fix. Continue toward playable scene by fixing evidence-backed shader semantics and independently testing lighting/geometry, not conflating warning suppression/safety-only changes with rendering repair. No main merge without approval.
 
+## D-017 · 2026-11-27 00:24 MST — Address five >64-group refusals safely, audit two broadly classified LDS errors
+
+Owner-private E078 verified an actual RTX5090 one-title diagnostic exit 0 and seven builder shader-translation refusals among 53 pipelines. First-error broad categories 5 `large_group` / 2 `cross_half_lds`; the LDS classifier matches general error strings, not exact operations. This is not a successful world render or fps benchmark. Prior E078 NOT_RUN text is superseded for this specific run, but past findings stay append-only.
+
+**Decision:** No bypass of BVH builder all-made safety. #2214 `b3efa1c0e3b7848cdc45d071972c4bfde83627aa` author acknowledges undefined count-paired group barrier across divergence—reject until site-uniform synchronization is correctly specified and negative synthetic tests pass. Independently gate <=64-thread source-only #3406 and separately #2925 lighting; preserve E077 optional walker safeguard. Do not repeat title until bounded source/CI/GPU tests justify a controlled owner run. E078 dedicated CI `45955222863` PASS; ordinary suite `45955222934` FAIL known frame assertion. [E080 plan](../research/e080-bvh-wave64-recovery-plan-20261127.md). Main `63bcca43` untouched. Fork currently publicly visible, keep private title data out of GitHub.
