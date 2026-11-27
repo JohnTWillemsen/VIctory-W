@@ -28,7 +28,9 @@ PATHS
 )"
 
 reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
+e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
+[[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 git -c core.autocrlf=false clone --quiet --no-tags https://github.com/Marvisak/VIctory.git "$work/source"
@@ -187,6 +189,7 @@ set -e
 echo "E-045 partial git apply exit $rejected_exit (expected)"
 grep -E 'Rejected hunk|with [0-9]+ reject|Applied patch|Hunk #[0-9]+ applied' "$work/reject.log" || true
 python "$reconciler" "$PWD"
+python "$e049" "$PWD"
 [[ "$(find apps crates -name '*.rej' -type f | wc -l)" -eq 0 ]] || {
   echo "E-045 an unhandled rejected hunk remains" >&2
   exit 42
@@ -212,6 +215,7 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked an_acceleration_structures_view_address_is_its_location -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked builder -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked portable -- --test-threads=1 --nocapture
+  # E-049 hostless->host lifecycle regression is included in the portable filter above.
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
