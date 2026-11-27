@@ -62,7 +62,7 @@ $SourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
 if ($SourceHash -ne $OldHash) {
     throw "The original Rust file SHA256 differs from the inspected owner ZIP. No edit."
 }
-$Utf8 = New-Object System.Text.UTF8Encoding($false)
+$Utf8 = [System.Text.UTF8Encoding]::new($false)
 $Text = $Utf8.GetString([System.IO.File]::ReadAllBytes($Source))
 if (-not $Text.Contains($OldCall) -or $Text.IndexOf($OldCall) -ne $Text.LastIndexOf($OldCall)) {
     throw "One unique outdated emit call was expected. No edit."
