@@ -5,6 +5,7 @@ on:
       - experiment/pr2628-wave64-portable-heap-reconciliation-20261126
     paths:
       - "scripts/research/e045-reconcile-pr2628.py"
+      - "scripts/research/e049-guard-hostless-portable-probe.py"
       - "scripts/research/e045-six-pr-source-and-ci.sh"
       - ".github/workflows/e045-six-pr-reconciliation.yml"
 permissions:
