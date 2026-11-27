@@ -35,7 +35,7 @@ jobs:
             'PUBLIC-isolated-build',
             'PRIVATE-raw-logs-do-not-upload',
             'upload-only',
-            "if($Consent -cne 'PLAY')",
+            'if($Consent -cne ''PLAY'')',
             'VICTORY_KEYS',
             'Get-FileHash',
             'Compress-Archive',
@@ -43,7 +43,7 @@ jobs:
           )){
             if(-not $C.Contains($Require)){throw ('Required source contract missing: '+$Require)}
           }
-          $ConsentPos=$C.IndexOf("if($Consent -cne 'PLAY')")
+          $ConsentPos=$C.IndexOf('if($Consent -cne ''PLAY'')')
           $LaunchPos=$C.IndexOf('$Title=Start-Process -FilePath $Candidate')
           if($LaunchPos -le $ConsentPos){throw 'Game launch is not behind explicit typed PLAY consent'}
           if($C.Contains('Remove-Item') -or $C.Contains('ForceWithLease') -or $C.Contains('git push') -or $C.Contains('Copy-Item -Path $GameExe')){
