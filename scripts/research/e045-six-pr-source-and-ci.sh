@@ -229,8 +229,8 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked mirrored_and_dynamic_slots_end_before_the_shader_null_views -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   if [[ "${E077_BVH_WALK_GUARD:-0}" == "1" ]]; then
-    cargo test -p victory-gpu --lib --locked programs_that_intersect_rays_walk_the_structures -- --test-threads=1 --nocapture
-    cargo test -p victory-gpu --lib --locked walks_wait_for_the_builder_to_run_whole -- --test-threads=1 --nocapture
+    cargo test -p victory-gpu --lib --locked only_gfx10_bvh_intersect_instructions_are_walks -- --test-threads=1 --nocapture
+    cargo test -p victory-gpu --lib --locked unbuilt_builder_blocks_walks_but_a_title_without_builder_does_not -- --test-threads=1 --nocapture
   fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
