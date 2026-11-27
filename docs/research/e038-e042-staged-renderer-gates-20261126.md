@@ -25,9 +25,16 @@
 - [#2464](https://github.com/Marvisak/VIctory/pull/2464) head `b9dc4b037a87bf6919ce92eae7c79a36c0307e48`; real PR merge base `13f91caee25f2fdf2c062be5f7a27f058e51cbca`, exactly **two changed files** (`crates/victory-gpu/src/descriptor/host.rs` and `crates/victory-gpu/src/host.rs`), both applied cleanly after #439+#2118+#2098+#2626.
 - **Scope:** SOURCE_APPLIES, no physical NVIDIA raw SRV behavior, no standalone title, no persistent source commit.
 
-## E-041 — five-PR Windows compiler gate
+## E-041 — five upstream PRs, hosted Windows compiler/Clippy/focused tests/release **PASS**
 
-The five-PR reproducible script `aaa418c7a0dad069198cd27f36a39bacb54f7088`, workflow `ab7ebff93e9361f1a1f5dbb6422912f16de14fa4`, adds `cargo check`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, packed GPU-lib test filter, acceleration address, builder, and optimized release. The source-only gate already passed. **At this document's snapshot, hosted Windows [run 45923514801](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45923514801) was IN_PROGRESS, not yet a completed Windows result. Do not cite it as PASS until the exact job logs are inspected and this document is updated.** No native RTX5090 result can be inferred even if Windows CI succeeds.
+- **[Windows workflow 45923514801](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45923514801): completed SUCCESS**. Source guard Ubuntu job `140259482019` passed; real hosted Windows job `140259527092` passed. Reproducible source script `aaa418c7a0dad069198cd27f36a39bacb54f7088`, workflow `ab7ebff93e9361f1a1f5dbb6422912f16de14fa4`, checked out on #4 research branch without updating main. Source is the pinned **#439 + #2118 + #2098 + #2626 + #2464** stack with hash-guarded test-only emitter API fix.
+- `cargo check --workspace --all-targets --locked`: **PASS**, dev profile completed.
+- `cargo clippy --workspace --all-targets --locked -- -D warnings`: **PASS**, warnings-as-errors check completed.
+- `cargo test -p victory-gpu --lib --locked packed -- --test-threads=1 --nocapture`: **6/6 pass, 0 fail, 238 filtered**; includes two partial-copy 16-bit pixel/padding tests, packed target/write selection, packed alpha conversion.
+- `... an_acceleration_structures_view_address_is_its_location`: **1/1 pass, 0 fail, 243 filtered**.
+- `... builder`: **4/4 pass, 0 fail, 240 filtered**.
+- `cargo build --release --locked -p victory`: **PASS**, optimized release build complete.
+- All source was ephemeral on hosted Windows and removed by cleanup. The #2464 NVIDIA-only raw-structured read behavior was **not physically exercised on an RTX5090**, and these focused tests do not establish a fully green GPU suite, GPU memory state, BVH title execution, or gameplay. No persistent integrated source SHA or binary for the five-PR source is available in this fork.
 
 ## E-042 — #2628 portable descriptor heap/shader clamp is the remaining integration blocker
 
@@ -44,4 +51,4 @@ The five-PR reproducible script `aaa418c7a0dad069198cd27f36a39bacb54f7088`, work
 5. **Acceptance order:** isolated commit(s) on a new experiment branch with honest source-merge diff and manual code review; compilation + Clippy + relevant synthetic descriptor/heap and packed tests in Windows CI; complete shader translation tests on host capabilities; RTX5090 wave32/console64 readbacks and **full GPU failure ledger**, then private in-title smoke with exact binary SHA and device-loss/visible-frame logs. Never suppress old two failing NVIDIA heap-cap tests to report an all-green regression suite.
 6. **Do not merge to main** without owner approval. No game executable, logs, shader containers or copyrighted title data in GitHub.
 
-The third-party RTX5080 lit scene required six PRs; E-039 verifies only four of them compile together, E-040 checks five patch source-application, and E-042 proves #2628 is not a blind drop-in. These findings narrow the next engineering task; they do not constitute a PC port gameplay milestone.
+The third-party RTX5080 lit scene required six PRs; E-039 verifies four compile together, **E-041 verifies five compile and pass 11 focused hosted-Windows unit tests plus Clippy**, and E-042 proves #2628 is not a blind drop-in. None of these results is a physical NVIDIA title or rendered-scene milestone. These findings narrow the next engineering task; they do not constitute a PC port gameplay milestone.
