@@ -6,6 +6,7 @@ set -euo pipefail
 
 wave=e2d3cfd50715954fb89ff462edb37a0c4395ecd0
 bvh=999a8f67125865fcc0b3aa23cdc8a93b10ef9974
+bvh_live=78f36cfa69211edbfa87d44e92ab93bd795f74a7
 addr=543d8688068b658ca4bf9602887097b215fec838
 # E-050: upstream #2626 advanced by one test-only commit (mip-1 packed copy).
 # Compared c8cc83e...6092548; one path: list/packed_copy_tests.rs; no runtime edits.
@@ -31,8 +32,10 @@ PATHS
 
 reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
+e095="$PWD/scripts/research/e095-e094-upstream-overlay.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
+checkout_root="$PWD"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 git -c core.autocrlf=false clone --quiet --no-tags https://github.com/Marvisak/VIctory.git "$work/source"
@@ -48,7 +51,7 @@ git fetch --quiet origin \
   refs/pull/2628/head:refs/remotes/origin/e045-2628
 for pair in \
   "refs/remotes/origin/e045-439:$wave" \
-  "refs/remotes/origin/e045-2118:$bvh" \
+  "refs/remotes/origin/e045-2118:$bvh_live" \
   "refs/remotes/origin/e045-2098:$addr" \
   "refs/remotes/origin/e045-2626:$fmt" \
   "refs/remotes/origin/e045-2464:$raw" \
@@ -58,6 +61,16 @@ for pair in \
     exit 3
   }
 done
+# Public #2118 HEAD advanced once, exactly a warning-only draw.rs change.
+# Retain the already validated older implementation SHA for E045; never
+# auto-import a newer BVH algorithm without revalidation.
+[[ "$(git merge-base "$bvh" "$bvh_live")" == "$bvh" ]] || {
+  echo "Unexpected #2118 lineage; refusing silent update" >&2; exit 94;
+}
+[[ "$(git diff --name-only "$bvh" "$bvh_live")" == "crates/victory-gpu/src/draw.rs" ]] || {
+  echo "#2118 changed more than previously reviewed warning path" >&2; exit 94;
+}
+echo "E095 audited #2118 warning-only live-head drift; retaining pinned old BVH source"
 
 # The same two-PR source and test-only API repair as E-034/E-037.
 git checkout --quiet --detach "$wave"
@@ -203,6 +216,11 @@ for p in apps/victory/src/translate.rs crates/victory-gpu/src/shader_cache.rs cr
   echo "E-045 public-source SHA256 $(sha256sum "$p")"
 done
 
+if [[ "${E095_COMBINED_GATE:-0}" == "1" ]]; then
+  [[ -f "$e095" ]] || { echo "E095 script missing" >&2; exit 95; }
+  bash "$e095" "$PWD"
+fi
+
 if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   echo "E-045 hosted Windows (NOT owner RTX5090): compiling and testing six-PR source"
   # The upstream pinned tree deliberately has pre-existing Rustfmt drift.
@@ -224,6 +242,31 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked mirrored_and_dynamic_slots_end_before_the_shader_null_views -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   cargo build --release --locked -p victory
+  if [[ "${E095_COMBINED_GATE:-0}" == "1" ]]; then
+    cargo test -p victory-gpu --lib --locked raw_views_start_on_16_bytes_of_their_copy -- --test-threads=1
+    cargo test -p victory-hle --lib --all-features --locked scripted_hold_ends_are_exclusive_even_near_duration_max -- --test-threads=1
+    if [[ "${E095_EXPORT_PUBLIC_BINARY:-0}" == "1" ]]; then
+      [[ -f target/release/victory.exe ]] || { echo "E095 no release exe: abort artifact"; exit 96; }
+      out="$checkout_root/e095-built-public-bin"
+      mkdir -p "$out"
+      cp target/release/victory.exe "$out/victory.exe"
+      {
+        echo "format=E095-public-source-binary-v1"
+        echo "workflow_source_commit=${GITHUB_SHA:-not-in-GitHub-Actions}"
+        echo "baseline_main=63bcca43c6a00a758510398fa43096ce7e4f7df0"
+        echo "six_pr_base=6a9787190de810ba560195608f0fc1ee3ce044f3"
+        echo "upstream_2634=a9eca1430a0b2a133ee5ebc4ec07062ae6c562ba"
+        echo "upstream_3540=ee3d12dc356df92a2da49133f11a5f0c98b0291f"
+        echo "upstream_3392=72d5370455e3fcd95f9daf672daa03ff862d4293"
+        echo "binary_sha256=$(sha256sum target/release/victory.exe | cut -d' ' -f1)"
+        echo "rustc=$(rustc --version)"
+        echo "owner_title_test=NOT_RUN"
+        echo "contains_game_files=NO"
+      } > "$out/BUILD-MANIFEST.txt"
+      echo "E095 PUBLIC_SOURCE_ONLY_ARTIFACT_STAGED: checkout/e095-built-public-bin"
+    fi
+    echo "E095 upstream source patches + E045 six-PR hosted Windows source/Clippy/tests/release PASS (if reached)"
+  fi
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
   echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
 else

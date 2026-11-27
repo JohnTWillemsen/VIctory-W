@@ -1,0 +1,51 @@
+name: E095 six-PR plus E094 NVIDIA overlay source/Windows gate
+on:
+  push:
+    branches: [experiment/e095-six-pr-e094-source-gate-20261127]
+  pull_request:
+    paths:
+      - scripts/research/e045-six-pr-source-and-ci.sh
+      - scripts/research/e095-e094-upstream-overlay.sh
+      - .github/workflows/e095-six-pr-e094-source-gate.yml
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Reconstruct E045 + apply only exact E094 source PRs
+        shell: bash
+        env:
+          E095_COMBINED_GATE: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Pinned Rust
+        run: rustup toolchain install
+      - name: Build + Clippy + selected GPU/Shader/HLE and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E095_COMBINED_GATE: "1"
+          E095_EXPORT_PUBLIC_BINARY: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
+      - name: Upload only the checked public-source release binary and manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e095-public-source-windows-${{ github.sha }}
+          path: e095-built-public-bin/
+          if-no-files-found: error
+          retention-days: 7
