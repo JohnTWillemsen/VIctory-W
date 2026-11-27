@@ -142,7 +142,7 @@ if ($Mode -eq 'Start') {
     $Command = "& '$QRunner' -Mode Worker -RunFolder '$QFolder'"
     $Encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($Command))
     try {
-        $Worker = Start-Process -FilePath $Shell -ArgumentList ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ' + $Encoded) -WorkingDirectory $RunFolder -WindowStyle Hidden -PassThru
+        $Worker = Start-Process -FilePath $Shell -ArgumentList ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ' + $Encoded) -WorkingDirectory $RunFolder -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $Private 'monitor-stdout-private.txt') -RedirectStandardError (Join-Path $Private 'monitor-stderr-private.txt')
         [System.IO.File]::WriteAllText((Join-Path $Private 'worker-pid.txt'), [string]$Worker.Id)
         Write-Host ('Independent monitor PID: ' + $Worker.Id)
         Write-Host ('Checkpoint ZIP, refreshed during run: ' + (Join-Path $RunFolder $ZipName))
