@@ -1,0 +1,37 @@
+name: Agent docs integrity
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  agent-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Required agent documents, continuity anchors and local links
+        run: bash scripts/check-agent-docs.sh
+      - name: Simulate cold starts, SIGKILL, resume, races, and fail-closed controls
+        run: bash scripts/test-agent-restarts.sh
+      - name: Negative regression — corrupted evidence ID must fail
+        shell: bash
+        run: |
+          sed -i 's/^| E-007 /| E-099 /' docs/agents/EVIDENCE_LOG.md
+          if bash scripts/check-agent-docs.sh; then
+            echo "ERROR: evidence validator accepted an intentionally skipped ID" >&2
+            exit 1
+          fi
+          sed -i 's/^| E-099 /| E-007 /' docs/agents/EVIDENCE_LOG.md
+      - name: Negative regression — a broken internal link must fail
+        shell: bash
+        run: |
+          printf '\n[Broken-link regression](this-file-must-never-exist-viw.md)\n' >> docs/agents/README.md
+          if bash scripts/check-agent-docs.sh; then
+            echo "ERROR: docs checker missed a deliberately broken link" >&2
+            exit 1
+          fi
