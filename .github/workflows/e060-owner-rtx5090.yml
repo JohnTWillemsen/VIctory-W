@@ -1,0 +1,87 @@
+name: E-060 RTX5090 six-PR + Belobug legal barrier owner runner
+on:
+  push:
+    branches:
+      - test/e060-legal-barrier-rtx5090-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e056-legal-barrier-port.sh"
+      - "scripts/research/owner-e060-barrier-rtx5090.ps1"
+      - ".github/workflows/e060-owner-rtx5090.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e056-legal-barrier-port.sh"
+      - "scripts/research/owner-e060-barrier-rtx5090.ps1"
+      - ".github/workflows/e060-owner-rtx5090.yml"
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Bash syntax and owner opt-in isolation
+        shell: bash
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e056-legal-barrier-port.sh
+          grep -Fq 'E045_OWNER_GPU' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'E056_PATCH' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'victory-six-pr-e056.exe' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'full_gpu_library' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'split_tests' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'lane_read_loop_tests' scripts/research/e045-six-pr-source-and-ci.sh
+      - name: Fail-closed E-056 public-source reconstruction
+        shell: bash
+        env:
+          E056_PATCH: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
+  powershell-parser:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse owner runner under real Windows PowerShell 5.1 (do not execute)
+        shell: powershell
+        run: |
+          $errors = $null
+          $tokens = $null
+          $script = 'scripts/research/owner-e060-barrier-rtx5090.ps1'
+          $null = [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          $code = Get-Content -Raw -LiteralPath $script
+          foreach ($expected in @(
+            "E056_PATCH = '1'",
+            'e056-legal-barrier-port.sh',
+            'E045_OWNER_GPU',
+            'Compress-Archive',
+            'RedirectStandardError'
+          )) {
+            if (-not $code.Contains($expected)) { throw "Missing E-060 gate: $expected" }
+          }
+          Write-Host 'E-060 Windows PowerShell 5.1 static syntax and source markers PASS.'
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Public-source full hosted checks, 22 synthetic tests, release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E056_PATCH: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh

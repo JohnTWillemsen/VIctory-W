@@ -233,7 +233,53 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
-  echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
+  if [[ "${E045_OWNER_GPU:-}" == "1" ]]; then
+    # E-060 opt-in only: executed by the owner on physical RTX 5090.
+    # Do not allow this runner to masquerade as the E-056 candidate when the
+    # opt-in source patch is absent.
+    [[ "${E056_PATCH:-0}" == "1" ]] || {
+      echo "E-060 BLOCKED: E056_PATCH=1 required for barrier candidate." >&2
+      exit 74
+    }
+    # No game paths, asset scans, or title launch. Never skip observed failures.
+    if [[ "${VICTORY_D3D12_WARP:-}" == "1" ]]; then
+      echo "E-060 BLOCKED: VICTORY_D3D12_WARP=1 is not physical NVIDIA testing" >&2
+      exit 70
+    fi
+    exe="${CARGO_TARGET_DIR:-target}/release/victory.exe"
+    [[ -f "$exe" ]] || { echo "E-060 missing independent release executable at $exe" >&2; exit 71; }
+    echo "E-060 PUBLIC-SOURCE RELEASE EXE SHA256 (no title data):"
+    sha256sum "$exe"
+    if [[ -n "${E045_OWNER_BINARY_DIR:-}" ]]; then
+      mkdir -p "$E045_OWNER_BINARY_DIR"
+      if [[ -e "$E045_OWNER_BINARY_DIR/victory-six-pr-e056.exe" ]]; then
+        echo "E-060 BLOCKED: output already exists, will not overwrite" >&2
+        exit 72
+      fi
+      cp -- "$exe" "$E045_OWNER_BINARY_DIR/victory-six-pr-e056.exe"
+      echo "E-060 PRIVATE candidate binary copy (outside report ZIP):"
+      sha256sum "$E045_OWNER_BINARY_DIR/victory-six-pr-e056.exe"
+    fi
+    # Native-adapter identity must be inspected from the output; WARP is not GPU_PASS.
+    # Independently capture tests even if one fails so a known NVIDIA heap
+    # baseline assertion does not conceal the rest of the suite.
+    set +e
+    cargo test -p victory-shader --lib --locked split_tests -- --test-threads=1 --nocapture
+    split_code=$?
+    cargo test -p victory-shader --lib --locked lane_read_loop_tests -- --test-threads=1 --nocapture
+    lane_code=$?
+    cargo test -p victory-gpu --lib --locked -- --test-threads=1 --nocapture
+    gpu_code=$?
+    set -e
+    printf 'E-060 RESULT split_tests exit=%s lane_read_loop_tests exit=%s full_gpu_library exit=%s\n' "$split_code" "$lane_code" "$gpu_code"
+    if [[ "$split_code" != "0" || "$lane_code" != "0" || "$gpu_code" != "0" ]]; then
+      echo "E-060 native validation NOT ALL PASS; preserve each failure, do not infer in-game behavior" >&2
+      exit 73
+    fi
+    echo "E-060 owner opt-in native tests EXIT_ZERO (verify adapter and individual skips in private log)."
+  else
+    echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
+  fi
 else
   echo "E-045 source-only gate passed; Windows tests require separate gate."
 fi
