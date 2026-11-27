@@ -1,0 +1,98 @@
+name: E-068 RTX5090 combined anonymous BVH diagnostic preflight
+on:
+  push:
+    branches:
+      - test/e068-rtx5090-bvh-anonymous-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e065-bucket-heap-warning.sh"
+      - "scripts/research/e066-bvh-refusal-categories.sh"
+      - "scripts/research/owner-e068-rtx5090-bvh-categories.ps1"
+      - ".github/workflows/e068-rtx5090-bvh-categories.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e065-bucket-heap-warning.sh"
+      - "scripts/research/e066-bvh-refusal-categories.sh"
+      - "scripts/research/owner-e068-rtx5090-bvh-categories.ps1"
+      - ".github/workflows/e068-rtx5090-bvh-categories.yml"
+permissions:
+  contents: read
+jobs:
+  public-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate public pinned source and both independent exact-preimage patches
+        shell: bash
+        env:
+          E066_BVH_DIAG: "1"
+          E065_HEAP_WARN_DIAG: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e065-bucket-heap-warning.sh
+          bash -n scripts/research/e066-bvh-refusal-categories.sh
+          grep -Fq 'E068_OWNER_BUILD' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'VICTORY_BVH_REFUSAL_COUNTS' scripts/research/e066-bvh-refusal-categories.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  powershell-static:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse Windows PowerShell 5.1 and verify owner-consent/privacy gates (never execute)
+        shell: powershell
+        run: |
+          $File = 'scripts/research/owner-e068-rtx5090-bvh-categories.ps1'
+          $Tokens = $null
+          $Errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile($File,[ref]$Tokens,[ref]$Errors)
+          if ($Errors.Count -gt 0) {
+            $Errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          $Code = Get-Content -Raw -LiteralPath $File
+          foreach ($Required in @(
+            "cne 'LAUNCH'",
+            'Read-Host',
+            '--execute --console series-x',
+            'E068_OWNER_BUILD',
+            'E066_BVH_DIAG',
+            'E065_HEAP_WARN_DIAG',
+            'VICTORY_BVH_REFUSAL_COUNTS',
+            'Select-String',
+            'anonymous-bvh-categories.txt',
+            'PRIVATE-raw-logs-do-not-upload',
+            'Compress-Archive -Path (Join-Path $Public',
+            'RTX 5090',
+            'nvidia-smi.exe',
+            'appdata0.rpf'
+          )) {
+            if (-not $Code.Contains($Required)) { throw "Missing E068 owner safety gate: $Required" }
+          }
+          if ($Code.Contains('Compress-Archive -Path (Join-Path $Folder')) {
+            throw 'E068 archive may not package raw logs.'
+          }
+          Write-Host 'E-068 Windows PowerShell 5.1 parse/consent/private-log ZIP markers PASS. No title executed.'
+  windows-build:
+    needs: public-source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Combined E065/E066 source strict all-target check, Clippy, all regression tests and release build
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E065_HEAP_WARN_DIAG: "1"
+          E066_BVH_DIAG: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh

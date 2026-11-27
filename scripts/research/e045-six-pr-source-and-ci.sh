@@ -32,6 +32,7 @@ PATHS
 reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
 e066="$PWD/scripts/research/e066-bvh-refusal-categories.sh"
+e065="$PWD/scripts/research/e065-bucket-heap-warning.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
 work="$(mktemp -d)"
@@ -197,6 +198,10 @@ if [[ "${E066_BVH_DIAG:-0}" == "1" ]]; then
   [[ -f "$e066" ]] || { echo "E-066 reviewed source patch missing" >&2; exit 66; }
   bash "$e066" "$PWD"
 fi
+if [[ "${E065_HEAP_WARN_DIAG:-0}" == "1" ]]; then
+  [[ -f "$e065" ]] || { echo "E-065 reviewed source patch missing" >&2; exit 65; }
+  bash "$e065" "$PWD"
+fi
 [[ "$(find apps crates -name '*.rej' -type f | wc -l)" -eq 0 ]] || {
   echo "E-045 an unhandled rejected hunk remains" >&2
   exit 42
@@ -208,7 +213,20 @@ for p in apps/victory/src/translate.rs crates/victory-gpu/src/shader_cache.rs cr
   echo "E-045 public-source SHA256 $(sha256sum "$p")"
 done
 
-if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
+if [[ "${E068_OWNER_BUILD:-0}" == "1" ]]; then
+  # The owner has already completed physical GPU correctness tests of this
+  # six-PR baseline; E-068 collects *diagnostics*, not another full suite.
+  [[ "${E066_BVH_DIAG:-0}" == "1" && "${E065_HEAP_WARN_DIAG:-0}" == "1" ]] || {
+    echo "E-068 owner build requires BOTH anonymous BVH and heap-logging patches" >&2; exit 68;
+  }
+  [[ -n "${E068_BINARY_DIR:-}" ]] || { echo "E-068 missing isolated binary directory" >&2; exit 68; }
+  cargo build --release --locked -p victory
+  mkdir -p "$E068_BINARY_DIR"
+  cp -n target/release/victory.exe "$E068_BINARY_DIR/victory-six-pr-e068.exe"
+  echo "E-068 anonymous diagnostic candidate source-generated release SHA256:"
+  sha256sum "$E068_BINARY_DIR/victory-six-pr-e068.exe"
+  echo "E-068 owner build PASS (title NOT RUN here; no title data read)."
+elif [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   echo "E-045 hosted Windows (NOT owner RTX5090): compiling and testing six-PR source"
   # The upstream pinned tree deliberately has pre-existing Rustfmt drift.
   # Formatting the ENTIRE checkout here changes unrelated unsafe blocks and
@@ -230,6 +248,9 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   if [[ "${E066_BVH_DIAG:-0}" == "1" ]]; then
     cargo test -p victory-gpu --lib --locked e066_refusal_category_tests -- --test-threads=1 --nocapture
+  fi
+  if [[ "${E065_HEAP_WARN_DIAG:-0}" == "1" ]]; then
+    cargo test -p victory-gpu --lib --locked e065_heap_warning_tests -- --test-threads=1 --nocapture
   fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
