@@ -5,9 +5,7 @@ $Tokens=$null;$Problems=$null
 $null=[Management.Automation.Language.Parser]::ParseFile($Script,[ref]$Tokens,[ref]$Problems)
 if($Problems.Count){throw 'E111 installer PowerShell syntax failed'}
 $Src=Get-Content -LiteralPath $Script -Raw
-foreach($Need in @("if($Launch)",'if($Launch)')) {
-    if(-not $Src.Contains($Need)){throw 'Launch must be explicitly gated'}
-}
+if(-not $Src.Contains('if($Launch)')){throw 'Launch must be explicitly gated'}
 $Root=Join-Path ([IO.Path]::GetTempPath()) ('e111-fixture-'+[Guid]::NewGuid().ToString('N'))
 $Install=Join-Path $Root 'installed'
 New-Item -ItemType Directory -Path $Root|Out-Null
