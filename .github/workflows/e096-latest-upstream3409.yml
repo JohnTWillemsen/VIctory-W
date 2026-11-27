@@ -1,0 +1,46 @@
+name: E096 latest upstream PR3409 hosted Windows game-free candidate
+on:
+  push:
+    branches: [experiment/e096-upstream3409-latest-playability-20261127]
+  pull_request:
+    paths:
+      - scripts/research/ci-e096-latest-upstream3409.ps1
+      - .github/workflows/e096-latest-upstream3409.yml
+permissions:
+  contents: read
+jobs:
+  pinned-windows:
+    runs-on: windows-latest
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Validate PowerShell 5.1 syntax and fail-closed source contract
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $Path='scripts/research/ci-e096-latest-upstream3409.ps1'
+          $Tokens=$null
+          $Errors=$null
+          $null=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $Path).ProviderPath,[ref]$Tokens,[ref]$Errors)
+          if($Errors.Count -gt 0){throw ('E096 invalid script: '+($Errors | Out-String))}
+          $C=Get-Content -LiteralPath $Path -Raw
+          foreach($Must in @('965d93823587932e8f40b152b8d4faab5f7a9c85','1e25b230d6572f08e718a1df31a619bb43070481','refs/pull/3409/head','-cne $Expected','merge-base','test --workspace --locked','title_test=NOT_RUN','contains_game_files=false')){
+            if(-not $C.Contains($Must)){throw ('E096 expected contract missing: '+$Must)}
+          }
+          if($C.Contains('git push') -or $C.Contains('VICTORY_GAME_DIR') -or $C.Contains('PLAY')){throw 'E096 source unexpectedly references title launch or push'}
+      - name: Exact source + Windows checks + release + manifest (no game)
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & .\scripts\research\ci-e096-latest-upstream3409.ps1 -Build
+          if($LASTEXITCODE -and $LASTEXITCODE -ne 0){throw ('E096 failed: '+$LASTEXITCODE)}
+      - name: Publish checked public-source binary only
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e096-latest-upstream3409-${{ github.sha }}
+          path: e096-public-artifact/
+          if-no-files-found: error
+          retention-days: 7
