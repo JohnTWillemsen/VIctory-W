@@ -1,0 +1,79 @@
+name: E-078 reuse owner E075 binary without rebuild
+on:
+  push:
+    branches:
+      - test/e078-reuse-existing-e075-rtx5090-20261126
+    paths:
+      - "scripts/research/owner-e078-launch-existing-e075.ps1"
+      - ".github/workflows/e078-reuse-existing-e075.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e078-launch-existing-e075.ps1"
+      - ".github/workflows/e078-reuse-existing-e075.yml"
+permissions:
+  contents: read
+jobs:
+  static-ps51:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - name: Windows PowerShell 5.1 syntax and fail-closed privacy/launch gating
+        shell: powershell
+        run: |
+          $File = 'scripts/research/owner-e078-launch-existing-e075.ps1'
+          $Tokens = $null
+          $Errors = $null
+          $Ast = [System.Management.Automation.Language.Parser]::ParseFile($File,[ref]$Tokens,[ref]$Errors)
+          if ($Errors.Count -ne 0) {
+            $Errors | ForEach-Object { Write-Error $_.Message }
+            throw 'E078 script syntax invalid'
+          }
+          $S = Get-Content -LiteralPath $File -Raw
+          foreach ($Required in @(
+            "cne 'LAUNCH'",
+            'Read-Host',
+            'ExpectedSha256',
+            'Get-FileHash',
+            'RTX 5090',
+            'nvidia-smi.exe',
+            'appdata0.rpf',
+            'VICTORY_BVH_TRANSLATION_REASONS',
+            'VICTORY_BVH_REFUSAL_COUNTS',
+            '--execute --console series-x',
+            'PRIVATE-raw-logs-do-not-upload',
+            'e075-parse-bvh-reasons.ps1',
+            'DF540AE71F3BD94C59000A0BBADF0648B4B98FB2781CA1D5D09D681C864D4773',
+            'Compress-Archive -Path (Join-Path $Public',
+            'build_reused_existing_e075=true',
+            'no_title_data_uploaded=true'
+          )) {
+            if (-not $S.Contains($Required)) {
+              throw "E078 safety condition missing: $Required"
+            }
+          }
+          foreach ($Forbidden in @(
+            'cargo build',
+            'cargo test',
+            'git clone',
+            'Stop-Process',
+            'GTA6.Xbox',
+            'CYBERLEEK',
+            'Compress-Archive -Path (Join-Path $Root',
+            'Compress-Archive -Path (Join-Path $Private'
+          )) {
+            if ($S.Contains($Forbidden)) {
+              throw "E078 unsafe functionality found: $Forbidden"
+            }
+          }
+          $ArchiveCmd = @($Ast.FindAll({ param($Node)
+            $Node -is [System.Management.Automation.Language.CommandAst] -and
+            $Node.GetCommandName() -eq 'Compress-Archive'
+          }, $true))
+          if ($ArchiveCmd.Count -ne 1) { throw 'Expected one archive action' }
+          $StartCmd = @($Ast.FindAll({ param($Node)
+            $Node -is [System.Management.Automation.Language.CommandAst] -and
+            $Node.GetCommandName() -eq 'Start-Process'
+          }, $true))
+          if ($StartCmd.Count -ne 1) { throw 'Expected precisely one title launch action' }
+          Write-Host 'E078 syntax/hash/owner-consent/reuse/no-raw-ZIP static gates PASS. No title executed.'
