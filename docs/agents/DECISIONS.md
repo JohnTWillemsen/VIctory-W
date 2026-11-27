@@ -112,3 +112,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Rollback:** Draft PR #12 source branch may be closed without affecting main/E052/E060. No title-derived code/data in GitHub.
 
+## D-012 · 2026-11-26 MST / 2026-11-27 UTC — Preserve partial-world render evidence; investigate absent E-068 categories offline first
+
+**Decision:** The owner privately demonstrated a real partially rendered illuminated distant city scene on RTX5090 with E068 source-generated six-PR+E065/E066 diagnostic-only candidate; most foreground/scene remains black and unrendered. Do not describe as playable or a proven E065/E066 graphics repair, since changes only affect logging and category output, which may affect timing and cache. E068 summary explicitly lacks anonymous BVH counts and that is **unknown**, not zero refused. Existing raw stderr/stdout remain in the owner's local PRIVATE folder.
+
+**Next test:** Read-only E070 offline stream of those already-existing private logs to check if BVH summary line appeared, and whether opt-in category marker exists or had unparseable numeric fields. Never ask for another gameplay rerun until existing logs analyzed. Only numeric ZIP supplied privately, game screenshot/raw logs never committed publicly. CI for offline tool passed exact-head PowerShell 5.1 synthetic parser/redaction at `97574a6`.
+
+**No main merge** and no attribution of visual difference without comparable scene/time/cache-controlled baseline.
+
