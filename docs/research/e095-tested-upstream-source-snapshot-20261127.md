@@ -1,4 +1,6 @@
-# E095 — isolated upstream tested-world integration snapshot (2026-11-27 America/Phoenix)
+# E096 — isolated upstream tested-world integration snapshot (2026-11-27 America/Phoenix)
+
+**Numbering note:** This distinct upstream aggregate was staged while another worker independently opened PR #26 for E095 (six-PR plus E094 overlay). Our branch/path retained their original E095 slug for traceability; this aggregate is **E096 / PR27**, and must not overwrite E095's evidence log entry. The two candidates are alternative branches, **not** a single combined source and must not be merged together without a compatibility review.
 
 ## Objective / provenance
 Preserve the **existing VIctory-W main** `63bcca43c6a00a758510398fa43096ce7e4f7df0` unchanged. Stage, for independent verification, the exact public source tree at [Marvisak/VIctory PR #3409](https://github.com/Marvisak/VIctory/pull/3409), head `965d93823587932e8f40b152b8d4faab5f7a9c85`, contributed from `pes7/VIctory:merge/tested`. The candidate branch was created directly at the **GitHub-recognized upstream commit** (no manual cherry-picks, proprietary data, replacement of our fork, or main merge). Base/merge-base exactly our `main` commit above; GitHub compare reported 147 commits ahead, 0 behind, 35 changed files (all public source, README and tests; no title binaries, game assets or screenshots). Original repository license and attribution retained in the Git history.
