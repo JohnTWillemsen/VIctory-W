@@ -27,6 +27,8 @@ function AtomicText([string]$Dest, [string[]]$Lines) {
     $Temp = $Dest + '.new'
     [System.IO.File]::WriteAllLines($Temp, $Lines, [System.Text.UTF8Encoding]::new($false))
     if ([System.IO.File]::Exists($Dest)) {
+        $Backup = $Dest + '.backup'
+        if ([System.IO.File]::Exists($Backup)) { [System.IO.File]::Delete($Backup) }
         [System.IO.File]::Replace($Temp, $Dest, ($Dest + '.backup'))
     } else {
         [System.IO.File]::Move($Temp, $Dest)
@@ -68,6 +70,8 @@ function Report([string]$Folder, [string]$Status, [string]$Result, [string]$Exit
     try {
         Compress-Archive -LiteralPath $Dest -DestinationPath $TmpZip -Force
         if ([System.IO.File]::Exists($Zip)) {
+            $Backup = $Zip + '.backup'
+            if ([System.IO.File]::Exists($Backup)) { [System.IO.File]::Delete($Backup) }
             [System.IO.File]::Replace($TmpZip, $Zip, ($Zip + '.backup'))
         } else {
             [System.IO.File]::Move($TmpZip, $Zip)
