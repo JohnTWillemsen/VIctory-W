@@ -1,0 +1,133 @@
+name: E-075 RTX5090 BVH shader reason owner-gate validation
+on:
+  push:
+    branches:
+      - test/e075-rtx5090-bvh-shader-reasons-20261126
+    paths:
+      - 'scripts/research/e045-six-pr-source-and-ci.sh'
+      - 'scripts/research/owner-e075-rtx5090-bvh-shader-reasons.ps1'
+      - 'scripts/research/e075-parse-bvh-reasons.ps1'
+      - '.github/workflows/e075-rtx5090-bvh-reasons.yml'
+  pull_request:
+    paths:
+      - 'scripts/research/e045-six-pr-source-and-ci.sh'
+      - 'scripts/research/owner-e075-rtx5090-bvh-shader-reasons.ps1'
+      - 'scripts/research/e075-parse-bvh-reasons.ps1'
+      - '.github/workflows/e075-rtx5090-bvh-reasons.yml'
+permissions:
+  contents: read
+jobs:
+  public-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Strict pinned source and exact preimage checks
+        shell: bash
+        env:
+          E065_HEAP_WARN_DIAG: '1'
+          E066_BVH_DIAG: '1'
+          E074_BVH_REASON_DIAG: '1'
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e074-bvh-shader-reasons.sh
+          grep -Fq 'E075_OWNER_BUILD' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'victory-six-pr-e075.exe' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows-ps51:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse PowerShell 5.1 and synthetic privacy-safe ANSI numeric histogram
+        shell: powershell
+        run: |
+          foreach ($Path in @(
+            'scripts/research/owner-e075-rtx5090-bvh-shader-reasons.ps1',
+            'scripts/research/e075-parse-bvh-reasons.ps1'
+          )) {
+            $Tokens = $null
+            $Errors = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($Path,[ref]$Tokens,[ref]$Errors)
+            if ($Errors.Count -gt 0) {
+              $Errors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell 5.1 syntax failed: $Path"
+            }
+          }
+          $Code = Get-Content -Raw -LiteralPath 'scripts/research/owner-e075-rtx5090-bvh-shader-reasons.ps1'
+          foreach ($Must in @(
+            "cne 'LAUNCH'",
+            '--execute --console series-x',
+            'E075_OWNER_BUILD',
+            'E074_BVH_REASON_DIAG',
+            'VICTORY_BVH_TRANSLATION_REASONS',
+            'VICTORY_BVH_REFUSAL_COUNTS',
+            'e74ae73d42358617ed924fe0588e7919e0630a1e',
+            'victory-six-pr-e075.exe',
+            'e075-parse-bvh-reasons.ps1',
+            "Compress-Archive -Path (Join-Path $Public '*'",
+            'PRIVATE-raw-logs-do-not-upload',
+            'appdata0.rpf'
+          )) {
+            if (-not $Code.Contains($Must)) { throw "E075 safety gate absent: $Must" }
+          }
+          foreach ($Bad in @('GTA6.Xbox', 'CYBERLEEK', 'Stop-Process', 'Compress-Archive -Path (Join-Path $Folder')) {
+            if ($Code.Contains($Bad)) { throw "E075 unsafe/hardcoded marker: $Bad" }
+          }
+          $Root = Join-Path $env:RUNNER_TEMP 'e075-synthetic'
+          New-Item -ItemType Directory -Force -Path $Root | Out-Null
+          $Input = Join-Path $Root 'synthetic-private-log.txt'
+          $Output = Join-Path $Root 'only-anonymous-counts.txt'
+          $Esc = [char]27
+          @(
+            ('2026 INFO pipelines=53 made=46 refused=7 dropped=0 BVH builder held back: not all its pipelines are made secret=SENSITIVE_GAME_SHADER_FAKE'),
+            ('2026 INFO shader_translation=7 host_pipeline=0 pending=0 BVH builder unavailable pipeline categories (anonymous)'),
+            ('2026 INFO {0}[36mlarge_group{0}[0m{0}[2m={0}[0m5 {0}[36mimplicit_sample{0}[0m{0}[2m={0}[0m1 {0}[36mcross_half_lds{0}[0m{0}[2m={0}[0m1 {0}[36mmask_data{0}[0m{0}[2m={0}[0m0 {0}[36mother{0}[0m{0}[2m={0}[0m0 BVH shader translator failure classes (anonymous) secret=SENSITIVE_GAME_SHADER_FAKE' -f $Esc),
+            '2026 WARN index=999999 title slot past the host heap secret=SENSITIVE_GAME_SHADER_FAKE'
+          ) | Set-Content -LiteralPath $Input -Encoding UTF8
+          & 'scripts/research/e075-parse-bvh-reasons.ps1' -LogFile $Input -OutputFile $Output
+          $Summary = Get-Content -LiteralPath $Output -Raw
+          foreach ($Need in @(
+            'bvh_status_complete=1',
+            'bvh_category_complete=1',
+            'bvh_reason_complete=1',
+            'last_pipelines=53',
+            'last_refused=7',
+            'last_shader_translation=7',
+            'last_host_pipeline=0',
+            'last_large_group=5',
+            'last_implicit_sample=1',
+            'last_cross_half_lds=1',
+            'last_mask_data=0',
+            'last_other=0',
+            'heap_warning_lines=1',
+            'terminal_control_lines=1'
+          )) {
+            if (-not $Summary.Contains($Need)) { throw "E075 synthetic count missing: $Need" }
+          }
+          if ($Summary.Contains('SENSITIVE_GAME_SHADER_FAKE') -or $Summary.Contains('synthetic-private-log')) {
+            throw 'E075 raw or path metadata leaked to upload-only summary'
+          }
+          Write-Host 'E075 PS5.1 AST, ANSI-separated numeric extraction, privacy and owner-consent checks PASS.'
+  windows-compile:
+    needs: public-source
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Exact public-source all-targets, strict Clippy, all E065/E066/E074 tests and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: '1'
+          E065_HEAP_WARN_DIAG: '1'
+          E066_BVH_DIAG: '1'
+          E074_BVH_REASON_DIAG: '1'
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
