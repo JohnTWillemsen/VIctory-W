@@ -49,6 +49,9 @@ jobs:
           fi
           SRC="$(mktemp -d)"
           KEEP="$(mktemp -d)"
+          WORKFLOWS="$(mktemp -d)"
+          mkdir -p "$WORKFLOWS"
+          cp -a .github/workflows/. "$WORKFLOWS/"
           echo "Importing exact pinned source $PINNED_SOURCE"
           git clone --quiet --no-checkout https://github.com/trustno1-coder/VIctory-NVIDIA.git "$SRC"
           git -C "$SRC" checkout --quiet --detach "$PINNED_SOURCE"
@@ -67,7 +70,10 @@ jobs:
           test -f "$KEEP/docs/agents/EVIDENCE_LOG.md" || { echo 'No append-only evidence log'; exit 1; }
           echo 'Replacing ONLY the migration branch working tree; original main/archive and old experiment branches preserved'
           git rm -r -q -- .
-          rsync -a --exclude='.git' --exclude='target/' "$SRC/" ./
+          rsync -a --exclude='.git' --exclude='target/' --exclude='.github/workflows/' "$SRC/" ./
+          mkdir -p .github/workflows
+          cp -a "$WORKFLOWS/." .github/workflows/
+          echo 'Original migration-branch CI workflow files preserved byte-for-byte; no workflow permissions needed'
           cp -a "$KEEP/AGENTS.md" ./AGENTS.md
           mkdir -p docs/agents docs/migration
           cp -a "$KEEP/docs/agents/." docs/agents/
@@ -87,6 +93,10 @@ jobs:
           - **First test design:** follow upstream's own built-in launcher defaults and selected host D3D12 GPU; record actual vendor/name, intro, 3D world, controls, exit vs expected first-run restart. Keep raw diagnostic logs local, export one allowlisted ZIP per run.
           EOF
           git add -A
+          if git diff --cached --name-only | grep -Eq '^\.github/workflows/'; then
+            echo 'Workflow change detected; refusing push without workflow permission'
+            exit 1
+          fi
           if git diff --cached --name-only | grep -Eiq '(^|/)(game_scarlett_master\.exe|appdata[0-9]+\.rpf|[^/]+\.(xvd|xci|nsp))$'; then
             echo 'Refusing commit with title files'
             exit 1
