@@ -219,7 +219,25 @@ for p in apps/victory/src/translate.rs crates/victory-gpu/src/shader_cache.rs cr
   echo "E-045 public-source SHA256 $(sha256sum "$p")"
 done
 
-if [[ "${E068_OWNER_BUILD:-0}" == "1" ]]; then
+if [[ "${E075_OWNER_BUILD:-0}" == "1" ]]; then
+  # E-075: source-generated owner instrument (never runs proprietary title).
+  # E074 requires E066; E065 limits diagnostic flood, all opt-in.
+  [[ "${E065_HEAP_WARN_DIAG:-0}" == "1" &&
+     "${E066_BVH_DIAG:-0}" == "1" &&
+     "${E074_BVH_REASON_DIAG:-0}" == "1" ]] || {
+    echo "E-075 requires all E065/E066/E074 diagnostics enabled" >&2; exit 75;
+  }
+  [[ -n "${E075_BINARY_DIR:-}" ]] || { echo "E-075 missing isolated binary dir" >&2; exit 75; }
+  cargo build --release --locked -p victory
+  mkdir -p "$E075_BINARY_DIR"
+  [[ ! -e "$E075_BINARY_DIR/victory-six-pr-e075.exe" ]] || {
+    echo "E-075 refuses to overwrite previous release" >&2; exit 75;
+  }
+  cp target/release/victory.exe "$E075_BINARY_DIR/victory-six-pr-e075.exe"
+  echo "E-075 public-source release SHA256:"
+  sha256sum "$E075_BINARY_DIR/victory-six-pr-e075.exe"
+  echo "E-075 owner build PASS; no title was run during source compilation."
+elif [[ "${E068_OWNER_BUILD:-0}" == "1" ]]; then
   # The owner has already completed physical GPU correctness tests of this
   # six-PR baseline; E-068 collects *diagnostics*, not another full suite.
   [[ "${E066_BVH_DIAG:-0}" == "1" && "${E065_HEAP_WARN_DIAG:-0}" == "1" ]] || {
