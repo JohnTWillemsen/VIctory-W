@@ -34,6 +34,9 @@ jobs:
             'System.IO.StreamReader',
             'PRIVATE-raw-logs-do-not-upload',
             'Read-IntegerField',
+            'Remove-TerminalControls',
+            'terminal_control_lines',
+            'anonymous_missing_host_pipeline',
             'anonymous_category_marker_lines',
             'source_files_read',
             'Compress-Archive -Path (Join-Path $Upload',
@@ -51,7 +54,12 @@ jobs:
             '2026 INFO frame=40 pipelines=53 made=46 refused=7 dropped=0 BVH builder held back: not all its pipelines are made secret=synthetic-private-string',
             '2026 INFO frame=40 shader_translation=5 host_pipeline=2 pending=0 BVH builder unavailable pipeline categories (anonymous)',
             '2026 WARN shader does not translate; its pipelines' + "'" + ' draws are dropped secret=synthetic-private-string',
-            '2026 WARN index=999999 title slot past the host heap secret=synthetic-private-string'
+            '2026 WARN index=999999 title slot past the host heap secret=synthetic-private-string',
+            # The production tracer can color each *separate token* around a
+            # field. Previously the BVH marker was visible but numeric key
+            # extraction failed in owner logs. Prove this normalized case.
+            ('2026 INFO {0}[36mpipelines{0}[0m{0}[2m={0}[0m53 {0}[36mmade{0}[0m{0}[2m={0}[0m46 {0}[36mrefused{0}[0m{0}[2m={0}[0m7 {0}[36mdropped{0}[0m{0}[2m={0}[0m0 BVH builder held back: not all its pipelines are made' -f [char]27),
+            ('2026 INFO BVH builder unavailable pipeline categories (anonymous) {0}[36mshader_translation{0}[0m{0}[2m={0}[0m6 {0}[36mhost_pipeline{0}[0m{0}[2m={0}[0m1 {0}[36mpending{0}[0m{0}[2m={0}[0m0' -f [char]27)
           ) | Set-Content -LiteralPath $Fixture
           & $Script -ReportRoot $Root -LogFile $Fixture
           if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "E070 test invocation failed" }
@@ -68,11 +76,16 @@ jobs:
           finally { $Zip.Dispose() }
           foreach ($Expected in @(
             'last_bvh_refused=7',
-            'last_shader_translation=5',
-            'last_host_pipeline=2',
+            'last_shader_translation=6',
+            'last_host_pipeline=1',
             'last_pending=0',
-            'anonymous_category_marker_lines=1',
-            'anonymous_complete_count_records=1',
+            'anonymous_category_marker_lines=2',
+            'anonymous_complete_count_records=2',
+            'bvh_pipeline_state_records=2',
+            'terminal_control_lines=2',
+            'anonymous_missing_shader_translation=0',
+            'anonymous_missing_host_pipeline=0',
+            'anonymous_missing_pending=0',
             'heap_overflow_warning_lines=1'
           )) {
             if (-not $Summary.Contains($Expected)) { throw "Missing synthetic diagnostic: $Expected" }
