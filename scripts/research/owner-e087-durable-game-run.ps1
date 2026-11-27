@@ -179,18 +179,37 @@ if ($Mode -eq 'Worker') {
         $Out = Join-Path $Private 'title-stdout-private.txt'
         $Err = Join-Path $Private 'title-stderr-private.txt'
         if ($Cfg.fixture) {
-            $Shell = Join-Path $PSHOME 'powershell.exe'
+            $FileName = Join-Path $PSHOME 'powershell.exe'
             $ArgumentLine = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $Cfg.fixtureScript + '"'
-            $App = Start-Process -FilePath $Shell -ArgumentList $ArgumentLine -PassThru -WorkingDirectory $RunFolder -RedirectStandardOutput $Out -RedirectStandardError $Err
+            $WorkDir = $RunFolder
         } else {
             $env:VICTORY_GAME_DIR = Split-Path -Parent $Cfg.game
             $env:VICTORY_D3D12_DRED = '1'
             if ($Cfg.enableDebug) { $env:VICTORY_D3D12_DEBUG = '1' }
-            # Per-list timing and GPU-based validation disabled by default, since they change GPU workload.
+            # Per-list timing and GPU-based validation disabled by default since they change workload.
             if ($Cfg.scriptedIntro) { $env:VICTORY_KEYS = '10:Enter:300,20:Enter:300,200:W:6000' }
+            $FileName = $Cfg.victory
             $ArgumentLine = 'run "' + $Cfg.game + '" --execute --console series-x'
-            $App = Start-Process -FilePath $Cfg.victory -ArgumentList $ArgumentLine -PassThru -WorkingDirectory (Split-Path -Parent $Cfg.game) -RedirectStandardOutput $Out -RedirectStandardError $Err
+            $WorkDir = Split-Path -Parent $Cfg.game
         }
+        # Use the actual System.Diagnostics.Process handle: WinPS5.1 Start-Process
+        # without -Wait may provide NULL ExitCode even after a timed wait.
+        # Two asynchronous byte-stream copies prevent deadlock on verbose game logs.
+        $Info = [System.Diagnostics.ProcessStartInfo]::new()
+        $Info.FileName = $FileName
+        $Info.Arguments = $ArgumentLine
+        $Info.WorkingDirectory = $WorkDir
+        $Info.UseShellExecute = $false
+        $Info.CreateNoWindow = [bool]$Cfg.fixture
+        $Info.RedirectStandardOutput = $true
+        $Info.RedirectStandardError = $true
+        $App = [System.Diagnostics.Process]::new()
+        $App.StartInfo = $Info
+        $OutStream = [System.IO.File]::Open($Out,[System.IO.FileMode]::Create,[System.IO.FileAccess]::Write,[System.IO.FileShare]::Read)
+        $ErrStream = [System.IO.File]::Open($Err,[System.IO.FileMode]::Create,[System.IO.FileAccess]::Write,[System.IO.FileShare]::Read)
+        if (-not $App.Start()) { throw 'Process creation returned false' }
+        $OutCopy = $App.StandardOutput.BaseStream.CopyToAsync($OutStream)
+        $ErrCopy = $App.StandardError.BaseStream.CopyToAsync($ErrStream)
         $PidText = [string]$App.Id
         [System.IO.File]::WriteAllText((Join-Path $Private 'game-pid.txt'),$PidText)
         $Status = 'TITLE_RUNNING'
@@ -202,6 +221,11 @@ if ($Mode -eq 'Worker') {
         # Do not use Refresh() before reading ExitCode (some WinPS5.1 wrappers
         # lose the cached code after a timed WaitForExit).
         [void]$App.WaitForExit()
+        # Drain both pipes before closing logs and counting their sanitized markers.
+        [void]$OutCopy.Wait(30000)
+        [void]$ErrCopy.Wait(30000)
+        if ($null -ne $OutStream) { $OutStream.Flush(); $OutStream.Dispose(); $OutStream=$null }
+        if ($null -ne $ErrStream) { $ErrStream.Flush(); $ErrStream.Dispose(); $ErrStream=$null }
         $Code = $App.ExitCode
         $Status = 'TITLE_EXITED'
         if ($null -eq $Code) {
@@ -217,6 +241,8 @@ if ($Mode -eq 'Worker') {
         $Result = 'MONITOR_ERROR_OR_LAUNCH_FAILURE'
         ($_ | Out-String) | Set-Content -LiteralPath (Join-Path $Private 'monitor-error-private.txt')
     } finally {
+        if ($null -ne $OutStream) { $OutStream.Dispose() }
+        if ($null -ne $ErrStream) { $ErrStream.Dispose() }
         $Secs = [math]::Floor(([DateTime]::UtcNow - $Started).TotalSeconds)
         Report $RunFolder $Status $Result $ExitText $PidText ([string]$Secs) (CountPrivateLogs $RunFolder)
         foreach ($Key in $Old.Keys) { [Environment]::SetEnvironmentVariable($Key,$Old[$Key],'Process') }
