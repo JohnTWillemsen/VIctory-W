@@ -1,0 +1,121 @@
+name: E123 NVIDIA source reference Windows validation
+
+on:
+  push:
+    branches:
+      - research/e123-victory-nvidia-baseline-20261127
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e123-nvidia-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-nvidia-reference:
+    name: Windows source-only ${{ matrix.release }}
+    runs-on: windows-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: v2026.11.27.7
+            commit: df2daafeb1b2170931cf7a6eddff6de254841d9c
+          - release: v2026.11.27.8
+            commit: 64d4931b3dd90305134512b805fc98f04119fb6e
+
+    steps:
+      - name: Checkout exact upstream release source (not this project's main)
+        uses: actions/checkout@v5
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: ${{ matrix.commit }}
+          path: nvidia-reference
+          persist-credentials: false
+
+      - name: Fail closed on source identity and prohibited title artifacts
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ matrix.commit }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $got = (& git -C nvidia-reference rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $got -cne $env:EXPECTED_SHA) { throw 'Exact upstream release SHA mismatch' }
+          $tracked = @(& git -C nvidia-reference ls-files)
+          $bad = @($tracked | Where-Object { $_ -match '(?i)(?:^|/)(?:game_scarlett_master\.exe|appdata\d+\.rpf|.*\.(?:xvd|xci|nsp))$' })
+          if ($bad.Count -gt 0) { throw 'Proprietary title files appear in upstream source: refusing build' }
+          if (-not (Test-Path -LiteralPath 'nvidia-reference/LICENSE' -PathType Leaf)) { throw 'Upstream licence missing' }
+          Write-Host "SOURCE_PIN_VERIFIED=$got"
+          Write-Host "UPSTREAM_TRACKED_FILES=$($tracked.Count)"
+          Write-Host 'TITLE_FILES_PRESENT=false'
+
+      - name: Install upstream-pinned Rust toolchain
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: rustup toolchain install
+
+      - name: Clippy all targets, default features
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Clippy all targets, diagnostics and all features
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Full workspace synthetic tests
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: cargo test --workspace --locked
+
+      - name: Upstream source asset policy
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: cargo run --locked -p xtask -- policy
+
+      - name: Build release source-only executable
+        shell: pwsh
+        working-directory: nvidia-reference
+        run: cargo build --release --locked -p victory
+
+      - name: Emit exact upstream and derived executable manifest
+        shell: pwsh
+        working-directory: nvidia-reference
+        env:
+          EXPECTED_SHA: ${{ matrix.commit }}
+          EXPECTED_TAG: ${{ matrix.release }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = 'target/release/victory.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No source-built executable' }
+          $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $lines = @(
+            'format=E123-public-source-nvidia-reference-v1'
+            'upstream=trustno1-coder/VIctory-NVIDIA'
+            ('upstream_release=' + $env:EXPECTED_TAG)
+            ('upstream_commit=' + $env:EXPECTED_SHA)
+            ('built_executable_sha256=' + $hash)
+            'build=release-locked'
+            'title_execution=NOT_RUN'
+            'owner_rtx5090_hardware=NOT_RUN'
+            'selected_runtime_gpu=NOT_VERIFIED'
+            'visual_world=NOT_VERIFIED'
+            'contains_title_assets=false'
+            'main_branch_modified=false'
+          )
+          [IO.File]::WriteAllLines('E123-SOURCE-MANIFEST.txt', $lines, [Text.UTF8Encoding]::new($false))
+          Write-Host "BUILT_FROM=$($env:EXPECTED_SHA) EXE_SHA256=$hash"
+          Write-Host 'This is a source-validation artifact ONLY, not a gameplay-approved binary'
+
+      - name: Archive source-only artifact for provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: e123-nvidia-${{ matrix.release }}-${{ matrix.commit }}
+          path: |
+            nvidia-reference/target/release/victory.exe
+            nvidia-reference/E123-SOURCE-MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 5
