@@ -37,7 +37,7 @@ jobs:
             'anonymous_category_marker_lines',
             'source_files_read',
             'Compress-Archive -Path (Join-Path $Upload',
-            'no game run'
+            'The game was not started.'
           )) {
             if (-not $Code.Contains($Need)) { throw "Missing E-070 safety marker: $Need" }
           }
