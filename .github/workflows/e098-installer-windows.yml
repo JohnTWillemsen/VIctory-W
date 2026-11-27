@@ -32,12 +32,12 @@ jobs:
           $ErrorActionPreference='Stop'
           $P=(Resolve-Path 'scripts/research/owner-e098-install-upstream.ps1').ProviderPath
           $Temp=Join-Path $env:RUNNER_TEMP ('e098-'+[guid]::NewGuid().ToString('N'))
-          $Input=Join-Path $Temp 'input'
+          $FixtureDir=Join-Path $Temp 'input'
           $Dest=Join-Path $Temp 'isolated'
-          New-Item -ItemType Directory -Force -Path $Input,$Dest | Out-Null
+          New-Item -ItemType Directory -Force -Path $FixtureDir,$Dest | Out-Null
           try {
-            [IO.File]::WriteAllBytes((Join-Path $Input 'victory.exe'),[byte[]](1..40))
-            $Hash=(Get-FileHash -LiteralPath (Join-Path $Input 'victory.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+            [IO.File]::WriteAllBytes((Join-Path $FixtureDir 'victory.exe'),[byte[]](1..40))
+            $Hash=(Get-FileHash -LiteralPath (Join-Path $FixtureDir 'victory.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
             @(
               'format=E096-public-source-build-v1'
               'source_commit=965d93823587932e8f40b152b8d4faab5f7a9c85'
@@ -45,17 +45,17 @@ jobs:
               'title_test=NOT_RUN'
               'physical_rtx5090_test=NOT_RUN'
               'contains_game_files=false'
-            ) | Set-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt') -Encoding ASCII
+            ) | Set-Content -LiteralPath (Join-Path $FixtureDir 'BUILD-MANIFEST.txt') -Encoding ASCII
             $Zip=Join-Path $Temp 'test.zip'
-            Compress-Archive -Path (Join-Path $Input '*') -DestinationPath $Zip
+            Compress-Archive -Path (Join-Path $FixtureDir '*') -DestinationPath $Zip
             & $P -ArtifactZip $Zip -InstallRoot $Dest
             if($LASTEXITCODE -and $LASTEXITCODE -ne 0){throw 'valid artifact install failed'}
             $Found=@(Get-ChildItem -Path $Dest -Filter victory.exe -Recurse -File)
             if($Found.Count -ne 1){throw 'expected one installed synthetic executable'}
             # Corrupt the manifest SHA; installer must refuse a second artifact.
-            (Get-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt')) -replace '^binary_sha256=.*$',('binary_sha256='+('0'*64)) | Set-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt')
+            (Get-Content -LiteralPath (Join-Path $FixtureDir 'BUILD-MANIFEST.txt')) -replace '^binary_sha256=.*$',('binary_sha256='+('0'*64)) | Set-Content -LiteralPath (Join-Path $FixtureDir 'BUILD-MANIFEST.txt')
             $Invalid=Join-Path $Temp 'invalid.zip'
-            Compress-Archive -Path (Join-Path $Input '*') -DestinationPath $Invalid
+            Compress-Archive -Path (Join-Path $FixtureDir '*') -DestinationPath $Invalid
             $Caught=$false
             try { & $P -ArtifactZip $Invalid -InstallRoot $Dest } catch { $Caught=$true }
             if(-not $Caught){throw 'tampered binary was accepted'}
