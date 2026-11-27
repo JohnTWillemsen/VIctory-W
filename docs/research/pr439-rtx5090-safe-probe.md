@@ -43,6 +43,21 @@ Inspected **actual per-file upstream PR diffs**, not just claims. A shared pathn
 
 **Conclusion:** Before any *new* combined source, the owner must pass independent shader/BVH tests and decide between (A) a carefully reproduced version of the *reported RTX 5080 stack* using #2628 or (B) adapting #439 with our #2121 pager; avoid replacing or mutating the already validated local #2121+#189 build. No source file merge, Rust build or title run has been performed for this map.
 
+
+## E-031 — actual #439 + #2118 noncommitting merge inspected (2026-11-26)
+
+The owner supplied two separate private files: the 14-line `pr439-bvh2118-merge-inspection.txt` and 79 KB code-only `pr439-bvh2118-review-source.zip`. The ZIP contains **six complete merged Rust files**, `DIFF_STAGED.patch` (source-only), Git `STATUS`, `MERGE_OUTPUT` and `MERGE_TREE`; the full archive and no proprietary title material are committed to Git.
+
+**Exact index state, source verified by inspection:**
+- Local branch `experiment/pr439-bvh2118-source-review-20261126`, pinned HEAD #439 `e2d3cfd50715954fb89ff462edb37a0c4395ecd0`; MERGE_HEAD #2118 `999a8f67125865fcc0b3aa23cdc8a93b10ef9974`.
+- `git merge-tree --write-tree --name-only`: **exit 0**, computed tree object **`9f8bb36f497fdfffd9d68f2f2b22b0284899ae10`**. `git merge --no-commit --no-ff`: **exit 0**, message `Automatic merge went well; stopped before committing as requested`.
+- **Zero textual source conflicts; zero `<<<<<<<` / `=======` / `>>>>>>>` conflict markers** in all six exported Rust files. The index has five modified paths and one newly added file, no unmerged stages.
+- Exact six source paths: `apps/victory/src/run.rs`, `crates/victory-gpu/src/draw.rs`, `crates/victory-gpu/src/pipeline.rs`, `crates/victory-gpu/src/pipeline/builder.rs` (added), `crates/victory-gpu/src/pipeline/make.rs`, `crates/victory-gpu/src/pipeline/placed_uav_tests.rs`.
+
+**Manual semantic review (pre-compile):** `run.rs` records both initial and later loaded BVH builder DLL images. `pipeline.rs` tags compute pipelines based on originating bytecode/stack address, registers pending builder pipelines, and exposes the `held_back`/`not_dispatched` gate. `builder.rs` requires all currently known builder host pipelines made before letting their dispatches run and tracks a dropped/bind-failed dispatch. `draw.rs` invokes this gate on both direct and indirect dispatch paths and notes missing pipelines/bind failures; `make.rs` exposes a nonblocking pending-state check and eager builder starts; `placed_uav_tests.rs` adjusts its fixture for dispatch holdback. The merged source contains both the console-flow Wave64 source from #439 and all of these BVH gate paths. **No obvious missing-symbol or marker conflict in the reviewed paths**; only a Rust compiler and owner unit/GPU runtime tests can validate behavior. `builder::runs()` caches a once-per-frame decision, so if the title creates new builder pipelines midframe, behavior also needs observation; no new invariant is claimed.
+
+**Next exact-source gate:** `scripts/research/validate-pr439-bvh2118-integration.ps1` in this draft branch verifies the **pending, uncommitted** HEAD/MERGE_HEAD/branch, all six expected staged source statuses, and exact `git write-tree` = `9f8bb36f497fdfffd9d68f2f2b22b0284899ae10`. It runs a workspace all-target Cargo check, 36 split-wave GPU tests, 2 lane-loop GPU tests, 4 BVH unit tests, an independently isolated optimized release build, and a **separate, non-blocking diagnostic full GPU suite** (the original source already has a known NVIDIA descriptor-cap unit failure). Record all exit codes and release SHA. **Script has NOT run on owner Windows yet; no combined build/GPU result/graphics or BVH live safety claim.** No source commit/push/merge into `main` is authorized. The old #2121+#189 experiments remain untouched.
+
 ## First bounded experiment (no game)
 
 Run the code-only `scripts/research/test-pr439-bvh2118.ps1` on the owner's Windows 11 RTX 5090 machine. It:
