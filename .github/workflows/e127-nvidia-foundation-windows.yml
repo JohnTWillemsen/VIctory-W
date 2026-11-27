@@ -1,0 +1,107 @@
+name: E127 NVIDIA foundation release build and independent test gates
+
+on:
+  push:
+    branches:
+      - migration/nvidia-foundation-v20261127-8
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e127-foundation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-build:
+    if: ${{ github.event_name == 'push' || github.head_ref == 'migration/nvidia-foundation-v20261127-8' }}
+    name: Pinned NVIDIA release executable (source-only)
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Verify source pin, no tracked title files and historical ancestry
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $manifest='docs/migration/NVIDIA_SOURCE_PIN.md'
+          if (-not (Test-Path -LiteralPath $manifest)) { throw 'Not NVIDIA migration branch' }
+          $contents=[IO.File]::ReadAllText((Resolve-Path $manifest).Path)
+          if (-not $contents.Contains('64d4931b3dd90305134512b805fc98f04119fb6e')) { throw 'Upstream SHA absent' }
+          $names=@(& git ls-files)
+          if (@($names | Where-Object { $_ -match '(?i)(?:^|/)(?:game_scarlett_master\.exe|appdata\d+\.rpf|[^/]+\.(?:xvd|xci|nsp))$' }).Count -gt 0) { throw 'Title files included' }
+          Write-Host 'SOURCE_IS_PINNED_NVIDIA_V8=true TITLE_FILES_PRESENT=false'
+      - name: Rust locked release build
+        shell: pwsh
+        run: cargo build --release --locked -p victory
+      - name: Emit source-only provenance manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $exe='target/release/victory.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Release binary missing' }
+          $sha=(Get-FileHash -Algorithm SHA256 -LiteralPath $exe).Hash.ToLowerInvariant()
+          $commit=(& git rev-parse HEAD).Trim()
+          $path='E127-NVIDIA-SOURCE-BUILD.txt'
+          $lines=@(
+            'format=E127-nvidia-source-v1'
+            'source=trustno1-coder/VIctory-NVIDIA'
+            'source_release=v2026.11.27.8'
+            'source_commit=64d4931b3dd90305134512b805fc98f04119fb6e'
+            ('victory_w_commit='+$commit)
+            ('source_built_sha256='+$sha)
+            'synthetic_tests=SEPARATE_REQUIRED_CHECK'
+            'actual_host_gpu=NOT_VERIFIED'
+            'visible_world=NOT_VERIFIED'
+            'controller_input=NOT_VERIFIED'
+            'game_executed=false'
+            'proprietary_title_assets_in_artifact=false'
+          )
+          [IO.File]::WriteAllLines($path,$lines,[Text.UTF8Encoding]::new($false))
+          Write-Host "NVIDIA_V8_SOURCE_BUILT_SHA256=$sha"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: E127-source-built-nvidia-v8
+          path: |
+            target/release/victory.exe
+            E127-NVIDIA-SOURCE-BUILD.txt
+          retention-days: 7
+          if-no-files-found: error
+
+  full-synthetic-tests:
+    if: ${{ github.event_name == 'push' || github.head_ref == 'migration/nvidia-foundation-v20261127-8' }}
+    name: Full unmodified upstream synthetic suite (RED on failures)
+    runs-on: windows-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Full locked source tests
+        shell: pwsh
+        run: cargo test --workspace --locked
+
+  report-harness-fixtures:
+    if: ${{ github.event_name == 'push' || github.head_ref == 'migration/nvidia-foundation-v20261127-8' }}
+    name: Anonymous report schema and PowerShell self-test (no title)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify report script PowerShell syntax
+        shell: powershell
+        run: |
+          $f='scripts/research/owner-nvidia-session.ps1'
+          if (-not (Test-Path -LiteralPath $f)) { Write-Host 'Report harness not yet imported'; exit 0 }
+          $tokens=$null; $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Error $_.Message }; throw 'PowerShell syntax invalid' }
+          & $f -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic report failed' }
