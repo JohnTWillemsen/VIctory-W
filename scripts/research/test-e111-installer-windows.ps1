@@ -64,11 +64,17 @@ function Refuse([string]$Candidate,[string]$Zip) {
 try {
     foreach($Type in @('E108','E109')){
         $Valid=Make-Zip $Type 'valid'
-        $Output=(& $Script -Candidate $Type -ArtifactZip $Valid -InstallRoot $Install -ReportRoot $Root | Out-String)
-        if($Output -notmatch 'Installed an isolated CI-only candidate'){throw "Failed valid $Type install"}
-        if($Output -notmatch 'Original executable untouched'){throw 'Existing build safety message missing'}
-        $Second=(& $Script -Candidate $Type -ArtifactZip $Valid -InstallRoot $Install -ReportRoot $Root | Out-String)
-        if($Second -notmatch 'Matching candidate already installed'){throw 'Idempotent install failed'}
+        # Write-Host goes to PowerShell's information stream, not success-stream
+        # Out-String on WinPS5.1; assert actual installed bytes, not host prose.
+        & $Script -Candidate $Type -ArtifactZip $Valid -InstallRoot $Install -ReportRoot $Root | Out-Null
+        $Dirs=@(Get-ChildItem -LiteralPath $Install -Directory | Where-Object {$_.Name -like ($Type+'-*')})
+        if($Dirs.Count -ne 1){throw "Failed valid $Type install"}
+        $Installed=Join-Path $Dirs[0].FullName 'victory.exe'
+        if(-not(Test-Path -LiteralPath $Installed -PathType Leaf)){throw 'Expected executable not installed'}
+        $Before=(Get-FileHash -LiteralPath $Installed -Algorithm SHA256).Hash
+        & $Script -Candidate $Type -ArtifactZip $Valid -InstallRoot $Install -ReportRoot $Root | Out-Null
+        if(@(Get-ChildItem -LiteralPath $Install -Directory | Where-Object {$_.Name -like ($Type+'-*')}).Count -ne 1){throw 'Repeated run created duplicate'}
+        if((Get-FileHash -LiteralPath $Installed -Algorithm SHA256).Hash -cne $Before){throw 'Idempotent install changed executable'}
         Refuse $Type (Make-Zip $Type 'tamper')
         Refuse $Type (Make-Zip $Type 'wrong_source')
         Refuse $Type (Make-Zip $Type 'extra')
