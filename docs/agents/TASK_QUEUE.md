@@ -2,6 +2,8 @@
 
 **Snapshot:** 2026-11-26 MST / 2026-11-27 UTC, through E-057 live Belobug/Kelvaroq audit and independent code/CI gates. Older state rows are historical; recheck live SHA.
 
+**Orchestration prerequisite:** Check live open PRs, exact branch heads and all associated GitHub Actions checks before choosing or promoting a candidate. These rows describe historical observations, not merge approvals.
+
 | Task | Status at snapshot | Owner / branch or PR | Acceptance / next action |
 | --- | --- | --- | --- |
 | VW-001 · Agent governance and restart rehearsal | **Draft PR open**, pinned earlier CI passes | [Draft PR #1](https://github.com/JohnTWillemsen/VIctory-W/pull/1), `docs/agent-continuity-system-20261126` | Maintains AGENTS, restart CI, task and evidence handoff. Prior verified CI [Windows 45868719062](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45868719062) and [docs 45868719132](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/45868719132) on **66bd9286**. This document refresh produces a later head: verify latest checks, no auto-merge. |
