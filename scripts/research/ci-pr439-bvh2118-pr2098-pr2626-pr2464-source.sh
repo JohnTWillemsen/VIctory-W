@@ -152,3 +152,37 @@ if [[ "${E041_WINDOWS_COMPILE:-0}" == "1" ]]; then
 else
   echo "No compilation, native GPU test, game launch, persistent multi-PR code or push in E-040."
 fi
+
+# E-046: owner-only RTX5090 test gate for the FIVE-PR source, which was
+# already hosted-Windows CI_PASS as E-043. This cannot auto-run in Actions.
+# Always keep private logs on owner's machine; never write any title data.
+if [[ "$(printenv E041_OWNER_GPU || true)" == "1" ]]; then
+  [[ "$(printenv E041_WINDOWS_COMPILE || true)" == "1" ]] || {
+    echo "Owner RTX5090 gate requires full E-041 build/test to be enabled." >&2
+    exit 66
+  }
+  echo "E-046 OWNER five-PR native GPU tests start"
+  echo "Pinned public sources: #439 e2d3cfd #2118 999a8f6 #2098 543d868 #2626 c8cc83e #2464 b9dc4b0"
+  command -v nvidia-smi >/dev/null || { echo "nvidia-smi not installed; host adapter unverified" >&2; exit 67; }
+  nvidia-smi
+  echo "SOURCE_STATUS_BEGIN"
+  git status --short
+  echo "SOURCE_STATUS_END"
+  cargo test -p victory-shader --lib --locked split_tests -- --test-threads=1 --nocapture
+  cargo test -p victory-shader --lib --locked lane_read_loop_tests -- --test-threads=1 --nocapture
+  echo "E-046 independent whole GPU lib suite starts; known capped-heap assertions may fail"
+  set +e
+  cargo test -p victory-gpu --lib --locked -- --test-threads=1 --nocapture
+  gpu_exit=$?
+  set -e
+  echo "E-046 FULL_GPU_SUITE_EXIT=$gpu_exit (0 is full pass; nonzero is NOT full pass)"
+  if [[ -f target/release/victory.exe ]]; then
+    echo "E-046 PUBLIC-SOURCE RUNTIME SHA256: $(sha256sum target/release/victory.exe)"
+  fi
+  echo "E-046 NO TITLE RUN; no copyrighted file accessed"
+  if [[ "$gpu_exit" -ne 0 ]]; then
+    echo "E-046 completed with full-GPU failures; preserve names and report (do not hide)" >&2
+    exit "$gpu_exit"
+  fi
+  echo "E-046 five-PR whole GPU lib suite PASS (verify shader output named NVIDIA RTX5090, not WARP)"
+fi
