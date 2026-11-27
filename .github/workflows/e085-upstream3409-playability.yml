@@ -1,0 +1,82 @@
+name: E085 isolated upstream PR3409 owner playability preflight
+on:
+  push:
+    branches:
+      - experiment/e085-upstream3409-isolated-playability-20261127
+    paths:
+      - "scripts/research/owner-e085-upstream3409-isolated-playability.ps1"
+      - ".github/workflows/e085-upstream3409-playability.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e085-upstream3409-isolated-playability.ps1"
+      - ".github/workflows/e085-upstream3409-playability.yml"
+permissions:
+  contents: read
+jobs:
+  windows-ps5-source-contract:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse Windows PowerShell 5.1 source and verify opt-in/privacy/integrity
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $Path='scripts/research/owner-e085-upstream3409-isolated-playability.ps1'
+          $T=$null
+          $E=$null
+          $null=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $Path).ProviderPath,[ref]$T,[ref]$E)
+          if($E.Count -gt 0){throw ('E085 PowerShell parse errors: '+($E | Out-String))}
+          $C=Get-Content -LiteralPath $Path -Raw
+          foreach($Require in @(
+            '#Requires -Version 5.1',
+            "1e25b230d6572f08e718a1df31a619bb43070481",
+            'refs/pull/3409/head',
+            'PUBLIC-isolated-build',
+            'PRIVATE-raw-logs-do-not-upload',
+            'upload-only',
+            'if($Consent -cne ''PLAY'')',
+            'VICTORY_KEYS',
+            'Get-FileHash',
+            'Compress-Archive',
+            'game_and_gpu_result_unverified_until_owner_report=true'
+          )){
+            if(-not $C.Contains($Require)){throw ('Required source contract missing: '+$Require)}
+          }
+          $ConsentPos=$C.IndexOf('if($Consent -cne ''PLAY'')')
+          $LaunchPos=$C.IndexOf('$Title=Start-Process -FilePath $Candidate')
+          if($LaunchPos -le $ConsentPos){throw 'Game launch is not behind explicit typed PLAY consent'}
+          if($C.Contains('Remove-Item') -or $C.Contains('ForceWithLease') -or $C.Contains('git push') -or $C.Contains('Copy-Item -Path $GameExe')){
+            throw 'Unexpected destructive or publishing source code'
+          }
+          Write-Host 'E085 PS5.1 syntax, exact-source pin, typed PLAY gate and anonymous ZIP contract PASS'
+  hosted-upstream-windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 95
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fetch exact public upstream PR3409 source (no title data)
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          git clone --quiet --no-tags https://github.com/Marvisak/VIctory.git pinned-upstream
+          if($LASTEXITCODE -ne 0){throw 'Public clone failed'}
+          git -C pinned-upstream fetch --quiet --no-tags origin refs/pull/3409/head
+          if($LASTEXITCODE -ne 0){throw 'Pinned PR fetch failed'}
+          $Got=(git -C pinned-upstream rev-parse FETCH_HEAD | Out-String).Trim()
+          if($Got -cne '1e25b230d6572f08e718a1df31a619bb43070481'){
+            throw 'Source moved; fail closed'
+          }
+          git -C pinned-upstream checkout --quiet --detach $Got
+          if($LASTEXITCODE -ne 0){throw 'Checkout failed'}
+      - name: Verify exact hosted Windows diagnostics release compiles
+        working-directory: pinned-upstream
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          cargo build --release --locked -p victory --features diagnostics
+          if($LASTEXITCODE -ne 0){throw 'Hosted Windows upstream build failed'}
+          if(-not (Test-Path target\release\victory.exe -PathType Leaf)){
+            throw 'Binary missing'
+          }
+          Write-Host 'E085 exact upstream public source diagnostics release BUILDS on hosted Windows; NO RTX5090/title run'
