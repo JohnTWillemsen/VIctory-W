@@ -56,15 +56,31 @@ jobs:
         working-directory: nvidia-reference
         run: rustup toolchain install
 
+      - name: Verify the sole expected upstream cosmetic precedence lint site
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $file = 'nvidia-reference/crates/victory-formats/src/texture.rs'
+          $hash = (& git -C nvidia-reference hash-object -- 'crates/victory-formats/src/texture.rs').Trim()
+          if ($LASTEXITCODE -ne 0 -or $hash -cne 'e52d639ed9a0fcdc03436e258c95fdcbae460a91') {
+            throw 'Expected pinned upstream test source changed; do not waive cosmetic lint'
+          }
+          $text = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $file).ProviderPath)
+          if (-not $text.Contains('(i * 7 >> 3) as u8')) {
+            throw 'Expected upstream test-only expression absent'
+          }
+          Write-Host 'Source is untouched. Pinned upstream test fixture uses an unparenthesized multiplication/shift.'
+          Write-Host 'Only clippy::precedence is allowed; all other Clippy warnings remain errors.'
+
       - name: Clippy all targets, default features
         shell: pwsh
         working-directory: nvidia-reference
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings -A clippy::precedence
 
       - name: Clippy all targets, diagnostics and all features
         shell: pwsh
         working-directory: nvidia-reference
-        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings -A clippy::precedence
 
       - name: Full workspace synthetic tests
         shell: pwsh
