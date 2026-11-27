@@ -136,3 +136,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Next:** Verify exact E075 Windows CI, provide one pinned PowerShell command when safe, interpret only anonymized reasons observed. If numbers missing, use the already preserved private logs and offline parser; avoid repeating title unnecessarily.
 
+## D-015 · 2026-11-26 MST / 2026-11-27 UTC — Optimize for first usable gameplay while preserving BVH safety
+
+**Decision:** Measure and fix the seven known BVH shader translation failures (E075 owner reason class histogram) as P0; concurrently research upstream #2925 safe LDS lighting phases and #3406 smaller eligibility patch for visible foreground/scene, without full patch stack transplant. Keep D3D12 barrier divergence in #2214 rejected until upstream correct uniform synchronization and reproducible tests. Only use owner source-generated private runtime tests with named script and small anonymous ZIP. Preserve no raw title/game data in public GitHub.
+
+**Secondary engineering:** Opt-in E077 #2311-derived walker guard prevents ray traversal until builder's structures are whole; its exact upstream delta conflicted with six-PR baseline so a smaller tested two-file port was developed, preserving original all-made BVH gate. This can reduce GPU hang risk while **not** fixing missing lighting/geometry; do not advertise as playability fix without GPU proof. Hosted Windows checks must pass. Main remains unchanged.
+
+**Acceptance:** Owner must actually see foreground/buildings/UI correct, demonstrate input movement, no device hang in bounded run, and eventually provide stable measured frame times; intro/audio/city lights alone do not establish playable state.
+
