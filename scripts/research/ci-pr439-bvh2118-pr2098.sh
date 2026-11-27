@@ -66,7 +66,12 @@ git -c user.name='VIctory-W CI' -c user.email='ci@localhost.invalid' \
 echo "Local-only integration commit: $(git rev-parse HEAD) (never pushed)"
 
 # The *specific PR diff* is applied, not a merge of its older divergent base.
-changed="$(git diff --name-only "$address_base" "$address")"
+# GitHub PR diffs are three-dot: compare against the branch merge-base, NOT
+# the current target branch tip, which can have unrelated newer changes.
+pr_base="$(git merge-base "$address_base" "$address")"
+[[ -n "$pr_base" ]] || { echo "PR2098 merge base missing" >&2; exit 6; }
+echo "PR2098 three-dot merge base: $pr_base"
+changed="$(git diff --name-only "$pr_base" "$address")"
 [[ "$changed" == "$host" ]] || {
   echo "PR2098 no longer changes exactly the expected file: $changed" >&2
   exit 6
@@ -75,7 +80,7 @@ if git grep -q 'fn view_address(' -- "$host"; then
   echo "Candidate already implemented in combined source; abort duplicate import" >&2
   exit 6
 fi
-git diff --binary "$address_base" "$address" -- "$host" > "$work/pr2098-public-source.patch"
+git diff --binary "$pr_base" "$address" -- "$host" > "$work/pr2098-public-source.patch"
 git apply --check --index "$work/pr2098-public-source.patch" || {
   echo "PR2098 patch needs manual semantic resolution; no ours/theirs fallback" >&2
   exit 7
