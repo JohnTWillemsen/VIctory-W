@@ -56,7 +56,7 @@ foreach($Name in @('title-stdout-private.txt','title-stderr-private.txt')){
         $Reader=[IO.StreamReader]::new($FS)
         while($null -ne ($Line=$Reader.ReadLine())){
             $Counts['scanned_lines']++
-            if($Line -match '(?i)\\bD3D12:'){
+            if($Line -match '(?i)\bD3D12:'){
                 $Counts['d3d12_debug_lines']++
                 $I=$IdPattern.Match($Line)
                 if($I.Success){
