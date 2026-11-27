@@ -62,11 +62,11 @@ $Counts = [ordered]@{
 }
 $Tail = [Collections.Generic.Queue[string]]::new()
 function Analyze([string]$Line) {
-    $Counts.scanned_lines++
-    if ($Line -match '(?i)\bERROR\b') { $Counts.error_level_lines++ }
-    if ($Line -match '(?i)ERROR victory_gpu::host') { $Counts.gpu_host_error_lines++ }
+    $Counts['scanned_lines'] = [long]$Counts['scanned_lines'] + 1
+    if ($Line -match '(?i)\bERROR\b') { $Counts['error_level_lines'] = [long]$Counts['error_level_lines'] + 1 }
+    if ($Line -match '(?i)ERROR victory_gpu::host') { $Counts['gpu_host_error_lines'] = [long]$Counts['gpu_host_error_lines'] + 1 }
     if ($Line -match '(?i)slow host submission') {
-        $Counts.host_slow_submission_lines++
+        $Counts['host_slow_submission_lines'] = [long]$Counts['host_slow_submission_lines'] + 1
         if ($Line -match 'ms=([0-9]+)\s+lists=([0-9]+)') {
             $Ms = [long]$Matches[1]
             if ($Ms -gt $Counts.host_max_slow_ms) {
@@ -75,27 +75,27 @@ function Analyze([string]$Line) {
             }
         }
     }
-    if ($Line -match '(?i)(0x887a0005|DXGI_ERROR_DEVICE_REMOVED)') { $Counts.dxgi_device_removed_code_lines++ }
-    if ($Line -match '(?i)(0x887a0006|DXGI_ERROR_DEVICE_HUNG)') { $Counts.dxgi_device_hung_code_lines++ }
-    if ($Line -match '(?i)0x887a0004') { $Counts.dxgi_unsupported_code_lines++ }
-    if ($Line -match '(?i)device removed') { $Counts.device_removed_text_lines++ }
-    if ($Line -match '(?i)device hung') { $Counts.device_hung_text_lines++ }
-    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $Counts.dred_marker_lines++ }
-    if ($Line -match '(?i)no breadcrumbs') { $Counts.dred_no_breadcrumbs_lines++ }
-    if ($Line -match '(?i)(auto.?breadcrumb|breadcrumbs.*(completed|stopped))') { $Counts.dred_auto_breadcrumb_lines++ }
-    if ($Line -match '(?i)page fault') { $Counts.dred_page_fault_marker_lines++ }
+    if ($Line -match '(?i)(0x887a0005|DXGI_ERROR_DEVICE_REMOVED)') { $Counts['dxgi_device_removed_code_lines'] = [long]$Counts['dxgi_device_removed_code_lines'] + 1 }
+    if ($Line -match '(?i)(0x887a0006|DXGI_ERROR_DEVICE_HUNG)') { $Counts['dxgi_device_hung_code_lines'] = [long]$Counts['dxgi_device_hung_code_lines'] + 1 }
+    if ($Line -match '(?i)0x887a0004') { $Counts['dxgi_unsupported_code_lines'] = [long]$Counts['dxgi_unsupported_code_lines'] + 1 }
+    if ($Line -match '(?i)device removed') { $Counts['device_removed_text_lines'] = [long]$Counts['device_removed_text_lines'] + 1 }
+    if ($Line -match '(?i)device hung') { $Counts['device_hung_text_lines'] = [long]$Counts['device_hung_text_lines'] + 1 }
+    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $Counts['dred_marker_lines'] = [long]$Counts['dred_marker_lines'] + 1 }
+    if ($Line -match '(?i)no breadcrumbs') { $Counts['dred_no_breadcrumbs_lines'] = [long]$Counts['dred_no_breadcrumbs_lines'] + 1 }
+    if ($Line -match '(?i)(auto.?breadcrumb|breadcrumbs.*(completed|stopped))') { $Counts['dred_auto_breadcrumb_lines'] = [long]$Counts['dred_auto_breadcrumb_lines'] + 1 }
+    if ($Line -match '(?i)page fault') { $Counts['dred_page_fault_marker_lines'] = [long]$Counts['dred_page_fault_marker_lines'] + 1 }
     if ($Line -match '(?i)(?:stopped at )?command\s+([0-9]+)\s+of\s+([0-9]+)(?:\s*\(op\s*([0-9]+)\))?') {
-        $Counts.dred_stopped_command_marker_lines++
+        $Counts['dred_stopped_command_marker_lines'] = [long]$Counts['dred_stopped_command_marker_lines'] + 1
         $Counts.dred_last_stopped_command_index = [int]$Matches[1]
         $Counts.dred_last_stopped_command_total = [int]$Matches[2]
-        if ($Matches.ContainsKey('3') -and $Matches[3]) { $Counts.dred_last_stopped_op_code = [int]$Matches[3] }
+        if ($Line -match '\(op\s*([0-9]+)\)') { $Counts['dred_last_stopped_op_code'] = [int]$Matches[1] }
     }
-    if ($Line -match '(?i)host pipeline refused') { $Counts.gpu_pipeline_refused_lines++ }
-    if ($Line -match '(?i)(shader does not translate|shader translation (?:failed|refused))') { $Counts.shader_translation_refused_lines++ }
-    if ($Line -match '(?i)(DROPPED indirect|dropped .*without a host pipeline)') { $Counts.dropped_pipeline_marker_lines++ }
-    if ($Line -match '(?i)(no descriptor slots|descriptor slot.*(?:null|missing)|no host pipeline)') { $Counts.descriptor_missing_marker_lines++ }
-    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $Counts.d3d12_debug_error_marker_lines++ }
-    if ($Line -match '(?i)(?:D3D12|debug layer).*\bWARNING\b') { $Counts.d3d12_debug_warning_marker_lines++ }
+    if ($Line -match '(?i)host pipeline refused') { $Counts['gpu_pipeline_refused_lines'] = [long]$Counts['gpu_pipeline_refused_lines'] + 1 }
+    if ($Line -match '(?i)(shader does not translate|shader translation (?:failed|refused))') { $Counts['shader_translation_refused_lines'] = [long]$Counts['shader_translation_refused_lines'] + 1 }
+    if ($Line -match '(?i)(DROPPED indirect|dropped .*without a host pipeline)') { $Counts['dropped_pipeline_marker_lines'] = [long]$Counts['dropped_pipeline_marker_lines'] + 1 }
+    if ($Line -match '(?i)(no descriptor slots|descriptor slot.*(?:null|missing)|no host pipeline)') { $Counts['descriptor_missing_marker_lines'] = [long]$Counts['descriptor_missing_marker_lines'] + 1 }
+    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $Counts['d3d12_debug_error_marker_lines'] = [long]$Counts['d3d12_debug_error_marker_lines'] + 1 }
+    if ($Line -match '(?i)(?:D3D12|debug layer).*\bWARNING\b') { $Counts['d3d12_debug_warning_marker_lines'] = [long]$Counts['d3d12_debug_warning_marker_lines'] + 1 }
     $Tail.Enqueue($Line)
     if ($Tail.Count -gt 512) { [void]$Tail.Dequeue() }
 }
@@ -103,8 +103,8 @@ function Analyze([string]$Line) {
 foreach ($File in @('title-stdout-private.txt','title-stderr-private.txt')) {
     $Path = Join-Path $Private $File
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { continue }
-    $Counts.log_files++
-    $Counts.total_log_bytes += (Get-Item -LiteralPath $Path).Length
+    $Counts['log_files'] = [long]$Counts['log_files'] + 1
+    $Counts['total_log_bytes'] = [long]$Counts['total_log_bytes'] + [long](Get-Item -LiteralPath $Path).Length
     $Stream = $null
     $Reader = $null
     try {
@@ -120,13 +120,13 @@ foreach ($File in @('title-stdout-private.txt','title-stderr-private.txt')) {
 if ($Counts.log_files -eq 0) { throw 'No expected local title stdout/stderr files; nothing to analyze.' }
 
 foreach ($Line in $Tail) {
-    if ($Line -match '(?i)device removed') { $Counts.tail_512_device_removed_lines++ }
-    if ($Line -match '(?i)(device hung|0x887a0006)') { $Counts.tail_512_device_hung_lines++ }
-    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $Counts.tail_512_dred_lines++ }
-    if ($Line -match '(?i)(?:\bcompute\b|\[compute )') { $Counts.tail_512_compute_lines++ }
-    if ($Line -match '(?i)(?:\bmesh\b|\[mesh )') { $Counts.tail_512_mesh_lines++ }
-    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $Counts.tail_512_debug_error_lines++ }
-    if ($Line -match '(?i)page fault') { $Counts.tail_512_page_fault_lines++ }
+    if ($Line -match '(?i)device removed') { $Counts['tail_512_device_removed_lines'] = [long]$Counts['tail_512_device_removed_lines'] + 1 }
+    if ($Line -match '(?i)(device hung|0x887a0006)') { $Counts['tail_512_device_hung_lines'] = [long]$Counts['tail_512_device_hung_lines'] + 1 }
+    if ($Line -match '(?i)(DRED|breadcrumb|page fault)') { $Counts['tail_512_dred_lines'] = [long]$Counts['tail_512_dred_lines'] + 1 }
+    if ($Line -match '(?i)(?:\bcompute\b|\[compute )') { $Counts['tail_512_compute_lines'] = [long]$Counts['tail_512_compute_lines'] + 1 }
+    if ($Line -match '(?i)(?:\bmesh\b|\[mesh )') { $Counts['tail_512_mesh_lines'] = [long]$Counts['tail_512_mesh_lines'] + 1 }
+    if ($Line -match '(?i)(?:D3D12|debug layer).*(?:\bERROR\b|error:)') { $Counts['tail_512_debug_error_lines'] = [long]$Counts['tail_512_debug_error_lines'] + 1 }
+    if ($Line -match '(?i)page fault') { $Counts['tail_512_page_fault_lines'] = [long]$Counts['tail_512_page_fault_lines'] + 1 }
 }
 $Lines = New-Object System.Collections.Generic.List[string]
 $Lines.Add('format=E089-private-offline-dred-aggregate-v1')
