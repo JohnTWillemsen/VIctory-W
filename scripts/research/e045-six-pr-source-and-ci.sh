@@ -277,7 +277,9 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
       exit 73
     fi
     echo "E-060 owner opt-in native tests EXIT_ZERO (verify adapter and individual skips in private log)."
-  echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
+  else
+    echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
+  fi
 else
   echo "E-045 source-only gate passed; Windows tests require separate gate."
 fi
