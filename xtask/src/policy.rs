@@ -27,6 +27,14 @@ const ALLOWED_NAMES: &[&str] = &[
     "LICENSE-APACHE",
 ];
 
+/// The only permitted executable Python research sources, both reviewed and
+/// synthetic. Unlike EXCEPTIONS, these STILL undergo size, magic, NUL, and
+/// encoded-payload checks. All other .py files remain forbidden.
+const APPROVED_RESEARCH_PYTHON: &[&str] = &[
+    "scripts/research/e045-reconcile-pr2628.py",
+    "scripts/research/e049-guard-hostless-portable-probe.py",
+];
+
 /// Paths explicitly exempted, with a reason. Keep this empty if at all possible.
 const EXCEPTIONS: &[(&str, &str)] = &[(
     "crates/victory-formats/src/bcpack-tables.bin",
@@ -148,6 +156,7 @@ pub fn check(path: &str, content: &[u8]) -> Vec<String> {
     let name = path.rsplit('/').next().unwrap_or(path);
     let ext = name.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase());
     let allowed = ALLOWED_NAMES.contains(&name)
+        || APPROVED_RESEARCH_PYTHON.contains(&path)
         || ext
             .as_deref()
             .is_some_and(|e| ALLOWED_EXTENSIONS.contains(&e));
@@ -235,6 +244,24 @@ mod tests {
         assert!(check("crates/x/src/lib.rs", b"fn main() {}\n").is_empty());
         assert!(check(".gitignore", b"/target/\n").is_empty());
         assert!(check(".githooks/pre-commit", b"#!/bin/sh\n").is_empty());
+    }
+
+    #[test]
+    fn only_reviewed_python_research_paths_are_allowed() {
+        for path in super::APPROVED_RESEARCH_PYTHON {
+            assert!(check(path, b"print('synthetic only')\n").is_empty());
+        }
+        assert!(!check("scripts/research/unknown.py", b"print(1)\n").is_empty());
+        assert!(!check("src/research/e045-reconcile-pr2628.py", b"print(1)\n").is_empty());
+        // Permission to use Python is NOT permission to commit binary content.
+        assert!(!check(
+            "scripts/research/e045-reconcile-pr2628.py",
+            b"MZ\\x90\\0"
+        ).is_empty());
+        assert!(!check(
+            "scripts/research/e049-guard-hostless-portable-probe.py",
+            &vec![b'A'; 600 * 1024],
+        ).is_empty());
     }
 
     #[test]
