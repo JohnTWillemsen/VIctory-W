@@ -1,0 +1,19 @@
+name: E100 offline D3D12 warning ID and DRED dispatch geometry synthetic
+on:
+  push:
+    branches: [test/e100-offline-d3d12-id-dispatch-shape-20261127]
+  pull_request:
+    paths:
+      - scripts/research/owner-e100-d3d12-ids-offline.ps1
+      - scripts/research/test-e100-d3d12-ids-offline.ps1
+      - .github/workflows/e100-offline-d3d12-ids.yml
+permissions:
+  contents: read
+jobs:
+  e100-offline:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Test offline-only PowerShell 5.1 aggregation, secret nonleak and fail closed
+        shell: powershell
+        run: .\scripts\research\test-e100-d3d12-ids-offline.ps1
