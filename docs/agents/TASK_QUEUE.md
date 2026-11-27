@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-11-26 MST / 2026-11-27 UTC, through E-057 live Belobug/Kelvaroq audit and independent code/CI gates. Older state rows are historical; recheck live SHA.
 
-**Orchestration prerequisite:** Check live open PRs, exact branch heads and all associated GitHub Actions checks before choosing or promoting a candidate. These rows describe historical observations, not merge approvals.
+**Orchestration prerequisite:** Check live open PRs/branch refs, exact branch heads and all associated GitHub Actions checks before choosing or promoting a candidate. These rows describe historical observations, not merge approvals.
 
 | Task | Status at snapshot | Owner / branch or PR | Acceptance / next action |
 | --- | --- | --- | --- |
