@@ -1,0 +1,28 @@
+name: E091 offline DRED in-flight analyzer Windows synthetic
+on:
+  push:
+    branches:
+      - test/e091-offline-dred-inflight-20261127
+    paths:
+      - "scripts/research/owner-e091-dred-inflight-offline.ps1"
+      - "scripts/research/test-e091-offline-dred-inflight.ps1"
+      - ".github/workflows/e091-offline-dred-inflight.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e091-dred-inflight-offline.ps1"
+      - "scripts/research/test-e091-offline-dred-inflight.ps1"
+      - ".github/workflows/e091-offline-dred-inflight.yml"
+permissions:
+  contents: read
+jobs:
+  windows-powershell51-offline:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate E091 synthetic DRED categories and private data non-leakage
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./scripts/research/test-e091-offline-dred-inflight.ps1
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw 'Test returned nonzero' }
