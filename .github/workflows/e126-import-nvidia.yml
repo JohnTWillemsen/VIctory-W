@@ -1,0 +1,104 @@
+name: E126 one-time pinned NVIDIA foundation import
+
+on:
+  push:
+    branches:
+      - migration/nvidia-foundation-v20261127-8
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: e126-nvidia-source-migration
+  cancel-in-progress: false
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PINNED_SOURCE: "64d4931b3dd90305134512b805fc98f04119fb6e"
+      OLD_MAIN: "63bcca43c6a00a758510398fa43096ce7e4f7df0"
+      AGENT_BRANCH: "docs/agent-continuity-system-20261126"
+    steps:
+      - name: Checkout isolated migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: migration/nvidia-foundation-v20261127-8
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Verify destination before any mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "migration/nvidia-foundation-v20261127-8" || { echo 'Wrong branch'; exit 1; }
+          git merge-base --is-ancestor "$OLD_MAIN" HEAD || { echo 'Old main ancestry missing'; exit 1; }
+          if test -f docs/migration/NVIDIA_SOURCE_PIN.md; then
+            echo 'Pinned NVIDIA source already imported; no changes made'
+            exit 0
+          fi
+          echo "PRE_IMPORT_HEAD=$(git rev-parse HEAD)"
+      - name: Import exact public source and preserve continuity, without touching main
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f docs/migration/NVIDIA_SOURCE_PIN.md; then
+            echo 'Import already completed on branch; nothing to do'
+            exit 0
+          fi
+          SRC="$(mktemp -d)"
+          KEEP="$(mktemp -d)"
+          echo "Importing exact pinned source $PINNED_SOURCE"
+          git clone --quiet --no-checkout https://github.com/trustno1-coder/VIctory-NVIDIA.git "$SRC"
+          git -C "$SRC" checkout --quiet --detach "$PINNED_SOURCE"
+          GOT="$(git -C "$SRC" rev-parse HEAD)"
+          test "$GOT" = "$PINNED_SOURCE" || { echo "Upstream source identity mismatch: $GOT"; exit 1; }
+          if git -C "$SRC" ls-files | grep -Eiq '(^|/)(game_scarlett_master\.exe|appdata[0-9]+\.rpf|[^/]+\.(xvd|xci|nsp))$'; then
+            echo 'Unacceptable tracked game file found in upstream source'
+            exit 1
+          fi
+          test -f "$SRC/docs/asset-policy.md" || { echo 'Upstream asset-policy missing'; exit 1; }
+          test -f "$SRC/LICENSE" || { echo 'Upstream GPL license missing'; exit 1; }
+          git fetch -q origin "refs/heads/$AGENT_BRANCH:refs/remotes/origin/$AGENT_BRANCH"
+          git archive "refs/remotes/origin/$AGENT_BRANCH" AGENTS.md docs/agents | tar -xf - -C "$KEEP"
+          test -f "$KEEP/AGENTS.md" || { echo 'No agent continuity root'; exit 1; }
+          test -f "$KEEP/docs/agents/LATEST_CHECKPOINT.md" || { echo 'No durable checkpoint'; exit 1; }
+          test -f "$KEEP/docs/agents/EVIDENCE_LOG.md" || { echo 'No append-only evidence log'; exit 1; }
+          echo 'Replacing ONLY the migration branch working tree; original main/archive and old experiment branches preserved'
+          git rm -r -q -- .
+          rsync -a --exclude='.git' --exclude='target/' "$SRC/" ./
+          cp -a "$KEEP/AGENTS.md" ./AGENTS.md
+          mkdir -p docs/agents docs/migration
+          cp -a "$KEEP/docs/agents/." docs/agents/
+          cat > docs/migration/NVIDIA_SOURCE_PIN.md <<'EOF'
+          # NVIDIA foundation source — E126 migration
+
+          - **Repository:** https://github.com/trustno1-coder/VIctory-NVIDIA
+          - **Exact source release:** v2026.11.27.8
+          - **Pinned upstream commit:** `64d4931b3dd90305134512b805fc98f04119fb6e`
+          - **Source lineage:** foxhound and Marvisak/VIctory, as credited in upstream README.
+          - **Original VIctory-W main / rollback:** `63bcca43c6a00a758510398fa43096ce7e4f7df0` and `archive/pre-nvidia-foundation-20261127`.
+          - **Agent continuity:** `AGENTS.md` and `docs/agents/**` brought in unchanged from `docs/agent-continuity-system-20261126`; earlier E001–E125 observations still historical; previous E108/E109/E121 candidates are **not** treated as fixes in this base.
+          - **Historical source preservation:** pre-migration main and all old draft PR refs remain; no force-push or deletion.
+          - **Licensing:** GPL-3.0-or-later upstream. Their `docs/asset-policy.md` describes one exceptional `crates/victory-formats/src/bcpack-tables.bin` constant format table not covered by the main license. Preserve provenance and review rights before redistribution.
+          - **Build status:** importing source into GitHub is not a passing build, functional title test, or playable RTX5090 confirmation.
+          - **Game artifacts:** never add game executable, archives, title shaders, private logs, screenshots or user-identifiable paths to this public repository.
+          - **First test design:** follow upstream's own built-in launcher defaults and selected host D3D12 GPU; record actual vendor/name, intro, 3D world, controls, exit vs expected first-run restart. Keep raw diagnostic logs local, export one allowlisted ZIP per run.
+          EOF
+          git add -A
+          if git diff --cached --name-only | grep -Eiq '(^|/)(game_scarlett_master\.exe|appdata[0-9]+\.rpf|[^/]+\.(xvd|xci|nsp))$'; then
+            echo 'Refusing commit with title files'
+            exit 1
+          fi
+          test -f docs/migration/NVIDIA_SOURCE_PIN.md || exit 1
+          test -f crates/victory-gpu/src/host.rs || exit 1
+          test -f scripts/play-nvidia.ps1 || exit 1
+          test -f docs/agents/EVIDENCE_LOG.md || exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat(E126): import pinned VIctory-NVIDIA v8 source preserving agent continuity"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "MIGRATED_HEAD=$(git rev-parse HEAD)"
+          echo "MIGRATED_SOURCE=$PINNED_SOURCE"
+          echo "MAIN_AND_ARCHIVE_UNCHANGED=true"
