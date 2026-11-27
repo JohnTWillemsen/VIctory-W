@@ -1,0 +1,65 @@
+name: E098 installer Windows PS5.1 synthetic security contract
+on:
+  push:
+    branches: [test/e098-pinned-rtx5090-upgrade-installer-20261127]
+  pull_request:
+    paths:
+      - scripts/research/owner-e098-install-upstream.ps1
+      - .github/workflows/e098-installer-windows.yml
+permissions:
+  contents: read
+jobs:
+  ps51-contract:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify syntax and exact pin / no game launch without consent
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $Path='scripts/research/owner-e098-install-upstream.ps1'
+          $Tokens=$null;$Errors=$null
+          $null=[Management.Automation.Language.Parser]::ParseFile((Resolve-Path $Path).ProviderPath,[ref]$Tokens,[ref]$Errors)
+          if($Errors.Count){throw ('PowerShell invalid: '+($Errors | Out-String))}
+          $C=Get-Content -LiteralPath $Path -Raw
+          foreach($Must in @('965d93823587932e8f40b152b8d4faab5f7a9c85','61e5c95dbedd55bb7a39478e9f623fee59cb02aa','UnpackChecked','Get-FileHash','if($Launch)','E096-public-source-build-v1','contains_game_files','owner-e087-durable-game-run.ps1','-notin $Allowed')){
+            if(-not $C.Contains($Must)){throw ('Missing E098 security contract '+$Must)}
+          }
+          if($C.Contains('git push') -or $C.Contains('VICTORY_SKIP_PIPELINES')){throw 'Forbidden capability'}
+      - name: Synthetic valid and invalid ZIP tests with a local fabricated executable
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $P=(Resolve-Path 'scripts/research/owner-e098-install-upstream.ps1').ProviderPath
+          $Temp=Join-Path $env:RUNNER_TEMP ('e098-'+[guid]::NewGuid().ToString('N'))
+          $Input=Join-Path $Temp 'input'
+          $Dest=Join-Path $Temp 'isolated'
+          New-Item -ItemType Directory -Force -Path $Input,$Dest | Out-Null
+          try {
+            [IO.File]::WriteAllBytes((Join-Path $Input 'victory.exe'),[byte[]](1..40))
+            $Hash=(Get-FileHash -LiteralPath (Join-Path $Input 'victory.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+            @(
+              'format=E096-public-source-build-v1'
+              'source_commit=965d93823587932e8f40b152b8d4faab5f7a9c85'
+              ('binary_sha256='+$Hash)
+              'title_test=NOT_RUN'
+              'physical_rtx5090_test=NOT_RUN'
+              'contains_game_files=false'
+            ) | Set-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt') -Encoding ASCII
+            $Zip=Join-Path $Temp 'test.zip'
+            Compress-Archive -Path (Join-Path $Input '*') -DestinationPath $Zip
+            & $P -ArtifactZip $Zip -InstallRoot $Dest
+            if($LASTEXITCODE -and $LASTEXITCODE -ne 0){throw 'valid artifact install failed'}
+            $Found=@(Get-ChildItem -Path $Dest -Filter victory.exe -Recurse -File)
+            if($Found.Count -ne 1){throw 'expected one installed synthetic executable'}
+            # Corrupt the manifest SHA; installer must refuse a second artifact.
+            (Get-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt')) -replace '^binary_sha256=.*$',('binary_sha256='+('0'*64)) | Set-Content -LiteralPath (Join-Path $Input 'BUILD-MANIFEST.txt')
+            $Invalid=Join-Path $Temp 'invalid.zip'
+            Compress-Archive -Path (Join-Path $Input '*') -DestinationPath $Invalid
+            $Caught=$false
+            try { & $P -ArtifactZip $Invalid -InstallRoot $Dest } catch { $Caught=$true }
+            if(-not $Caught){throw 'tampered binary was accepted'}
+            Write-Host 'E098 PS5.1 synthetic valid install/tampered ZIP refusal PASS'
+          } finally {
+            Remove-Item -LiteralPath $Temp -Recurse -Force -ErrorAction SilentlyContinue
+          }
