@@ -35,18 +35,18 @@ git config core.autocrlf false
 git config rerere.enabled false
 git fetch --quiet origin \
   refs/pull/439/head:refs/remotes/origin/e044-439 \
-  refs/pull/2118/head:refs/remotes/origin/e042-2118 \
-  refs/pull/2098/head:refs/remotes/origin/e042-2098 \
-  refs/pull/2626/head:refs/remotes/origin/e042-2626 \
-  refs/pull/2464/head:refs/remotes/origin/e042-2464 \
-  refs/pull/2628/head:refs/remotes/origin/e042-2628
+  refs/pull/2118/head:refs/remotes/origin/e044-2118 \
+  refs/pull/2098/head:refs/remotes/origin/e044-2098 \
+  refs/pull/2626/head:refs/remotes/origin/e044-2626 \
+  refs/pull/2464/head:refs/remotes/origin/e044-2464 \
+  refs/pull/2628/head:refs/remotes/origin/e044-2628
 for pair in \
-  "refs/remotes/origin/e042-439:$wave" \
-  "refs/remotes/origin/e042-2118:$bvh" \
-  "refs/remotes/origin/e042-2098:$addr" \
-  "refs/remotes/origin/e042-2626:$fmt" \
-  "refs/remotes/origin/e042-2464:$raw" \
-  "refs/remotes/origin/e042-2628:$clamp"; do
+  "refs/remotes/origin/e044-439:$wave" \
+  "refs/remotes/origin/e044-2118:$bvh" \
+  "refs/remotes/origin/e044-2098:$addr" \
+  "refs/remotes/origin/e044-2626:$fmt" \
+  "refs/remotes/origin/e044-2464:$raw" \
+  "refs/remotes/origin/e044-2628:$clamp"; do
   [[ "$(git rev-parse "${pair%%:*}")" == "${pair#*:}" ]] || {
     echo "Upstream ref changed: ${pair%%:*}; refusing mixed source" >&2
     exit 3
