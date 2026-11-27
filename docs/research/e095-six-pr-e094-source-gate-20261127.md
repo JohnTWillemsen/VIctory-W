@@ -1,0 +1,9 @@
+# E095: apply high-confidence NVIDIA fixes to the existing six-PR source candidate (source gate only)
+
+2026-11-27 (America/Phoenix). Child branch from [E045 PR5](https://github.com/JohnTWillemsen/VIctory-W/pull/5) exact `6a9787190de810ba560195608f0fc1ee3ce044f3`; this is a **disposable reconstruction gate**. No source or title in main. The 6 pinned public upstream PRs are #439 #2118 #2098 #2626 #2464 #2628; its source reconciler already preserves #439 console Wave64 target and #2628 1M portable heap behavior. Unlike a general mass merge, E095 performs *strict* path, SHA and applicability checks for upstream #2634 + #3540 + #3392 at the exact heads. If any hunk does not apply, exits 95 without fallback or title execution.
+
+E094 corresponding live source draft: [PR25](https://github.com/JohnTWillemsen/VIctory-W/pull/25) implementation commit `3bdbdc38958804bc9799e8b071f1eea5ee08d33a`; E095 differs because it applies the same upstream original patch to the existing E045 six-PR *ephemeral* build rather than its clean-base E094 source branch.
+
+**Potential issue:** existing E045 runner originally pinned #2118 head `999a8f...`, but public live #2118 moved to `78f36cf...` with a documented warning-only draw.rs change. This gate **must not execute a new unreviewed head**. Its E045 preflight is allowed to accept only the exact audited new ref `78f36cfa...` while merging the existing old pin `999a8f...` only if reachable; any other drift fails closed.
+
+**Expected ordered gates:** (1) Ubuntu source reconstruction and exact hunks, (2) hosted Windows check, strict Clippy, 6-PR focused tests and release, (3) new raw-buffer and HLE hold unit filters, (4) separate real RTX5090 visual test only if correct/safe. No skipped essential BVH builder, no approximate #2214 group barriers, no title/asset files, no automatic main merge. Results are unknown until linked CI finishes.

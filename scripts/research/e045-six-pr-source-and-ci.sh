@@ -31,6 +31,7 @@ PATHS
 
 reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
+e095="$PWD/scripts/research/e095-e094-upstream-overlay.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
 work="$(mktemp -d)"
@@ -203,6 +204,11 @@ for p in apps/victory/src/translate.rs crates/victory-gpu/src/shader_cache.rs cr
   echo "E-045 public-source SHA256 $(sha256sum "$p")"
 done
 
+if [[ "${E095_COMBINED_GATE:-0}" == "1" ]]; then
+  [[ -f "$e095" ]] || { echo "E095 script missing" >&2; exit 95; }
+  bash "$e095" "$PWD"
+fi
+
 if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   echo "E-045 hosted Windows (NOT owner RTX5090): compiling and testing six-PR source"
   # The upstream pinned tree deliberately has pre-existing Rustfmt drift.
@@ -224,6 +230,11 @@ if [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   cargo test -p victory-gpu --lib --locked mirrored_and_dynamic_slots_end_before_the_shader_null_views -- --test-threads=1 --nocapture
   cargo test -p victory-gpu --lib --locked keys_tell_hosts_wave_sizes_apart -- --test-threads=1 --nocapture
   cargo build --release --locked -p victory
+  if [[ "${E095_COMBINED_GATE:-0}" == "1" ]]; then
+    cargo test -p victory-gpu --lib --locked raw_views_start_on_16_bytes_of_their_copy -- --test-threads=1
+    cargo test -p victory-hle --lib --all-features --locked scripted_hold_ends_are_exclusive_even_near_duration_max -- --test-threads=1
+    echo "E095 upstream source patches + E045 six-PR hosted Windows source/Clippy/tests/release PASS (if reached)"
+  fi
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
   echo "No full GPU suite, physical NVIDIA or title/game/visual scene tested."
 else
