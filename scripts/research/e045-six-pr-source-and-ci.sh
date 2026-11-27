@@ -33,6 +33,7 @@ reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
 e066="$PWD/scripts/research/e066-bvh-refusal-categories.sh"
 e065="$PWD/scripts/research/e065-bucket-heap-warning.sh"
+e081="$PWD/scripts/research/e081-wave64-lds-six-pr-gate.sh"
 e074="$PWD/scripts/research/e074-bvh-shader-reasons.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
@@ -49,6 +50,34 @@ git fetch --quiet origin \
   refs/pull/2626/head:refs/remotes/origin/e045-2626 \
   refs/pull/2464/head:refs/remotes/origin/e045-2464 \
   refs/pull/2628/head:refs/remotes/origin/e045-2628
+# E081-only: upstream PR #2118 advanced by exactly one warning-text commit
+# 999a8f6 -> 78f36cf (draw.rs, 4 added/1 deleted, one diff hunk).
+# Keep the previous tested six-PR runtime SHA exactly pinned for this experiment.
+# Verify the live ref and precise expected harmless delta; fail closed on drift.
+if [[ "${E081_WAVE64_LDS_GATE:-0}" == "1" ]]; then
+  observed="$(git rev-parse refs/remotes/origin/e045-2118)"
+  [[ "$observed" == '78f36cfa69211edbfa87d44e92ab93bd795f74a7' ]] || {
+    echo "E081 unknown upstream #2118 head: $observed" >&2; exit 81;
+  }
+  [[ "$(git rev-list --count "$bvh..$observed")" == "1" ]] || {
+    echo "E081 expected exactly one added #2118 commit" >&2; exit 81;
+  }
+  stat="$(git diff --numstat "$bvh" "$observed")"
+  expected="$(printf '4\t1\tcrates/victory-gpu/src/draw.rs')"
+  [[ "$stat" == "$expected" ]] || {
+    echo "E081 unexpected #2118 changed paths or line count" >&2; exit 81;
+  }
+  [[ "$(git diff -U0 "$bvh" "$observed" -- crates/victory-gpu/src/draw.rs | grep -c '^@@')" == "1" ]] || {
+    echo "E081 unexpected #2118 extra change hunk" >&2; exit 81;
+  }
+  git diff -U0 "$bvh" "$observed" -- crates/victory-gpu/src/draw.rs |
+    grep -Fq 'see the `BVH builder held back` line' || {
+      echo "E081 expected #2118 warning-text change absent" >&2; exit 81;
+    }
+  # Modify ONLY the disposable local tracking ref; never push or force a remote.
+  git update-ref refs/remotes/origin/e045-2118 "$bvh" "$observed"
+  echo "E081 #2118 warning-only advance verified; preserving immutable previous runtime."
+fi
 for pair in \
   "refs/remotes/origin/e045-439:$wave" \
   "refs/remotes/origin/e045-2118:$bvh" \
@@ -208,6 +237,10 @@ if [[ "${E074_BVH_REASON_DIAG:-0}" == "1" ]]; then
   [[ -f "$e074" ]] || { echo "E-074 review patch missing" >&2; exit 74; }
   bash "$e074" "$PWD"
 fi
+if [[ "${E081_WAVE64_LDS_GATE:-0}" == "1" ]]; then
+  [[ -f "$e081" ]] || { echo "E081 source gate missing" >&2; exit 81; }
+  bash "$e081" "$PWD"
+fi
 [[ "$(find apps crates -name '*.rej' -type f | wc -l)" -eq 0 ]] || {
   echo "E-045 an unhandled rejected hunk remains" >&2
   exit 42
@@ -260,6 +293,10 @@ elif [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   fi
   if [[ "${E074_BVH_REASON_DIAG:-0}" == "1" ]]; then
     cargo test -p victory-gpu --lib --locked e074_ -- --test-threads=1 --nocapture
+  fi
+  if [[ "${E081_WAVE64_LDS_GATE:-0}" == "1" ]]; then
+    cargo test -p victory-shader --lib --locked wave64_lds_ -- --test-threads=1 --nocapture
+    cargo xtask policy
   fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"

@@ -1,0 +1,52 @@
+name: E-081 pinned safe LDS source applicability on six-PR stack
+on:
+  push:
+    branches:
+      - experiment/e081-wave64-lds-six-pr-gate-20261127
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e081-wave64-lds-six-pr-gate.sh"
+      - ".github/workflows/e081-wave64-lds-six-pr.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e081-wave64-lds-six-pr-gate.sh"
+      - ".github/workflows/e081-wave64-lds-six-pr.yml"
+permissions:
+  contents: read
+jobs:
+  public-source-applicability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Verify strict source gate and reconstruct six-PR
+        shell: bash
+        env:
+          E081_WAVE64_LDS_GATE: "1"
+        run: |
+          bash -n scripts/research/e081-wave64-lds-six-pr-gate.sh
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'git apply --check' scripts/research/e081-wave64-lds-six-pr-gate.sh
+          grep -Fq 'E081_WAVE64_LDS_GATE' scripts/research/e045-six-pr-source-and-ci.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows-hosted-synthetics:
+    needs: public-source-applicability
+    runs-on: windows-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Strict all-target compile, Clippy, LDS negative tests, policy, release
+        shell: bash
+        env:
+          E081_WAVE64_LDS_GATE: "1"
+          E045_WINDOWS_BUILD: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
