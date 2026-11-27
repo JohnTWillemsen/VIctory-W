@@ -1,0 +1,32 @@
+name: E-037 pinned Wave64 BVH and view-address integration smoke
+
+# This is an intentionally opt-in *source* probe for the isolated research
+# branch. For pull_request events, paths are evaluated against the whole PR
+# diff; that inadvertently reran a 5-minute build on every evidence-only edit.
+# Push path-filtering only runs when this exact CI script/workflow changes.
+on:
+  push:
+    branches:
+      - research/pr439-console-wave64-bvh-gate-20261126
+    paths:
+      - ".github/workflows/e037-pinned-integration.yml"
+      - "scripts/research/ci-pr439-bvh2118-pr2098.sh"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e037-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-public-source:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install repository-pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Reconstruct and validate pinned upstream source in a disposable checkout
+        shell: bash
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098.sh

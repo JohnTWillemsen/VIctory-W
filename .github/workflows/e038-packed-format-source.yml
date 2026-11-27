@@ -1,0 +1,37 @@
+name: E-038 packed-format source compatibility probe
+
+# Only source-probe changes should trigger this; docs-only PR edits do not.
+on:
+  push:
+    branches:
+      - research/pr439-console-wave64-bvh-gate-20261126
+    paths:
+      - ".github/workflows/e038-packed-format-source.yml"
+      - "scripts/research/ci-pr439-bvh2118-pr2098-pr2626-source.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  public-source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check nine-file packed format PR applies to pinned safe integration
+        shell: bash
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-source.sh
+
+  packed-format-hosted-windows:
+    needs: public-source-only
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install pinned Windows MSVC Rust toolchain
+        run: rustup toolchain install
+      - name: Rebuild four pinned public PRs and test packed formats, BVH and release
+        shell: bash
+        env:
+          E038_WINDOWS_COMPILE: "1"
+        run: bash scripts/research/ci-pr439-bvh2118-pr2098-pr2626-source.sh
