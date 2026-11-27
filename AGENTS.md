@@ -4,6 +4,8 @@ This file is the **entry point** for every ChatGPT, Codex, Copilot, Claude, Curs
 
 ## Start here (in order)
 
+**Newest short handoff:** [Latest verified checkpoint](docs/agents/LATEST_CHECKPOINT.md). Read it **and** the full docs; always recheck live GitHub refs and CI.
+
 1. [Agent documentation index](docs/agents/README.md).
 2. [CURRENT_STATE](docs/agents/CURRENT_STATE.md) — **dated snapshot, not a substitute for live repository verification**.
 3. [WORKFLOW](docs/agents/WORKFLOW.md) and [RESEARCH_PROTOCOL](docs/agents/RESEARCH_PROTOCOL.md).

@@ -1,5 +1,8 @@
 # Bounded task queue (orchestrator-owned)
 
+**LATEST CHECKPOINT 2026-11-27 AZ:** [LATEST_CHECKPOINT.md](LATEST_CHECKPOINT.md); VW-045 E087 source+synthetic tests complete [PR22](https://github.com/JohnTWillemsen/VIctory-W/pull/22), all four latest-head CI workflows SUCCESS; owner has stated they will run script, but **actual E087 report still PENDING**. Await upload rather than new build. No main merges. This top note supersedes only the stale historical snapshot timestamp, not the individually dated task rows.
+
+
 **Snapshot:** 2026-11-26 23:53 MST / 2026-11-27 UTC. E075 source build PASS but OWNER DECLINED title launch; E078 reuse-binary owner script PS5.1 CI PASS and owner command given; E077 source/Windows safety CI all PASS, no RTX5090 safety test.
 
 **Orchestration prerequisite:** Check live open PRs/branch refs, exact branch heads and all associated GitHub Actions checks before choosing or promoting a candidate. These rows describe historical observations, not merge approvals.

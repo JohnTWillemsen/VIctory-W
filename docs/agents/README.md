@@ -4,6 +4,7 @@
 
 | File | One job | Update policy |
 | --- | --- | --- |
+| [LATEST_CHECKPOINT.md](LATEST_CHECKPOINT.md) | Short newest-session waypoint: exact CI, owner pending results, next steps | Refresh at substantial milestones; never replace live verification |
 | [CURRENT_STATE.md](CURRENT_STATE.md) | **Only mutable present-tense handoff:** exact verified refs, task in progress, blockers, next actions | Update at the end of a substantive task; stamp date, author/context, source URLs |
 | [ROADMAP.md](ROADMAP.md) | Stable priority order, acceptance gates, scope | Update when priorities change; add a decision record |
 | [TASK_QUEUE.md](TASK_QUEUE.md) | Bounded work IDs, owners, allowed edits and branch coordination | Update at claim, PR and closure; no pretend background progress |
