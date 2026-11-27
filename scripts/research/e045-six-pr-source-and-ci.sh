@@ -33,6 +33,7 @@ reconciler="$PWD/scripts/research/e045-reconcile-pr2628.py"
 e049="$PWD/scripts/research/e049-guard-hostless-portable-probe.py"
 e066="$PWD/scripts/research/e066-bvh-refusal-categories.sh"
 e065="$PWD/scripts/research/e065-bucket-heap-warning.sh"
+e074="$PWD/scripts/research/e074-bvh-shader-reasons.sh"
 [[ -f "$reconciler" ]] || { echo "Missing reviewed E-045 reconciler" >&2; exit 40; }
 [[ -f "$e049" ]] || { echo "Missing reviewed E-049 probe guard" >&2; exit 43; }
 work="$(mktemp -d)"
@@ -202,6 +203,11 @@ if [[ "${E065_HEAP_WARN_DIAG:-0}" == "1" ]]; then
   [[ -f "$e065" ]] || { echo "E-065 reviewed source patch missing" >&2; exit 65; }
   bash "$e065" "$PWD"
 fi
+if [[ "${E074_BVH_REASON_DIAG:-0}" == "1" ]]; then
+  [[ "${E066_BVH_DIAG:-0}" == "1" ]] || { echo "E-074 requires E-066 state classifier" >&2; exit 74; }
+  [[ -f "$e074" ]] || { echo "E-074 review patch missing" >&2; exit 74; }
+  bash "$e074" "$PWD"
+fi
 [[ "$(find apps crates -name '*.rej' -type f | wc -l)" -eq 0 ]] || {
   echo "E-045 an unhandled rejected hunk remains" >&2
   exit 42
@@ -251,6 +257,9 @@ elif [[ "$(printenv E045_WINDOWS_BUILD || true)" == "1" ]]; then
   fi
   if [[ "${E065_HEAP_WARN_DIAG:-0}" == "1" ]]; then
     cargo test -p victory-gpu --lib --locked e065_heap_warning_tests -- --test-threads=1 --nocapture
+  fi
+  if [[ "${E074_BVH_REASON_DIAG:-0}" == "1" ]]; then
+    cargo test -p victory-gpu --lib --locked e074_ -- --test-threads=1 --nocapture
   fi
   cargo build --release --locked -p victory
   echo "E-045 SIX-PR HOSTED WINDOWS CHECK/CLIPPY/UNIT/RELEASE PASS (if reached)"
