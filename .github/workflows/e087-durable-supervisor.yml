@@ -1,0 +1,48 @@
+name: E087 durable GPU report supervisor (synthetic Windows tests)
+on:
+  push:
+    branches:
+      - test/e087-durable-gpu-run-supervisor-20261127
+    paths:
+      - "scripts/research/owner-e087-durable-game-run.ps1"
+      - "scripts/research/test-e087-supervisor.ps1"
+      - ".github/workflows/e087-durable-supervisor.yml"
+  pull_request:
+    paths:
+      - "scripts/research/owner-e087-durable-game-run.ps1"
+      - "scripts/research/test-e087-supervisor.ps1"
+      - ".github/workflows/e087-durable-supervisor.yml"
+permissions:
+  contents: read
+jobs:
+  powershell51-synthetic-termination:
+    runs-on: windows-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check PowerShell 5.1 parser and synthetic exit/crash/kill/recovery
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/research/test-e087-supervisor.ps1
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            throw ('E087 synthetic script returned exit '+$LASTEXITCODE)
+          }
+      - name: Check public source does not print raw title logs
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $p='scripts/research/owner-e087-durable-game-run.ps1'
+          $c=Get-Content -LiteralPath $p -Raw
+          foreach($required in @(
+            'SUPERVISOR_STARTING',
+            'RECOVERED_AFTER_MONITOR_STOP',
+            'VICTORY_D3D12_DRED',
+            'VICTORY_D3D12_DEBUG',
+            "if ($" + "Consent -cne 'PLAY')",
+            'AtomicText',
+            'E087-anonymous-summary.zip'
+          )){
+            if(-not $c.Contains($required)){throw ('Missing invariant: '+$required)}
+          }
+          Write-Host 'Durable worker, DRED/debug and consent gates present'
