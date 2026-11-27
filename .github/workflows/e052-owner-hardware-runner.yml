@@ -1,0 +1,45 @@
+name: E-052 owner hardware runner static validation
+on:
+  push:
+    branches:
+      - test/e052-six-pr-rtx5090-evidence-20261126
+    paths:
+      - 'scripts/research/e045-six-pr-source-and-ci.sh'
+      - 'scripts/research/owner-e052-six-pr-rtx5090.ps1'
+      - '.github/workflows/e052-owner-hardware-runner.yml'
+  pull_request:
+    paths:
+      - 'scripts/research/e045-six-pr-source-and-ci.sh'
+      - 'scripts/research/owner-e052-six-pr-rtx5090.ps1'
+      - '.github/workflows/e052-owner-hardware-runner.yml'
+permissions:
+  contents: read
+jobs:
+  bash-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bash parser
+        run: bash -n scripts/research/e045-six-pr-source-and-ci.sh
+      - name: Check explicit owner opt-in and no title launcher
+        shell: bash
+        run: |
+          grep -Fq 'E045_OWNER_GPU' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'split_tests' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'lane_read_loop_tests' scripts/research/e045-six-pr-source-and-ci.sh
+          grep -Fq 'full_gpu_library' scripts/research/e045-six-pr-source-and-ci.sh
+  powershell-static:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse Windows PowerShell without execution
+        shell: pwsh
+        run: |
+          $errors = $null
+          $tokens = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile('scripts/research/owner-e052-six-pr-rtx5090.ps1', [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Host 'E-052 static parser PASS. No hardware or title test executed.'
