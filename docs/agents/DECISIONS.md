@@ -104,3 +104,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Next:** Verify exact-head CI; if green, plan one bounded RTX5090 build to collect *anonymous* builder-category evidence, rather than full unfocused visual A/B loops. Keep E065 warning rate limiting separate in the first hardware comparison, or explicitly document a later combined experiment.
 
+## D-011 · 2026-11-26 MST / 2026-11-27 UTC — One owner-gated anonymous BVH category run, no full visual A/B
+
+**Decision:** After E064 title A/B established gray/incomplete world on both E052/E060, use E068 diagnostics to determine whether the seven refused builder host pipelines are from shader translation vs D3D12 host creation; do not rerun old full GPU test battery or merge E056 based on visual guesses. Combine **only** E065 (logs sampled, descriptor `return None` unchanged) and E066 (aggregate anonymous categories, all-made BVH safety gate unchanged) in an isolated source-only rebuild. Require exact pinned source/PS parser and full Windows Clippy/release validation before owner trial; owner must explicitly type LAUNCH for a single existing local game executable. Keep raw title logs entirely on owner's machine outside ZIP; package anonymous counts and non-sensitive metadata only.
+
+**Success/limits:** Numeric category sums may guide next focused shader or D3D12 investigation, but do not prove a graphics fix, correct world rendering, or seven unique pipeline causes unless totals observed. If counts missing, say unknown rather than infer zero. Separate E065 standard repo-wide frame ticking test failed; record it rather than labeling flaky.
+
+**Rollback:** Draft PR #12 source branch may be closed without affecting main/E052/E060. No title-derived code/data in GitHub.
+
