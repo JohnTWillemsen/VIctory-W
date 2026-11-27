@@ -144,3 +144,11 @@ Each decision needs an ID, date, why, options rejected, authorization, evidence 
 
 **Acceptance:** Owner must actually see foreground/buildings/UI correct, demonstrate input movement, no device hang in bounded run, and eventually provide stable measured frame times; intro/audio/city lights alone do not establish playable state.
 
+## D-016 · 2026-11-26 MST / 2026-11-27 UTC — Reuse successful owner E075 build, do not waste time recompiling after declined launch
+
+**Owner evidence:** E075 compiled public-source-only diagnostics successfully but never launched the title: `BUILD_PASS_OWNER_DECLINED_LAUNCH`, SHA256 `7b978f8f902f27a0ff479142f044d58c1c337526d9ef33cf5b34d3c2b5178f74`. There are no E075 per-BVH shader semantic classifications to interpret. Reusing same binary is safe and efficient as long as hash, local game title input and physical RTX5090 are verified.
+
+**Action:** New E078 opt-in, launch-only PowerShell wrapper; exact existing E075 source-built binary hash required, public parser hash pinned, never recompile. Owner types uppercase LAUNCH before a single title execution and uploads ONLY numeric summary ZIP privately; raw title logs stay local. The script is independent draft PR17 with exact-head WinPS5.1 static consent/privacy CI successful. No other title tests required until data available.
+
+**Parallel engineering:** E077 upstream #2311-derived safe walker holdback passed strict source+Windows CI; remains opt-in, not a title-tested graphics fix. Continue toward playable scene by fixing evidence-backed shader semantics and independently testing lighting/geometry, not conflating warning suppression/safety-only changes with rendering repair. No main merge without approval.
+
