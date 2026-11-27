@@ -1,0 +1,50 @@
+name: E-056 isolated Belobug #449 legal barrier candidate
+on:
+  push:
+    branches:
+      - experiment/e056-belobug-legal-barriers-20261126
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e056-legal-barrier-port.sh"
+      - ".github/workflows/e056-legal-barrier-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/research/e045-six-pr-source-and-ci.sh"
+      - "scripts/research/e056-legal-barrier-port.sh"
+      - ".github/workflows/e056-legal-barrier-validation.yml"
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate shell scripts and pinned public-source preimages
+        shell: bash
+        env:
+          E056_PATCH: "1"
+        run: |
+          bash -n scripts/research/e045-six-pr-source-and-ci.sh
+          bash -n scripts/research/e056-legal-barrier-port.sh
+          bash scripts/research/e045-six-pr-source-and-ci.sh
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned Rust
+        run: rustup toolchain install
+      - name: Source, strict Clippy, existing tests, four barrier tests and release
+        shell: bash
+        env:
+          E045_WINDOWS_BUILD: "1"
+          E056_PATCH: "1"
+        run: bash scripts/research/e045-six-pr-source-and-ci.sh
