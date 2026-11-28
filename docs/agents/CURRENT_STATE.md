@@ -1,6 +1,6 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
-**E142 newer:** E141 owner ZIP: log_1 90 scene windows median **10.9 FPS** (first 11.7, last 9.6); log_2 5 windows **3.6 FPS** (first 3.7, last 3.6). No recovery in long log, so warmup alone unproven; no per-frame 1% lows or GPU utilization. **P0 prioritize perf** and upstream [PR614](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/614) in isolated branch, not exploration beyond cell. Evidence E142/E143, decision D056.
+**E147 newer:** E141 logs **10.9 FPS** (90 windows, first 11.7 vs last 9.6) and **3.6 FPS** (5 windows); severe persistent lag. **P0 performance, not exploration.** [Draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) NVIDIA CPU refresh: Windows release and privacy PASS, 435 GPU pass/3 known red, focused serial WARP 203 pass plus 3 repeats; no owner test. [Merged PR51](https://github.com/JohnTWillemsen/VIctory-W/pull/51) E145 artifact SHA/PLAY/E127/E141 helper PASS. E144–E146, D057; live GitHub overrides.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 

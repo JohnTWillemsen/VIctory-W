@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**E142 latest:** E141 owner ZIP: two source logs; 90 scene windows **10.9 FPS median** (first half 11.7, last 9.6), other 5 windows **3.6 FPS** (first 3.7, last 3.6). Both very slow; **warmup alone not established**. These are multi-second averages, not true 1% lows or utilization. **P0 stop deeper exploration**, isolate performance candidate upstream [PR614](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/614) before next consented GPU A/B. E142/E143, D056.
+**E147 latest:** E141 RTX5090 scene logs **10.9 FPS** (90 windows) and **3.6 FPS** (5), no recovery. **P0 performance before exploration.** Draft **PR50**: source release+privacy PASS, E144 serial WARP **203 tests + 3 repeats PASS** (run 46097227183); full GPU 3 inherited RED and Clippy RED. **Candidate gameplay FPS NOT RUN.** Merged **PR51** adds verified E127+E141 owner A/B helper. E144–E147, D057; check live CI.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 
