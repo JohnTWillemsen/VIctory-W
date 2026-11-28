@@ -45,7 +45,9 @@ function DeviceProof {
     }
     return @{ gpu='RTX5090'; driver=$parts[1].Trim() }
 }
-function CacheFiles([string]$Folder) {
+# Seed alone may exclude six non-cache executable DLL files from the verified
+# H3 prepared cache. Run-time Check retains strict rejection of ALL DLLs.
+function CacheFiles([string]$Folder,[bool]$ExcludeSixDlls=$false) {
     if (-not (Test-Path -LiteralPath $Folder -PathType Container)) { throw 'Private source cache missing' }
     NoLink $Folder
     $base=(Get-Item -LiteralPath $Folder).FullName.TrimEnd('\')
@@ -53,6 +55,7 @@ function CacheFiles([string]$Folder) {
     $stack.Push($base)
     $files=New-Object 'System.Collections.Generic.List[object]'
     [long]$total=0
+    [int]$excludedDlls=0
     while ($stack.Count -gt 0) {
         foreach ($item in @(Get-ChildItem -LiteralPath ($stack.Pop()) -Force -ErrorAction Stop)) {
             if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Cache links refused' }
@@ -60,7 +63,15 @@ function CacheFiles([string]$Folder) {
                 if ($item.Name -in @('PRIVATE-never-upload','logs','saves')) { throw 'Not an isolated cache folder' }
                 $stack.Push($item.FullName)
             } else {
-                if ($item.Extension.ToLowerInvariant() -in @('.exe','.dll','.rpf','.pak','.zip','.7z','.log','.dmp','.sav','.mp4')) {
+                $ext=$item.Extension.ToLowerInvariant()
+                if ($ext -ceq '.dll' -and $ExcludeSixDlls) {
+                    $excludedDlls++
+                    if ($excludedDlls -gt 6) {
+                        throw 'Prepared H3 cache DLL count changed; do not seed from unexpected source'
+                    }
+                    continue
+                }
+                if ($ext -in @('.exe','.dll','.rpf','.pak','.zip','.7z','.log','.dmp','.sav','.mp4')) {
                     throw 'Unexpected title asset, executable, log or archive in cache'
                 }
                 if ($item.Length -gt 8589934592) { throw 'Cache file exceeds 8 GiB guard' }
@@ -74,6 +85,9 @@ function CacheFiles([string]$Folder) {
         }
     }
     if ($files.Count -eq 0) { throw 'Cache is empty' }
+    if ($ExcludeSixDlls -and $excludedDlls -ne 6) {
+        throw 'Prepared H3 cache no longer contains exactly six excluded DLL files'
+    }
     return @($files | Sort-Object relative)
 }
 # Read-only extension histogram. Never return names, paths, cache contents,
@@ -154,7 +168,7 @@ function SeedCache([string]$Root,[string]$RunId,[string]$Head,[string]$Exe,[hash
     PriorSession $Root $RunId $Exe
     # Accept only the previously prepared local cache folder, never a title path.
     $source=Join-Path $Root ('VW092-warm-cache-'+$Head.Substring(0,12))
-    $items=@(CacheFiles $source)
+    $items=@(CacheFiles $source $true)
     $dest=CacheFolder $Root $Head
     if (Test-Path -LiteralPath $dest) { throw 'Destination already exists; will not overwrite cache' }
     if ($Device.gpu -cne 'RTX5090' -or $Device.driver -notmatch '^[0-9.]+$') {
@@ -178,12 +192,14 @@ function SeedCache([string]$Root,[string]$RunId,[string]$Head,[string]$Exe,[hash
         gpu=$Device.gpu;driver_version=$Device.driver
         source_driver_version_independently_verified=$false
         copied_file_count=$items.Count
+        excluded_dll_count=6
         created_utc=[DateTime]::UtcNow.ToString('o')
         private_material_only=$true
     }
     [IO.File]::WriteAllText((Join-Path $dest $ProvenanceName),
         ($manifest | ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
     Write-Host ('VW092 persistent cache SHA256 copy verified: '+$items.Count+' local files. No title launched.')
+    Write-Host 'Six DLL files excluded from private cache seed; none copied or executed.'
     Write-Host 'Source-run driver was not independently logged; only current seed driver is pinned.'
 }
 function VerifyCache([string]$Root,[string]$Head,[string]$Exe,[hashtable]$Device) {
@@ -198,7 +214,8 @@ function VerifyCache([string]$Root,[string]$Head,[string]$Exe,[hashtable]$Device
     $j=Get-Content -LiteralPath $private -Raw | ConvertFrom-Json
     if ($j.format -cne 'VW092-private-cache-v1' -or
         $j.source_head_sha -cne $Head -or $j.executable_sha256 -cne $Exe -or
-        $j.gpu -cne $Device.gpu -or $j.driver_version -cne $Device.driver) {
+        $j.gpu -cne $Device.gpu -or $j.driver_version -cne $Device.driver -or
+        [int]$j.excluded_dll_count -ne 6) {
         throw 'Cache source/executable/GPU driver changed, refusing reuse'
     }
     $cache=Join-Path $dest 'cache'
@@ -228,6 +245,21 @@ if ($Mode -eq 'SelfTest') {
             throw 'Fixed-field extension histogram leaked details or missed the forbidden .log'
         }
         Remove-Item -LiteralPath $syntheticLog -Force
+        # Exact H3 extension fixture: copy 1 safe file, exclude precisely six
+        # non-cache DLLs, refuse seven, and never copy/run executable code.
+        for ($n=1; $n -le 6; $n++) {
+            [IO.File]::WriteAllText((Join-Path $src ('pipelines\synthetic-'+$n+'.dll')),'Private synthetic executable placeholder')
+        }
+        $seventh=Join-Path $src 'pipelines\synthetic-7.dll'
+        [IO.File]::WriteAllText($seventh,'Excess synthetic DLL')
+        $rejected=$false
+        try { [void](CacheFiles $src $true) } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Unexpected seventh DLL was silently accepted' }
+        Remove-Item -LiteralPath $seventh -Force
+        $one=@(CacheFiles $src $true)
+        if ($one.Count -ne 1 -or $one[0].relative -cne 'pipelines\synthetic.bin') {
+            throw 'DLL filtering lost or unexpectedly included a fake cache file'
+        }
         $private=Join-Path (Join-Path $tmp $run) 'PRIVATE-never-upload'
         New-Item -ItemType Directory -Path $private -Force | Out-Null
         [IO.File]::WriteAllText((Join-Path $private 'session.json'),
@@ -243,6 +275,10 @@ if ($Mode -eq 'SelfTest') {
         if (-not $rejected) { throw 'Source executable SHA mismatch accepted' }
         SeedCache $tmp $run $h $e $dev
         [void](VerifyCache $tmp $h $e $dev)
+        $copied=Join-Path (CacheFolder $tmp $h) 'cache'
+        if (@(Get-ChildItem -LiteralPath $copied -Recurse -File -Filter '*.dll').Count -ne 0) {
+            throw 'Forbidden DLL copied into persistent cache'
+        }
         foreach ($wrong in @(@{gpu='RTX5090';driver='999.02'},@{gpu='OTHER';driver='999.01'})) {
             $rejected=$false
             try { [void](VerifyCache $tmp $h $e $wrong) } catch { $rejected=$true }
@@ -260,6 +296,12 @@ if ($Mode -eq 'SelfTest') {
         try { [void](VerifyCache $tmp $h $e $dev) } catch { $rejected=$true }
         if (-not $rejected) { throw 'Title-like material was accepted as cache' }
         Remove-Item -LiteralPath $blocked -Force
+        $dllInTarget=Join-Path (Join-Path (CacheFolder $tmp $h) 'cache') 'private-injected.dll'
+        [IO.File]::WriteAllText($dllInTarget,'Synthetic DLL must be rejected even after seed')
+        $rejected=$false
+        try { [void](VerifyCache $tmp $h $e $dev) } catch { $rejected=$true }
+        if (-not $rejected) { throw 'DLL unexpectedly accepted in active cache' }
+        Remove-Item -LiteralPath $dllInTarget -Force
         Write-Host 'VW092 private cache: READY rejection, SHA copies, GPU/driver and non-overwrite SelfTest PASS; no title launched'
     }
     finally { if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Recurse -Force } }
