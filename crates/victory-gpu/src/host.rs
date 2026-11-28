@@ -10439,18 +10439,20 @@ impl Host {
                 0,
                 if p.presents_tearing { DXGI_PRESENT_ALLOW_TEARING } else { DXGI_PRESENT(0) },
             );
-            if let Err(error) = shown {
+            if shown.is_err() {
                 if p.presents_tearing {
+                    // IDXGISwapChain::Present returns HRESULT, not Result<()>.
                     // A proxied swap chain may reject immediate presentation even when
                     // the factory supports it. Fall back once and stay in the safe mode.
                     p.presents_tearing = false;
-                    tracing::warn!(%error, frame, "immediate present refused; disabling tearing for this run");
-                    if let Err(fallback) = p.swap_chain.Present(0, DXGI_PRESENT(0)) {
-                        tracing::warn!(%fallback, frame, "ordinary present after fallback was refused");
+                    tracing::warn!(code = %shown, frame, "immediate present refused; disabling tearing for this run");
+                    let fallback = p.swap_chain.Present(0, DXGI_PRESENT(0));
+                    if fallback.is_err() {
+                        tracing::warn!(code = %fallback, frame, "ordinary present after fallback was refused");
                     }
                 } else if !p.present_refused {
                     p.present_refused = true;
-                    tracing::warn!(%error, frame, "ordinary present was refused (logged once)");
+                    tracing::warn!(code = %shown, frame, "ordinary present was refused (logged once)");
                 }
             }
             crate::streamline::present_returned(called);
