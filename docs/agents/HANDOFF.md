@@ -1,6 +1,10 @@
 # VIctory-W — canonical handoff (read this first)
 
-## E151 latest — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
+## VW096 latest — full upstream v2026.11.28.01 owner visual regression; do NOT promote
+
+Pinned upstream SHA `63b902fe1720a5188ee79d94a88c8de0470f6349`, source-built `edf411e6a86824544aaf4f85261d9dc47e98a1349aefb2294ef8d86058b93014`, PR65 [draft](https://github.com/JohnTWillemsen/VIctory-W/pull/65). Owner E127 FINALIZED exit0/241sec, visual/controls/adapter UNKNOWN fields (do not infer positives); E141 19 scene-like windows median **13.1 FPS**, first/last 6.6→20.7, p10 3.6. Owner screenshot shows floating eyes/teeth with missing head, confirms **visual regression** relative to earlier double-load session. Main remains known v8, no merge. Upstream default-on memory reclaim 3 flags and framegen-only warm-restart are *unproven hypotheses*. Source-build/E127 fixture PASS; 452/453 GPU synthetic PASS (one inherited depth_bounds fails), Clippy fails two warnings. Stage fixed `LegacyV8Memory` opt-out via proper `--set` arguments, not process env; exact-head vetted owner test/PLAY only. [Evidence and test matrix](../research/VW096-UPSTREAM-RELEASE-SCREENING.md).
+
+## E151 historical — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
 
 Owner uploaded **both fixed-field E127/E141 ZIPs** for [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) candidate source `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, E127 run `e127-20261128024702-726c06`, verified [CI 46098122107](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46098122107). E127 `FINALIZED`, exit 0, 336 sec, selected real RTX5090, zero recognized GPU fault markers in 7,000 scanned lines; **visual=Unknown and controls=Unknown.**
 

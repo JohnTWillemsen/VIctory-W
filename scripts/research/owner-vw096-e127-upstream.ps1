@@ -11,7 +11,8 @@ param(
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$RunFolder,
     [ValidateSet('Unknown','Menu','Black','World')][string]$Visual='Unknown',
-    [ValidateSet('Unknown','No','Yes')][string]$Controls='Unknown'
+    [ValidateSet('Unknown','No','Yes')][string]$Controls='Unknown',
+    [ValidateSet('Default','LegacyV8Memory')][string]$MemoryStackProfile='Default'
 )
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
@@ -121,6 +122,7 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
         ('checkpoint_utc='+[DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')),
         'launcher=builtin_play',
         'console_profile=SOURCE_DEFAULT',
+        ('memory_stack_profile='+$cfg.memory_stack_profile),
         'd3d12_debug_layer=OFF',
         'native_bvh_builder=OFF',
         'frame_generation=SOURCE_DEFAULT',
@@ -162,13 +164,20 @@ function Answer([string]$Message,[string[]]$Choices,[string]$Default) {
     }
     return $Default
 }
+function RuntimeArgs([string]$TitleExe,[string]$Profile) {
+    $call=@('play',$TitleExe)
+    if ($Profile -ceq 'LegacyV8Memory') {
+        $call+=@('--set','VICTORY_SLOT_EVICT=0','--set','VICTORY_ALLOCATOR_TRIM=0','--set','VICTORY_BUDGET_PACK=0')
+    } elseif ($Profile -cne 'Default') { throw 'Unknown upstream memory treatment' }
+    return $call
+}
 if ($Mode -eq 'SelfTest') {
     # Check -07:00 relative to Z, independent of host timezone.
     $fakeNow=[DateTimeOffset]::Parse('2026-11-27T18:24:29-07:00',[Globalization.CultureInfo]::InvariantCulture)
     if ((ElapsedSeconds '2026-11-28T01:24:17Z' $fakeNow) -ne 12) { throw 'Phoenix/UTC elapsed math mismatch' }
     $root=Join-Path $env:TEMP ('E127-fixture-'+[Guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Force -Path (WorkPrivate $root),(Join-Path $root 'home\logs') | Out-Null
-    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
+    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o');memory_stack_profile='Default' }
     [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
     $log=Join-Path $root 'home\logs\victory-nvidia-play-synthetic.log'
     # Force the host adapter event outside the sampled tail without a title.
@@ -191,6 +200,17 @@ if ($Mode -eq 'SelfTest') {
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
     if (-not $report.Contains('source_release=v2026.11.28.01') -or -not $report.Contains('source_commit=63b902fe1720a5188ee79d94a88c8de0470f6349')) { throw 'New upstream source identity missing' }
+    if (-not $report.Contains('memory_stack_profile=Default')) { throw 'Missing default memory treatment in private report' }
+    $legacy=@(RuntimeArgs 'SYNTHETIC.exe' 'LegacyV8Memory')
+    if ($legacy.Count -ne 8 -or ($legacy -join '|') -cne 'play|SYNTHETIC.exe|--set|VICTORY_SLOT_EVICT=0|--set|VICTORY_ALLOCATOR_TRIM=0|--set|VICTORY_BUDGET_PACK=0') { throw 'Upstream memory opt-out arguments mismatch' }
+    $normal=@(RuntimeArgs 'SYNTHETIC.exe' 'Default')
+    if ($normal.Count -ne 2 -or ($normal -join '|') -cne 'play|SYNTHETIC.exe') { throw 'Default treatment unexpectedly changed' }
+    $cfg.memory_stack_profile='LegacyV8Memory'
+    [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
+    PublicReport $root 'SELFTEST' 'UNKNOWN' 'World' 'Yes'
+    $probe=Join-Path $root 'opened-legacy'
+    Expand-Archive -LiteralPath (Join-Path $root $ZipName) -DestinationPath $probe
+    if (-not ([IO.File]::ReadAllText((Join-Path $probe 'E127-fixed-fields.txt')).Contains('memory_stack_profile=LegacyV8Memory'))) { throw 'LegacyV8Memory profile missing from E127 privacy ZIP' }
     $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?$')
     if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
     $duration=[int]$durationMatch.Groups[1].Value
@@ -225,7 +245,7 @@ if ($Mode -eq 'Start') {
     $cfg=@{
         victory_exe=$VictoryExe;game_exe=$GameExe
         executable_sha256=$sha;started_utc=[DateTime]::UtcNow.ToString('o')
-        run_id=$id
+        run_id=$id; memory_stack_profile=$MemoryStackProfile
     }
     [IO.File]::WriteAllText((WorkConfig $RunFolder),($cfg|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
     PublicReport $RunFolder 'READY' 'UNKNOWN' 'Unknown' 'Unknown'
@@ -233,6 +253,7 @@ if ($Mode -eq 'Start') {
     Write-Host ('Private-only logs and settings: '+(Join-Path $RunFolder 'home'))
     Write-Host 'This may reset the graphics driver or crash/reboot the PC. Back up game saves beforehand.'
     Write-Host 'This test uses an isolated VICTORY_HOME, forces RTX 5090 by name, and leaves native BVH off.'
+    Write-Host ('Memory treatment selected: '+$MemoryStackProfile+' (Default or LegacyV8Memory)')
     Write-Host 'On first launch, the NVIDIA program may offer optional DLL downloads and restart itself once to warm up.'
     $consent=Read-Host 'Type PLAY to launch; anything else keeps the initial anonymous ZIP and cancels'
     if ($consent -cne 'PLAY') { Write-Host 'Cancelled without launching'; return }
@@ -256,7 +277,9 @@ if ($Mode -eq 'Start') {
         Remove-Item Env:VICTORY_BVH_BUILDER -ErrorAction SilentlyContinue
         Remove-Item Env:VICTORY_KEYS -ErrorAction SilentlyContinue
         Write-Host 'Starting the upstream built-in play launcher now; respond to any visible NVIDIA SDK prompt yourself.'
-        & $VictoryExe play $GameExe
+        $playArgs=@(RuntimeArgs $GameExe $MemoryStackProfile)
+        Write-Host ('Upstream memory treatment: '+$MemoryStackProfile+' (recorded in E127 ZIP)')
+        & $VictoryExe @playArgs
         if ($null -ne $LASTEXITCODE) { $exit=[string]$LASTEXITCODE }
     } catch {
         ($_|Out-String) | Set-Content -LiteralPath (Join-Path (WorkPrivate $RunFolder) 'private-launch-exception.txt')

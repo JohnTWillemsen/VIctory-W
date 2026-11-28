@@ -12,7 +12,8 @@ param(
     [string]$GameRoot='',
     [string]$RunFolder='',
     [ValidateSet('Unknown','Menu','Black','World')][string]$Visual='Unknown',
-    [ValidateSet('Unknown','No','Yes')][string]$Controls='Unknown'
+    [ValidateSet('Unknown','No','Yes')][string]$Controls='Unknown',
+    [ValidateSet('Default','LegacyV8Memory')][string]$MemoryStackProfile='Default'
 )
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
@@ -189,9 +190,9 @@ $prior=@{}
 foreach ($key in $names) { $prior[$key]=[Environment]::GetEnvironmentVariable($key,'Process') }
 try {
     foreach ($key in $names) { [Environment]::SetEnvironmentVariable($key,$null,'Process') }
-    Write-Host 'Upstream v2026.11.28.01 with its default settings; no old persistent cache imported.'
+    Write-Host ('Upstream v2026.11.28.01 memory treatment: '+$MemoryStackProfile+'; no old persistent cache imported.')
     Write-Host 'Back up saves and expect a possible driver/PC crash. E127 requires literal PLAY.'
-    & $build.Session -Mode Start -VictoryExe $build.Exe -GameExe $games[0].FullName -ExpectedSha256 $build.Sha -ReportRoot $ReportRoot
+    & $build.Session -Mode Start -VictoryExe $build.Exe -GameExe $games[0].FullName -ExpectedSha256 $build.Sha -ReportRoot $ReportRoot -MemoryStackProfile $MemoryStackProfile
 } finally {
     foreach ($key in $names) { [Environment]::SetEnvironmentVariable($key,$prior[$key],'Process') }
 }
