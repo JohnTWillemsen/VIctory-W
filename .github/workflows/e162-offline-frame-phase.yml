@@ -1,0 +1,34 @@
+name: E162 offline frame phase audit privacy (no title)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fixture:
+    name: E162 WinPS5.1 synthetic private-log audit
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source
+        shell: pwsh
+        run: |
+          $want = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -cne $want) { throw 'E162 source head mismatch' }
+          Write-Host 'E162_EXACT_SOURCE=true'
+      - name: Parse Windows PowerShell script and run anonymous fixture
+        shell: pwsh
+        run: |
+          $p = 'scripts/research/owner-nvidia-frame-phase-audit.ps1'
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -LiteralPath $p).ProviderPath,[ref]$tokens,[ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'E162 PowerShell syntax invalid' }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'E162 synthetic phase/privacy test failed' }
+          Write-Host 'E162_WINDOWS_PHASE_PRIVACY_PASS=true'
