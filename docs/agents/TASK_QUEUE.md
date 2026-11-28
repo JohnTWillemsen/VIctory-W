@@ -15,7 +15,7 @@
 | **VW-078 — E131 preserve isolated home + RTX adapter** | **MERGED PR41 / Windows release and regression PASS** | Do not use pre-fix binary; owner E127 run completed and interior 3D movement confirmed by E139 follow-up. |
 | **VW-079 — E133 long-log host GPU evidence** | **MERGED PR43 / synthetic 3600-line privacy SelfTest PASS** | Read bounded log head for adapter only when tail lacks event; anonymous ZIP only, no raw private logs. |
 
-| **VW-089 — E152 fix 2 inherited GPU budget test-fixture assumptions** | **[PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) DRAFT; CI PENDING, NOT MERGED** | Source-reviewed upstream `9b712a6` budget test correction only; exact-head Windows WARP both `VICTORY_INDIRECT_REST` modes. Do not imply FPS or 3D gains. Third inherited depth-bounds red and Clippy red unaffected. See [E152](../research/E152-NVIDIA-INDIRECT-BUDGET-TEST-FIX.md). |
+| **VW-089 — E152 fix 2 inherited GPU budget test-fixture assumptions** | **[PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) DRAFT; E152 focused WARP PASS, E127 full GPU 435/1 FAIL; NOT MERGED** | Source-reviewed upstream `9b712a6` budget test correction only; exact-head Windows WARP both `VICTORY_INDIRECT_REST` modes. Do not imply FPS or 3D gains. Third inherited depth-bounds red and Clippy red unaffected. See [E152](../research/E152-NVIDIA-INDIRECT-BUDGET-TEST-FIX.md). |
 
 **Task ownership:** Never infer a task is unclaimed solely from this dated Markdown. Query open PRs, branch tips, recent main commits and Actions first. The original source and old experimental PRs are preserved for research but are **not** active Nvidia runtime changes. Use one focused branch/PR per task. No commits to `main` without owner authorization and exact-head review.
 
