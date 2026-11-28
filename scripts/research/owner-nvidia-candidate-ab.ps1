@@ -7,6 +7,7 @@ param(
     [long]$GithubRun=0,
     [string]$ExpectedHeadSha='',
     [ValidateSet('0','1')][string]$Tearing='0',
+    [switch]$AllowDetachedCandidateWorktree,
     [string]$Repo='C:\VIctory-NVIDIA',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$GameRoot='C:\Grand Theft Auto',
@@ -41,6 +42,12 @@ function VerifiedBuild([string]$Folder,[string]$Head) {
     $sha=(Get-FileHash -LiteralPath $exes[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($sha -cne (ExactLine $text 'source_built_sha256')) { throw 'Downloaded executable SHA-256 mismatch' }
     return [pscustomobject]@{ Exe=$exes[0].FullName; Sha=$sha; Commit=$Head }
+}
+# A dedicated, detached owner worktree can run an exact candidate without
+# changing the existing normal main checkout at C:\VIctory-NVIDIA.
+function CheckoutAllowed([string]$Branch,[string]$Current,[string]$Expected,[bool]$Detached) {
+    if ($Detached) { return (($Branch -ceq '') -and ($Current -ceq $Expected)) }
+    return ($Branch -ceq 'main')
 }
 function Harness([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw 'Required GitHub test script missing' }
@@ -83,6 +90,10 @@ if ($Mode -eq 'SelfTest') {
         $rejected=$false
         try { [void](VerifiedBuild $root $expected) } catch { $rejected=$true }
         if (-not $rejected) { throw 'Duplicated manifest hash was not rejected' }
+        if (-not (CheckoutAllowed '' $expected $expected $true)) { throw 'Exact detached candidate rejected' }
+        if (CheckoutAllowed '' ('b'*40) $expected $true) { throw 'Wrong detached worktree SHA accepted' }
+        if (CheckoutAllowed 'main' $expected $expected $true) { throw 'Attached branch accepted as detached worktree' }
+        if (-not (CheckoutAllowed 'main' ('b'*40) $expected $false)) { throw 'Old main-based preflight regressed' }
         Write-Host 'E145 source artifact SHA and commit verification, fail-closed fixtures PASS; no title launched'
     }
     finally {
@@ -108,7 +119,17 @@ if ($ExpectedHeadSha -cnotmatch '^[0-9a-f]{40}$') { throw 'Provide exact 40-hex 
 if ($GithubRun -lt 1) { throw 'Provide exact GitHub Actions source release run ID' }
 if (-not (Test-Path -LiteralPath $Repo -PathType Container)) { throw 'NVIDIA source directory missing' }
 if (-not (Test-Path -LiteralPath $ReportRoot -PathType Container)) { throw 'NVIDIA private test directory missing' }
-if ((& git -C $Repo branch --show-current).Trim() -cne 'main') { throw 'Local source must remain on main; no experimental branch checkout' }
+$checkedBranch=(& git -C $Repo branch --show-current).Trim()
+$checkedSha=(& git -C $Repo rev-parse HEAD).Trim().ToLowerInvariant()
+if (-not (CheckoutAllowed $checkedBranch $checkedSha $ExpectedHeadSha ([bool]$AllowDetachedCandidateWorktree))) {
+    throw 'Source checkout must be main, or exact detached candidate SHA in opted-in worktree'
+}
+if ($AllowDetachedCandidateWorktree) {
+    $work=(Resolve-Path -LiteralPath $Repo).ProviderPath.TrimEnd('\')
+    $test=(Resolve-Path -LiteralPath $ReportRoot).ProviderPath.TrimEnd('\')
+    $expectedWork=Join-Path $test ('E158-owner-source-'+$ExpectedHeadSha.Substring(0,12))
+    if ($work -ine $expectedWork) { throw 'Detached candidate checkout must be the exact isolated E158 folder under report root' }
+}
 if ((& git -C $Repo remote get-url origin).Trim() -cne 'https://github.com/JohnTWillemsen/VIctory-W.git') {
     throw 'Source Git remote is not the existing official project'
 }
