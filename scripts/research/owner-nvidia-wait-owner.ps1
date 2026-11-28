@@ -27,6 +27,13 @@ function SessionIds([string]$Folder) {
         Where-Object { $_.Name -cmatch '^e127-\d{14}-[a-f0-9]{6}$' } |
         Select-Object -ExpandProperty Name)
 }
+# A new E127 run starts with a READY checkpoint before the PLAY prompt.
+# Cancelled or still-running sessions are not valid FPS measurements.
+# A game crash without finished.flag remains recoverable with -Mode Recover.
+function SessionFinalized([string]$Folder) {
+    $private=Join-Path $Folder 'PRIVATE-never-upload'
+    return (Test-Path -LiteralPath (Join-Path $private 'finished.flag') -PathType Leaf)
+}
 function ReportFor([string]$Folder,[string]$ReportRoot,[string]$Audit) {
     $root=(Resolve-Path -LiteralPath $ReportRoot).ProviderPath.TrimEnd('\')
     $resolved=(Resolve-Path -LiteralPath $Folder).ProviderPath.TrimEnd('\')
@@ -50,6 +57,18 @@ if ($Mode -eq 'SelfTest') {
     if (Test-Path -LiteralPath $local -PathType Leaf) {
         & $local -Mode SelfTest
         if ($LASTEXITCODE -ne 0) { throw 'Existing E145 synthetic provenance fixture failed' }
+    }
+    $sample=Join-Path $env:TEMP ('VW092-finalization-'+[guid]::NewGuid().ToString('N').Substring(0,10))
+    try {
+        $private=Join-Path $sample 'PRIVATE-never-upload'
+        New-Item -ItemType Directory -Path $private -Force | Out-Null
+        if (SessionFinalized $sample) { throw 'READY-only session incorrectly accepted as finished' }
+        [IO.File]::WriteAllText((Join-Path $private 'finished.flag'),'finished')
+        if (-not (SessionFinalized $sample)) { throw 'Finalized E127 session was rejected' }
+        Write-Host 'VW092 READY/non-finalized checkpoint rejection fixture PASS; no game launched'
+    }
+    finally {
+        if (Test-Path -LiteralPath $sample) { Remove-Item -LiteralPath $sample -Recurse -Force }
     }
     Write-Host 'VW092 handoff script and offline privacy preflight PASS; no game launched'
     return
@@ -102,6 +121,15 @@ if ($new.Count -eq 0) {
 }
 if ($new.Count -ne 1) { throw 'Ambiguous E127 run count: do not guess; recover with explicit run folder.' }
 $session=Join-Path $ReportRoot $new[0]
+if (-not (SessionFinalized $session)) {
+    # The original E127 READY ZIP exists before owner PLAY consent.
+    # E145 may have emitted an E141 ZIP with zero data anyway. Do not
+    # imply those reports are a hardware result; never relaunch here.
+    Write-Warning 'E127 has no finalized marker: it may be at PLAY, canceled, interrupted or recoverable. No validated FPS measurement.'
+    Write-Host ('E127 checkpoint only (not gameplay proof): '+(Join-Path $session 'E127-anonymous-summary.zip'))
+    Write-Host 'Do not rerun while a game may still be active; inspect the local session first.'
+    return
+}
 $e141=Join-Path (Join-Path $ReportRoot ('E141-offline-'+$new[0])) 'E141-anonymous-perf-summary.zip'
 if (-not (Test-Path -LiteralPath $e141 -PathType Leaf)) {
     # E141 reads only existing private logs and does not relaunch the title.
