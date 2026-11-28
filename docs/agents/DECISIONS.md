@@ -361,3 +361,11 @@ Owner physically launched exact validated E108 [PR32](https://github.com/JohnTWi
 **Testing:** GitHub source/CI fixture only; first local clone and physical RTX5090 game launch remain **NOT_RUN / NOT_VERIFIED**. A source document can't alter the owner's PC. Passing the continuity checker establishes consistent committed docs and disposable Git cloning, not actual user Windows installation or game playability.
 
 **Boundaries and rollback:** No new remote GitHub repository is created, no runtime shader/GPU behavior is changed, no old local folder deleted or modified, and no user title asset/log data stored in public GitHub. Revisit these local paths only on a new explicit owner request and update the same canonical docs and harness accordingly.
+
+## D-050 · 2026-11-27 AZ — Preserve E127 NVIDIA session isolation before first owner GPU run
+
+**Evidence:** Verified NVIDIA `main` `b801b5218d1ace78fd473dcb197f3eabd235fb97`: `play::prepare` clears almost all `VICTORY_*` switches, including `VICTORY_HOME` and `VICTORY_ADAPTER` explicitly set by E127. This can invalidate the intended private session cache/save isolation and chosen RTX 5090 selection, including restart inheritance. NVIDIA upstream [PR #511](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/511) confirms same defect; broader competing PR #510 was not imported.
+
+**Decision:** Stage only the two missing kept switches with a regression test on [draft PR #41](https://github.com/JohnTWillemsen/VIctory-W/pull/41). Keep it isolated and unmerged until exact-head source review and CI; do not claim gameplay or conceal unrelated strict Clippy and three GPU synthetic failures. Do not request a risky owner E127 run using a pre-fix binary. Preserve separate new source/test roots, old local checkout and private title assets.
+
+**Revisit:** If exact-head gates support it, merge with reviewed provenance; afterward issue a hash-verified E127 run with explicit `-ReportRoot` and owner `PLAY` confirmation. Record actual 5090 World+Controls only from E127 owner evidence.
