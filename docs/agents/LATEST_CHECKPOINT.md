@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**E147 latest:** Owner E141 logs: 90 scene windows median **10.9 FPS**, 5 windows **3.6 FPS**, no long-log recovery. **P0 performance, defer exploration.** [Draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) CPU optimization compiles; 3 inherited GPU reds and a focused intermittent write-watch failure remain under investigation; **no owner candidate run**. [Merged PR51](https://github.com/JohnTWillemsen/VIctory-W/pull/51) adds hash-verified E127+E141 owner test helper. E144–E146, D057; check live CI.
+**E147 latest:** E141 RTX5090 scene logs **10.9 FPS** (90 windows) and **3.6 FPS** (5), no recovery. **P0 performance before exploration.** Draft **PR50**: source release+privacy PASS, E144 serial WARP **203 tests + 3 repeats PASS** (run 46097227183); full GPU 3 inherited RED and Clippy RED. **Candidate gameplay FPS NOT RUN.** Merged **PR51** adds verified E127+E141 owner A/B helper. E144–E147, D057; check live CI.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 
