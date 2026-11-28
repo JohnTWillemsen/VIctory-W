@@ -285,9 +285,37 @@ impl WaitSample {
     }
 }
 
-static WAIT_SAMPLE: WaitSample = WaitSample {
-    calls: AtomicU64::new(0),
-    us: AtomicU64::new(0),
+/// Waits for ordinary pipelines and screen-wide passes have separate
+/// budgets. Observe them separately without changing either budget.
+#[derive(Default)]
+struct ClassifiedWaitSample {
+    ordinary: WaitSample,
+    screen: WaitSample,
+}
+
+impl ClassifiedWaitSample {
+    fn note(&self, screen: bool, elapsed: Duration) {
+        if screen {
+            self.screen.note(elapsed);
+        } else {
+            self.ordinary.note(elapsed);
+        }
+    }
+
+    fn take(&self) -> ((u64, u64), (u64, u64)) {
+        (self.ordinary.take(), self.screen.take())
+    }
+}
+
+static WAIT_SAMPLE: ClassifiedWaitSample = ClassifiedWaitSample {
+    ordinary: WaitSample {
+        calls: AtomicU64::new(0),
+        us: AtomicU64::new(0),
+    },
+    screen: WaitSample {
+        calls: AtomicU64::new(0),
+        us: AtomicU64::new(0),
+    },
 };
 
 fn wait_sample_enabled() -> bool {
@@ -297,7 +325,8 @@ fn wait_sample_enabled() -> bool {
 
 /// Returns an opt-in aggregate for the most recent host meter interval.
 /// None on ordinary runs, where the extra per-wait atomics are disabled.
-pub(crate) fn take_wait_sample() -> Option<(u64, u64)> {
+/// Returns (ordinary calls/us, screen-wide calls/us); independent drains.
+pub(crate) fn take_wait_sample() -> Option<((u64, u64), (u64, u64))> {
     wait_sample_enabled().then(|| WAIT_SAMPLE.take())
 }
 
@@ -412,7 +441,7 @@ fn wait(p: &Pending, frame: u64) {
     drop(held);
     let waited = started.elapsed().min(left);
     if wait_sample_enabled() {
-        WAIT_SAMPLE.note(waited);
+        WAIT_SAMPLE.note(screen, waited);
     }
     if screen && waited > Duration::from_millis(500) {
         tracing::info!(
@@ -672,6 +701,18 @@ mod tests {
         assert_eq!(sample.take(), (0, 0));
         sample.note(Duration::ZERO);
         assert_eq!(sample.take(), (1, 0));
+    }
+
+    #[test]
+    fn opt_in_classifies_screen_and_ordinary_waits_without_changing_budgets() {
+        let sample = ClassifiedWaitSample::default();
+        sample.note(false, Duration::from_micros(1_000));
+        sample.note(true, Duration::from_micros(9_500));
+        sample.note(false, Duration::from_micros(2_000));
+        assert_eq!(sample.take(), ((2, 3_000), (1, 9_500)));
+        assert_eq!(sample.take(), ((0, 0), (0, 0)));
+        sample.note(true, Duration::ZERO);
+        assert_eq!(sample.take(), ((0, 0), (1, 0)));
     }
 
     #[test]

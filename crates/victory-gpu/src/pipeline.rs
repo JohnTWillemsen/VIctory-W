@@ -468,7 +468,7 @@ pub(crate) fn making() -> u64 {
 /// Numeric-only, opt-in pipeline wait calls and summed title-thread time
 /// since the previous meter window. Not GPU time or individual-frame pacing.
 #[cfg(windows)]
-pub(crate) fn take_wait_sample() -> Option<(u64, u64)> {
+pub(crate) fn take_wait_sample() -> Option<((u64, u64), (u64, u64))> {
     make::take_wait_sample()
 }
 
