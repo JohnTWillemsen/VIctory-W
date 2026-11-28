@@ -28,7 +28,7 @@ Owner's Windows workstation uses NVIDIA RTX 5090 and Intel Core Ultra 9 285K. Th
 
 Use [E127 protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md) and `scripts/research/owner-nvidia-session.ps1` from verified `main`:
 - Strict compiled-executable SHA check; **owner consent ('PLAY')**; back up game saves; normal non-admin PowerShell; NVIDIA fork's built-in `victory play`, clean isolated `VICTORY_HOME`, `VICTORY_ADAPTER=RTX 5090`, RT BVH/debug/scripted keys off.
-- The report harness checkpoints **one** `E127-anonymous-summary.zip`; after reboot `-Mode Recover` reconstructs from private local files without relaunch. Report fixed fields only: actual host adapter name match, exit/device-loss markers, stage (`Unknown/Menu/Black/World`), movement (`Unknown/No/Yes`). Ask for **only the anonymous ZIP**.
+- The report harness checkpoints **one** `E127-anonymous-summary.zip`; after reboot `-Mode Recover` reconstructs from private local files without relaunch. Report fixed fields only: actual host adapter name match, exit/device-loss markers, human-observed World/Controls acceptance, stage (`Unknown/Menu/Black/World`), movement (`Unknown/No/Yes`). Ask for **only the anonymous ZIP**.
 - Keep raw title logs, screenshots, title files, local paths, shaders, caches and dumps on owner PC; never paste them in GitHub. `VIctory-W` repo was **PUBLIC** at checkpoint; recheck visibility before any change involving sensitive data.
 - The harness's synthetic privacy + parsing fixture passed; **owner's first real game session on this source still needs to be performed with explicit consent**. Do not claim a GPU run has happened merely because its script exists.
 
