@@ -1,6 +1,6 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
-**VW-092 H3:** RTX5090 same exe + local cache: World+Controls Yes, exit0; 28 scene windows p50 **32.9**, p10 **22.6**, min **14.9**, 0 <=10FPS. Prior H2 separate run p50 23.5/p10 3.5, seven slow. No matched scenes/cache-hit proof. Next persist cache privately; PR61 draft, main unchanged.
+**VW-092 H4 newest:** RTX5090 private persistent cache, same H2/H3 exe, World+Controls Yes, 338s exit0. 42 scene windows p50 **28.8**, p10 **18.8**, min9.9, 1 <=10FPS. H3: 28 scenes 32.9/22.6/0 slow; H2: 22 scenes 23.5/3.5/7 slow. Unmatched scenes, no cache-hit proof. PR61 draft, main unchanged.
 
 
 **E151 now:** Owner E127 candidate RTX5090 report `FINALIZED`, exit 0, SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, selected GPU, no recognized fault markers; **visual Unknown, controls Unknown**. E141 longer log 30 scene windows p50 **29.1 FPS** vs prior 90 windows **10.9 FPS**; short 5-window log **3.6 FPS** in both. Promising 2.67x sampled median, **NOT controlled scene/fps benchmark nor playable visual acceptance**. PR50 remains DRAFT, main preserves owner-confirmed original controllable cell. See E151/D060 and [research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
