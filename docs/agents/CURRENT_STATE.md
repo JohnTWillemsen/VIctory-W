@@ -1,5 +1,14 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
+## First real owner RTX5090 report — E135–E138 (2026-11-27 AZ)
+
+The owner E135 inspection showed an existing **empty** `C:\\VIctory-NVIDIA` folder; the E136 fixed-field report then **verified a clean clone** of the same GitHub `main` at `8caccae47243cad361038bab4d4d4025f90ccc82`. E137 verified the matching [GitHub Actions source-built artifact](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089270184), binary SHA-256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f`, and anonymous PowerShell self-test PASS. Old checkout and title files were not moved by these steps.
+
+**FIRST OWNER GPU SESSION NOW VERIFIED:** E127 ZIP (not committed) was `FINALIZED`, `exit_code=0`, selected real host RTX5090 (2 adapter events, zero other), zero recognized device removed/hung/DRED/pagefault/slow submission/GPU failure markers. However it reported `human_observed_visual=Unknown`, `human_observed_controls=Yes`. **World+Controls gate remains UNKNOWN, NOT proven playable.** Ask whether the owner saw and moved within a rendered 3D world or only controlled menus. No new risky game run needed to clarify.
+
+**E138 timekeeping bug:** The anonymized `elapsed_seconds=26020` is invalid; UTC run ID started at 01:24:17 and checkpoint was 01:37:58, a ~821-second interval, not a measured gameplay duration. [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) fixes offset-naive UTC arithmetic. The source [main Windows E127 CI](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089270184) release and privacy fixture PASS, **three inherited GPU synthetic tests FAIL**, and strict Clippy still FAIL. Verify later CI and live main SHA, never claim global green CI.
+
+
 **Checkpoint:** 2026-11-27 America/Phoenix. **Live GitHub overrides this snapshot.** Canonical complete overview: [HANDOFF.md](HANDOFF.md).
 
 ## Source and preserved history
