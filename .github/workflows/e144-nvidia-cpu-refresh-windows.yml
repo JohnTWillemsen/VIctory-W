@@ -1,0 +1,30 @@
+name: E144 NVIDIA CPU refresh candidate Windows regression gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  focused-cpu-refresh:
+    name: E144 Win WARP shadow, watch, host and list focused regressions
+    runs-on: windows-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Run four independent GPU-library regression families on WARP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:VICTORY_D3D12_WARP='1'
+          foreach ($filter in @('shadow::','watch::','host::','list::')) {
+            Write-Host ('E144 WARP focused filter: '+$filter)
+            cargo test --locked -p victory-gpu --lib -- $filter
+            if ($LASTEXITCODE -ne 0) { throw ('E144 WARP test failure in '+$filter) }
+          }
+          Write-Host 'E144 FOUR WARP FILTER FAMILIES PASSED; OWNER_GAME_NOT_RUN'
