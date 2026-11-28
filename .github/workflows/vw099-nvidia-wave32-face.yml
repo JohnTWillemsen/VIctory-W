@@ -27,6 +27,7 @@ jobs:
           repository: trustno1-coder/VIctory-NVIDIA
           ref: 63429aa380df9ff3dbad8a6ba1eaab07ccd597a8
           path: upstream
+          fetch-depth: 0
           persist-credentials: false
       - name: Verify exact source pins and only one upstream file changed
         shell: pwsh
