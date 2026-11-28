@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**VW-092:** [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) draft: opt-in wait metric, anonymous ZIP, one consent-gated RTX5090 helper. `ec182b9` focused CI and release PASS; full synthetic/Clippy RED. New helper CI pending; no GPU test or FPS fix.
+**VW-092 H1:** PR61 owner RTX5090 **World+Controls Yes**, 285s exit0, scene FPS p50 26.7 (28 windows), slow 4/28; 7241ms vs 59ms summed wait p50 per ~5s window (122x, not causal). E164/release PASS, inherited full synthetic/Clippy RED; classify screen/ordinary waits next, not performance fix.
 
 
 **E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).

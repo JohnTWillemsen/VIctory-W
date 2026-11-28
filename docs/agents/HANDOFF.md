@@ -1,5 +1,10 @@
 # VIctory-W — canonical handoff (read this first)
 
+## VW092-H1 — newest owner RTX5090 result (2026-11-27 AZ)
+
+[PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) exact source `3a830b3509491713d2c164e6ed12dcfc1805e778` / exe SHA256 `d4963529a4197806d92864d5ef0461b3838029e90ca49e74460d9708b1351864`, E164 [CI PASS 46114929321](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46114929321), [source release PASS 46114929298](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46114929298). Owner's three validated one-member anonymous ZIPs from `e127-20261128063033-7ce369`: E127 **World=Yes Controls=Yes**, 285s exit0, 2 RTX5090 adapter events, zero recognized GPU faults; E141 28 scene-like windows FPS p50 **26.7**, p10 **6.0**, min **3.6**; VW092 45 paired/zero invalid, slow <=10FPS (4 windows) median summed wait **7241.233ms** vs fast >=20FPS (21 windows) **59.289ms**, ~122x association, **not frame-time causality**. Source ordinary wait budget 500ms/frame vs screen-pass 10s, category unknown. Next opt-in classified wait research; do not blindly tune, rerun or merge. Old E151 paragraphs below are dated. No user ZIP, title data or raw logs in GitHub. Three inherited GPU synthetic and strict Clippy remain RED; main unchanged.
+
+
 ## E151 latest — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
 
 Owner uploaded **both fixed-field E127/E141 ZIPs** for [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) candidate source `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, E127 run `e127-20261128024702-726c06`, verified [CI 46098122107](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46098122107). E127 `FINALIZED`, exit 0, 336 sec, selected real RTX5090, zero recognized GPU fault markers in 7,000 scanned lines; **visual=Unknown and controls=Unknown.**
