@@ -17,6 +17,7 @@ from pathlib import Path
 REQUIRED = (
     "AGENTS.md",
     "docs/agents/HANDOFF.md",
+    "docs/agents/LOCAL_WORKSPACE.md",
     "docs/agents/CURRENT_STATE.md",
     "docs/agents/LATEST_CHECKPOINT.md",
     "docs/agents/NEW_SESSION_PROMPT.md",
@@ -87,6 +88,35 @@ def verify(root: Path) -> str:
         fail("New-session prompt is hard-pinned to a commit and will become stale")
     if "C:\\VIctory-NVIDIA" not in handoff or "C:\\VIctory-NVIDIA-Tests" not in handoff:
         fail("Owner's new local checkout/testing roots not recorded")
+    # E130: keep source, test root, old local checkout, and game assets physically separate.
+    workspace = contents["docs/agents/LOCAL_WORKSPACE.md"]
+    protocol = contents["docs/research/E127-TESTING-AND-UPLOAD-PROTOCOL.md"]
+    launcher = (root / "scripts/research/owner-nvidia-session.ps1").read_text(encoding="utf-8")
+    checkout = "C:" + chr(92) + "VIctory-NVIDIA"
+    tests = "C:" + chr(92) + "VIctory-NVIDIA-Tests"
+    old = "C:" + chr(92) + "VIctory-W"
+    for label, body in [
+        ("AGENTS.md", agents),
+        ("HANDOFF.md", handoff),
+        ("NEW_SESSION_PROMPT.md", prompt),
+        ("LOCAL_WORKSPACE.md", workspace),
+    ]:
+        if "LOCAL_WORKSPACE.md" not in body and label != "LOCAL_WORKSPACE.md":
+            fail(label + " must link canonical local-workspace instructions")
+        if any(folder not in body for folder in [checkout, tests, old]):
+            fail(label + " omits one of three separated Windows folders")
+    if "not a new GitHub" not in workspace and "not a second GitHub" not in workspace:
+        fail("Local workspace must distinguish fresh clone from new GitHub repo")
+    if "git clone --branch main" not in workspace or "git -C $Repo remote -v" not in workspace:
+        fail("Local safe clone and remote verification instructions missing")
+    if "owner-nvidia-session.ps1" not in workspace or "-ReportRoot" not in workspace:
+        fail("Workspace lacks explicit E127 report-root contract")
+    if "C:" + chr(92) + "VIctory-Tests" in protocol:
+        fail("E127 protocol still instructs upload from old report root")
+    if tests not in protocol or tests not in workspace:
+        fail("E127 reporting protocol disagrees with isolated new report root")
+    if "[string]$ReportRoot='" + tests + "'" not in launcher:
+        fail("E127 PowerShell default still writes into the old report root")
     if "World" not in handoff or "Controls" not in handoff or "E127-anonymous-summary.zip" not in handoff:
         fail("Positive playability criteria or single privacy-safe upload missing")
     if "NOT" not in handoff or "FAILED" not in handoff:
