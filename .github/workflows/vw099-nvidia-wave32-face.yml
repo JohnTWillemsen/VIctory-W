@@ -1,0 +1,126 @@
+name: VW099 NVIDIA exact head/face pipeline fix Windows (no title)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vw099-heads-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-face-fix:
+    name: Source-pin PR703 patch, focused GPU regression and Windows release
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: owner
+      - uses: actions/checkout@v4
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: 63429aa380df9ff3dbad8a6ba1eaab07ccd597a8
+          path: upstream
+          persist-credentials: false
+      - name: Verify exact source pins and only one upstream file changed
+        shell: pwsh
+        run: |
+          $owner=(& git -C owner rev-parse HEAD).Trim()
+          $up=(& git -C upstream rev-parse HEAD).Trim()
+          if ($owner -cne '${{ github.event.pull_request.head.sha || github.sha }}' -or $up -cne '63429aa380df9ff3dbad8a6ba1eaab07ccd597a8') { throw 'Wrong owner/upstream SHA' }
+          & git -C upstream merge-base --is-ancestor 63b902fe1720a5188ee79d94a88c8de0470f6349 HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Wave32 head does not descend from official release' }
+          $p=(Resolve-Path 'owner/scripts/research/vw099-pr703-headmap.patch').Path
+          & git -C upstream apply --check $p
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream PR703 patch does not apply to pinned release' }
+          & git -C upstream apply $p
+          if ($LASTEXITCODE -ne 0) { throw 'Could not apply checked PR703 patch' }
+          $changed=@(& git -C upstream diff --name-only)
+          if ($changed.Count -ne 1 -or $changed[0] -cne 'crates/victory-gpu/src/pipeline/make.rs') { throw 'Unexpected upstream code modified' }
+          & git -C upstream diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Bad source patch diff' }
+          $file=Get-Content -LiteralPath 'upstream/crates/victory-gpu/src/pipeline/make.rs' -Raw
+          foreach ($needle in @('HEAD_BLEND_SHAPE_MAP','61e54e90adccaf6a','the_head_blend_shape_map_is_made_at_creation')) {
+            if (-not $file.Contains($needle)) { throw 'Expected pipeline source/test missing' }
+          }
+          if (@(& git -C upstream ls-files | Where-Object { $_ -match '(?i)(^|/)(game_scarlett_master\.exe|appdata\d+\.rpf|[^/]+\.(xvd|xci|nsp))$' }).Count -gt 0) { throw 'Unexpected proprietary game assets' }
+          Write-Host ('VW099_OWNER_SHA='+$owner)
+          Write-Host ('VW099_UPSTREAM_BASE_SHA='+$up)
+          Write-Host 'VW099_PATCH_PR703_SHA=3a9f195b8f10820f336cb6ede29ecc9d4f75f49f'
+          Write-Host 'VW099_WAVE32_PR378_SHA=63429aa380df9ff3dbad8a6ba1eaab07ccd597a8'
+      - name: PowerShell 5.1 E127 privacy and exact patch-artifact negative fixtures
+        shell: powershell
+        run: |
+          foreach ($path in @('owner/scripts/research/owner-vw099-e127-faces-wave32.ps1','owner/scripts/research/owner-vw099-faces-test.ps1')) {
+            $tokens=$null;$errors=$null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path,[ref]$tokens,[ref]$errors)
+            if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Error $_.Message }; throw 'Owner helper PowerShell parse failure' }
+          }
+          & ./owner/scripts/research/owner-vw099-e127-faces-wave32.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'E127 face-profile privacy fixture failed' }
+          & ./owner/scripts/research/owner-vw099-faces-test.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'Owner provenance/patch-verification negative fixture failed' }
+      - name: Install pinned upstream Rust
+        shell: pwsh
+        working-directory: upstream
+        run: rustup toolchain install
+      - name: Verify NVIDIA Wave32 face LDS per-wave meeting regression
+        shell: pwsh
+        working-directory: upstream
+        run: cargo test --locked -p victory-shader --lib half_meet_orders_a_128_thread_lds_region -- --nocapture
+      - name: Run new upstream head blend-shape map regression test
+        shell: pwsh
+        working-directory: upstream
+        run: cargo test --locked -p victory-gpu --lib the_head_blend_shape_map_is_made_at_creation -- --nocapture
+      - name: Compile exact patched upstream Windows release executable
+        shell: pwsh
+        working-directory: upstream
+        run: cargo build --release --locked -p victory
+      - name: Emit source, patch and executable provenance without title data
+        shell: pwsh
+        run: |
+          $owner=(& git -C owner rev-parse HEAD).Trim()
+          if ($owner -cne '${{ github.event.pull_request.head.sha || github.sha }}') { throw 'Owner SHA drift' }
+          $exe='upstream/target/release/victory.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No Windows release executable' }
+          $hash=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $e127=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-vw099-e127-faces-wave32.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $helper=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-vw099-faces-test.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $patch=(Get-FileHash -LiteralPath 'owner/scripts/research/vw099-pr703-headmap.patch' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=@(
+            'format=VW099-nvidia-source-v1'
+            'owner_repository=JohnTWillemsen/VIctory-W'
+            ('owner_pr_head='+$owner)
+            'upstream_repository=trustno1-coder/VIctory-NVIDIA'
+            'upstream_release=pr378+pr703-on-v2026.11.28.01'
+            'upstream_commit=63429aa380df9ff3dbad8a6ba1eaab07ccd597a8'
+            'patch_pr_head=3a9f195b8f10820f336cb6ede29ecc9d4f75f49f'
+            'upstream_base_commit=63b902fe1720a5188ee79d94a88c8de0470f6349'
+            ('patch_sha256='+$patch)
+            ('source_built_sha256='+$hash)
+            ('e127_harness_sha256='+$e127)
+            ('owner_helper_sha256='+$helper)
+            'game_executed=false'
+            'proprietary_title_assets_in_artifact=false'
+          )
+          [IO.File]::WriteAllLines('VW099-UPSTREAM-BUILD.txt',$manifest,[Text.UTF8Encoding]::new($false))
+          Write-Host ('VW099_EXACT_OWNER='+$owner)
+          Write-Host ('VW099_SOURCE_BUILT_EXE_SHA256='+$hash)
+          Write-Host 'VW099_GAME_LAUNCHED=false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VW099-wave32-faces-pr378-pr703-sourcebuilt
+          path: |
+            upstream/target/release/victory.exe
+            owner/scripts/research/owner-vw099-e127-faces-wave32.ps1
+            owner/scripts/research/owner-vw099-faces-test.ps1
+            owner/scripts/research/vw099-pr703-headmap.patch
+            VW099-UPSTREAM-BUILD.txt
+          retention-days: 7
+          if-no-files-found: error
