@@ -465,6 +465,13 @@ pub(crate) fn making() -> u64 {
     make::waiting()
 }
 
+/// Numeric-only, opt-in pipeline wait calls and summed title-thread time
+/// since the previous meter window. Not GPU time or individual-frame pacing.
+#[cfg(windows)]
+pub(crate) fn take_wait_sample() -> Option<(u64, u64)> {
+    make::take_wait_sample()
+}
+
 /// Draws and dispatches asked of pipelines left out on purpose since the last
 /// call (ray-tracing passes without the structure builder).
 #[cfg(windows)]
