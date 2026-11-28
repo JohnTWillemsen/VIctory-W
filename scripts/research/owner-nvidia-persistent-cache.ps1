@@ -198,10 +198,31 @@ if ($Mode -eq 'SelfTest') {
         $rejected=$false
         try { SeedCache $tmp $run $h $e $dev } catch { $rejected=$true }
         if (-not $rejected) { throw 'Existing persistent cache overwritten' }
+        $blocked=Join-Path (Join-Path (CacheFolder $tmp $h) 'cache') 'private-title.rpf'
+        [IO.File]::WriteAllText($blocked,'synthetic, forbidden title-like asset')
+        $rejected=$false
+        try { [void](VerifyCache $tmp $h $e $dev) } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Title-like material was accepted as cache' }
+        Remove-Item -LiteralPath $blocked -Force
         Write-Host 'VW092 private cache: READY rejection, SHA copies, GPU/driver and non-overwrite SelfTest PASS; no title launched'
     }
     finally { if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Recurse -Force } }
     return
+}
+# H4 is intentionally bounded to the ONE verified owner H2/H3 executable.
+# Future driver/build experiments must seed a distinct reviewed cache namespace.
+$AcceptedHead='5bc4a9d089f66fe8485ea154feaf29c21e3e15b5'
+$AcceptedExe='70e0bbe0ed7aa032a65495a99f26240310acdeeb1337927002b1a6460a801d60'
+$AcceptedRun='e127-20261128073423-f88740'
+$AcceptedGithubRun=46117808321
+if ($ExpectedHeadSha -cne $AcceptedHead -or $ExpectedExeSha -cne $AcceptedExe) {
+    throw 'This cache flow is pinned to the previously verified H2/H3 NVIDIA executable'
+}
+if ($Mode -eq 'Seed' -and $SourceRunId -cne $AcceptedRun) {
+    throw 'Only the owner-verified H3 source session may seed this bounded cache'
+}
+if ($Mode -eq 'Run' -and $GithubRun -ne $AcceptedGithubRun) {
+    throw 'Wrong GitHub source-built release run for the known H2/H3 executable'
 }
 AssertSha $ExpectedHeadSha $ExpectedExeSha
 $root=Root $ReportRoot
