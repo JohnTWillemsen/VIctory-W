@@ -105,18 +105,18 @@ function InspectCache([string]$Folder) {
             }
         }
     }
-    Write-Host 'format=VW092-private-cache-extension-audit-v1'
-    Write-Host ('inspected_file_count='+$total)
+    Write-Output 'format=VW092-private-cache-extension-audit-v1'
+    Write-Output ('inspected_file_count='+$total)
     [int]$blockedTotal=0
     foreach ($ext in $blocked) {
         $n=[int]$counts[$ext]
         $blockedTotal += $n
-        Write-Host (('blocked_'+$ext.TrimStart('.')+'_count')+'='+$n)
+        Write-Output (('blocked_'+$ext.TrimStart('.')+'_count')+'='+$n)
     }
-    Write-Host ('blocked_total_count='+$blockedTotal)
-    Write-Host ('nonblocked_count='+($total-$blockedTotal))
-    Write-Host 'game_launched=false'
-    Write-Host 'file_names_paths_and_contents_exported=false'
+    Write-Output ('blocked_total_count='+$blockedTotal)
+    Write-Output ('nonblocked_count='+($total-$blockedTotal))
+    Write-Output 'game_launched=false'
+    Write-Output 'file_names_paths_and_contents_exported=false'
 }
 function PriorSession([string]$Root,[string]$RunId,[string]$Exe) {
     if ($RunId -cnotmatch '^e127-\d{14}-[a-f0-9]{6}$') { throw 'Invalid E127 source ID' }
