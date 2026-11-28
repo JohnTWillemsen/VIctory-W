@@ -15,6 +15,9 @@
 | **VW-078 — E131 preserve isolated home + RTX adapter** | **MERGED PR41 / Windows release and regression PASS** | Do not use pre-fix binary; owner E127 run completed and interior 3D movement confirmed by E139 follow-up. |
 | **VW-079 — E133 long-log host GPU evidence** | **MERGED PR43 / synthetic 3600-line privacy SelfTest PASS** | Read bounded log head for adapter only when tail lacks event; anonymous ZIP only, no raw private logs. |
 
+| **VW-089 — E157 WARP fixtures** | **[PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) DRAFT** | [E127 46104177631](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46104177631): GPU 436/0, 36 ignored; source/privacy PASS. Strict Clippy RED; no renderer or GPU play, no owner-authorized merge. |
+| **VW-090 — DXGI opt-in handoff** | **[PR57](https://github.com/JohnTWillemsen/VIctory-W/pull/57), [PR59](https://github.com/JohnTWillemsen/VIctory-W/pull/59) DRAFT** | E156 anonymous ON/OFF synthetic PASS; runtime opt-in default OFF. Hardware validation still required. |
+
 **Task ownership:** Never infer a task is unclaimed solely from this dated Markdown. Query open PRs, branch tips, recent main commits and Actions first. The original source and old experimental PRs are preserved for research but are **not** active Nvidia runtime changes. Use one focused branch/PR per task. No commits to `main` without owner authorization and exact-head review.
 
 **Privacy:** No title executable, proprietary data, raw GPU logs, screenshots, identifying file paths or dumps in this PUBLIC repo. For owner tests accept only the fixed-schema E127 anonymous summary ZIP.
