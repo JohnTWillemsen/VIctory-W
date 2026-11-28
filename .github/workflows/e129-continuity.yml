@@ -1,0 +1,32 @@
+name: E129 cold-session handoff integrity
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - docs/e129-canonical-handoff-safety-20261127
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e129-continuity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cold-bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Install Python for standard-library-only handoff test
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Source-of-truth and new-session fresh-clone acceptance
+        run: python scripts/check-continuity.py --smoke-clone
