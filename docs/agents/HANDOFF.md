@@ -1,12 +1,14 @@
 # VIctory-W — canonical handoff (read this first)
 
-## E151 latest — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
+## VW099 latest — correct RTX5090 faces, controls, world; FPS still too low
 
-Owner uploaded **both fixed-field E127/E141 ZIPs** for [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) candidate source `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, E127 run `e127-20261128024702-726c06`, verified [CI 46098122107](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46098122107). E127 `FINALIZED`, exit 0, 336 sec, selected real RTX5090, zero recognized GPU fault markers in 7,000 scanned lines; **visual=Unknown and controls=Unknown.**
+**2026-11-28 Arizona, owner-confirmed.** On [draft PR67](https://github.com/JohnTWillemsen/VIctory-W/pull/67) exact HEAD `66e75cada34658d0646aa083d7ecc9a9574db725`, Windows binary SHA256 `899d69672c174b785d23951aa794dcec7b7d581ef57bda4c75841c55fa861d15`, E127 `e127-20261128094753-85439b` FINALIZED/267s/exit0, E127 World=Yes, Controls=Yes, no recognized GPU loss. Asked whether faces/heads/skin looked normal, the owner explicitly replied **"They looked normal."** Original E127 adapter text UNKNOWN, do not rewrite. E141 30 scene-like windows FPS p10/p50/p90 **14.5/19.5/21.7**, window-frame p50 **51.4ms**, early/late p50 **18.6/19.7**. **VISUAL+INPUT PASS for this exact run; performance FAIL (~20 FPS, not smooth).** PR67 remains DRAFT/UNMERGED, main v8/H4 cache remain rollback.
 
-E141 candidate longer log **30 scene-like windows median 29.1 FPS** (first half 25.9/last 30.3), short log five windows **3.6 FPS**. Original main baseline longer log **90 windows median 10.9 FPS** (first 11.7/last 9.6), short 5 windows **3.6 FPS**. Longer log sampled median **2.67x**; pooled 28.4 vs 10.3 FPS. But candidate p10 only 3.5 FPS, p90 frame-window ms 285.7; stutter persists. These are *multi-second log-window averages*, not 1% lows, direct GPU utilization, or matched scene/cache/time benchmark. Host-GPU-associated p50 0.0ms is not evidence the GPU did no work.
+**Next priority:** bounded source-backed smooth FPS work on the visually correct candidate; target stable ~30+ FPS with lower stutter and matched scene/settings/cache. Do not rerun to reconfirm faces, assume PR50's 29.1 FPS candidate is visually correct (World/Controls UNKNOWN), or blindly import large upstream PR814/texture PR33 (external RTX5090 black-world regression). PR66 earlier had partially broken faces with FPS p50 10.8/14 windows; not matched scene/length/cache.
 
-**BLOCKER:** User must confirm this exact candidate rendered Lucia's 3D cell correctly and movement worked; **do not merge PR50 until then**. Original E139 baseline worked in 3D, but was a different binary. Apparent FPS gain may mean omitted rendering. No replay needed just to clarify prior observations. Next if visual/input pass: controlled same-cell repeat or instrumented frame pacing. [E151 research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md), E151 evidence, D060, VW088. [PR53](https://github.com/JohnTWillemsen/VIctory-W/pull/53) exact PR-head artifact provenance fix merged; old synthetic merge artifact retired. E144 WARP 203+3 pass; 3 inherited full synthetic reds/Clippy red; PR50 still draft. Owner ZIP/private data not in GitHub.
+## E151 historical — old CPU candidate
+
+[PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) 29.1 FPS p50/30 long-log windows vs earlier baseline 10.9/90, but visual and controls UNKNOWN, short logs 3.6; still draft.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 
