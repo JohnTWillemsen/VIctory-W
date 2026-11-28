@@ -1,6 +1,6 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
-**E151 now:** Owner E127 candidate RTX5090 report `FINALIZED`, exit 0, SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, selected GPU, no recognized fault markers; **visual Unknown, controls Unknown**. E141 longer log 30 scene windows p50 **29.1 FPS** vs prior 90 windows **10.9 FPS**; short 5-window log **3.6 FPS** in both. Promising 2.67x sampled median, **NOT controlled scene/fps benchmark nor playable visual acceptance**. PR50 remains DRAFT, main preserves owner-confirmed original controllable cell. See E151/D060 and [research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
+**VW099 CURRENT, 2026-11-28:** Exact [PR67](https://github.com/JohnTWillemsen/VIctory-W/pull/67) source `66e75cada34658d0646aa083d7ecc9a9574db725` / exe `899d69672c174b785d23951aa794dcec7b7d581ef57bda4c75841c55fa861d15` / E127 `e127-20261128094753-85439b` FINALIZED exit0/267s. World/Controls Yes; **owner said faces, heads, skin looked normal**. E141 30 scene-like windows FPS p10/p50/p90 **14.5/19.5/21.7**, frame window p50 51.4ms, first/last **18.6/19.7**. Human visual/input **PASS**, smooth FPS **FAIL**, E127 adapter log UNKNOWN. PR67 remains draft/unmerged, main v8 rollback. Next: bounded source FPS/stutter improvements preserving good rendering. Prior PR66 partial-face p50 10.8/14 windows vs PR67 19.5/30; not matched A/B. Historical PR50 p50 29.1 but visual/input UNKNOWN; do not assume correct.
 
 ## E140–E151 performance investigation (newest supersedes old snapshots)
 

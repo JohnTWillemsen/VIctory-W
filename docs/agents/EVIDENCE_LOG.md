@@ -172,3 +172,7 @@
 `E-### · date/time+zone | repository+full SHA | SOURCE_READ / CI_PASS / UNIT_PASS / WARP_PASS / GPU_PASS / GAMEPLAY_OBSERVED / UPSTREAM_REPORTED / NOT_RUN / UNKNOWN | command, branch, driver/scene where relevant | explicit pass/fail/skip, measured result and caveats | permanent source URL or private-local evidence reference`.
 
 Do not paste personal Windows paths, game content, screenshots, title-generated binaries, shaders, shader hashes derived from title assets, saves, unredacted crash logs, proprietary data, secret tokens or extracts into this file. Link to GitHub workflow/PR for public source evidence; keep user game observations private until sanitized.
+
+### VW099 owner visual verification — 2026-11-28 AZ
+
+`GAMEPLAY_OBSERVED`: Owner was explicitly asked if faces, heads and skin looked normal on tested [PR67](https://github.com/JohnTWillemsen/VIctory-W/pull/67), and replied **"They looked normal."** Exact PR HEAD `66e75cada34658d0646aa083d7ecc9a9574db725`, EXE SHA256 `899d69672c174b785d23951aa794dcec7b7d581ef57bda4c75841c55fa861d15`, E127 `e127-20261128094753-85439b` FINALIZED exit0 267s, World/Controls Yes, adapter text UNKNOWN and no detected GPU loss. E141 scene-like 30 log windows FPS p10/p50/p90 14.5/19.5/21.7, frame-window p50 51.4ms. **Visual/input accepted, smooth FPS below target**. Not a matched benchmark or true per-frame 1% lows; owner ZIPs left immutable, no title assets or raw logs uploaded.
