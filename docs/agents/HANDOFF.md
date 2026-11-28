@@ -1,11 +1,5 @@
 # VIctory-W — canonical handoff (read this first)
 
-## VW-092 / E-165 source-only probe staged (draft PR61) — no hardware run
-
-Live NVIDIA `main` at staging was `ea186566a868430a51e416d4c94695f6aff3fce1`. Owner E161 on draft PR60 (same RTX5090 binary) confirmed World+Controls in DXGI ON and OFF, while OFF had stronger *descriptive* sampled FPS. E162/E163 offline privacy-safe evidence showed slow 3–5 FPS windows associated with hundreds of queued host pipelines and elevated CPU copies; **not proven causal**. See [PR60 E163](https://github.com/JohnTWillemsen/VIctory-W/blob/experiment/e158-nvidia-optin-owner-candidate-20261127/docs/research/E163-RTX5090-COLD-PIPELINE-AND-COPY-PHASES.md) and D069 on that unmerged branch.
-
-New [draft PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) **VW-092** adds **opt-in-only** `VICTORY_PIPELINE_WAIT_STATS=1` numeric pipeline wait calls and summed thread wait microseconds at the existing 5-second meter; default OFF and existing E127/E141/E162 FPS lines unchanged. Windows no-title exact-head regression and source release are separate pending gates; **no claimed FPS fix and no new RTX5090 run**. See [design](../research/E164-NVIDIA-PIPELINE-WAIT-WINDOWS.md). **Do not merge or request an owner game run until exact-head CI, report privacy, and source review.** The E-164 identifier is already used for an editorial correction on PR60; track this work as **VW-092 / E-165**. Main remains unchanged.
-
 ## E151 latest — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
 
 Owner uploaded **both fixed-field E127/E141 ZIPs** for [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) candidate source `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, E127 run `e127-20261128024702-726c06`, verified [CI 46098122107](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46098122107). E127 `FINALIZED`, exit 0, 336 sec, selected real RTX5090, zero recognized GPU fault markers in 7,000 scanned lines; **visual=Unknown and controls=Unknown.**
