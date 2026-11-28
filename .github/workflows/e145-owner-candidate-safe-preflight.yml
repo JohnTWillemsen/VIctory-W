@@ -1,0 +1,34 @@
+name: E145 candidate provenance and safe owner handoff
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-artifact-handoff-selftest:
+    name: WinPS5.1 candidate provenance and fail-closed test without game
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse E145 script and run synthetic artifact self-test
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $p='scripts/research/owner-nvidia-candidate-ab.ps1'
+          $tokens=$null; $errs=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -LiteralPath $p).Path,[ref]$tokens,[ref]$errs)
+          if ($errs.Count -ne 0) {
+            $errs | ForEach-Object { Write-Error $_.Message }
+            throw 'E145 syntax invalid'
+          }
+          & $p -Mode SelfTest
+          # E145 is a PowerShell script returning normally; failure throws.
+          # LASTEXITCODE may be null when no native executable was run.
+          if (-not $?) { throw 'E145 provenance self-test failed' }
+          Write-Host 'E145 source artifact verifier PASS; no game/asset access'
