@@ -4,10 +4,6 @@
 
 **E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
-## E140–E151 NVIDIA performance evidence
-
-Owner baseline E140/E141 showed 95 scene-like windows, FPS p50 10.3; E141 longer log 90 windows p50 10.9, short 5-window log p50 3.6. The E151 candidate E141 reported 35 scene-like windows, pooled FPS p50 28.4, long log 30 windows p50 29.1, short 5-window log p50 3.6. Long-log first/last medians changed baseline 11.7→9.6 to candidate 25.9→30.3. **These are multi-second meter-window quantiles, not 1% lows, GPU utilization or matched scenes.** RTX5090 visual/input on candidate **UNKNOWN**; report's 0.0 host-GPU-associated ms does not prove no GPU workload. Preserve baseline and candidate as separate evidence. Full tests 3 inherited reds and strict Clippy red; source release+focused WARP green. Newer E151 prevails over older snapshots below.
-
 ## VERIFIED: FIRST RENDERED CONTROLLABLE 3D INTERIOR ON OWNER RTX5090
 
 - Existing repository `JohnTWillemsen/VIctory-W` contains full NVIDIA-based source from `trustno1-coder/VIctory-NVIDIA v2026.11.27.8`, source pin `64d4931b3dd90305134512b805fc98f04119fb6e`. NVIDIA migration PR37/38 merged; old source archived `archive/pre-nvidia-foundation-20261127`.
