@@ -8,6 +8,7 @@ param(
     [string]$VictoryExe,
     [string]$GameExe,
     [string]$ExpectedSha256,
+    [ValidateSet('0','1')][string]$Tearing='0',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$RunFolder,
     [ValidateSet('Unknown','Menu','Black','World')][string]$Visual='Unknown',
@@ -100,6 +101,11 @@ function ElapsedSeconds([string]$StartedUtc,[DateTimeOffset]$Now) {
 }
 function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$VisualCode,[string]$ControlsCode) {
     $cfg=ReadConfig $Folder
+    # A single fixed enum; never include arbitrary CLI flags or private paths.
+    $tearingCode='OFF'
+    if ($cfg.PSObject.Properties['tearing_requested'] -and ([string]$cfg.tearing_requested -ceq '1')) {
+        $tearingCode='ON'
+    }
     $summary=LogSummary $Folder
     $pub=Join-Path $Folder 'UPLOAD-ONLY'
     New-Item -ItemType Directory -Force -Path $pub | Out-Null
@@ -124,6 +130,7 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
         'd3d12_debug_layer=OFF',
         'native_bvh_builder=OFF',
         'frame_generation=SOURCE_DEFAULT',
+        ('dxgi_tearing_requested='+$tearingCode),
         'expected_host_gpu_name=RTX5090',
         ('observed_host_gpu='+$gpu),
         ('host_adapter_event_count='+$summary.host_seen),
@@ -168,7 +175,7 @@ if ($Mode -eq 'SelfTest') {
     if ((ElapsedSeconds '2026-11-28T01:24:17Z' $fakeNow) -ne 12) { throw 'Phoenix/UTC elapsed math mismatch' }
     $root=Join-Path $env:TEMP ('E127-fixture-'+[Guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Force -Path (WorkPrivate $root),(Join-Path $root 'home\logs') | Out-Null
-    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
+    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o');tearing_requested='0' }
     [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
     $log=Join-Path $root 'home\logs\victory-nvidia-play-synthetic.log'
     # Force the host adapter event outside the sampled tail without a title.
@@ -190,6 +197,15 @@ if ($Mode -eq 'SelfTest') {
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
+    if (-not $report.Contains('dxgi_tearing_requested=OFF')) { throw 'Default DXGI opt-in enum absent' }
+    # Fixed-field ON state is verified with the synthetic manifest only; no title run.
+    $cfg.tearing_requested='1'
+    [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
+    PublicReport $root 'SELFTEST' 'UNKNOWN' 'World' 'Yes'
+    Expand-Archive -LiteralPath $zip -DestinationPath $testdir -Force
+    $reportOn=Get-Content -LiteralPath (Join-Path $testdir 'E127-fixed-fields.txt') -Raw
+    if (-not $reportOn.Contains('dxgi_tearing_requested=ON')) { throw 'DXGI ON fixed enum absent' }
+    if ($reportOn.Contains('C:\\private') -or $reportOn.Contains('never-upload.rpf') -or $reportOn.Contains($root)) { throw 'DXGI ON report leaked a private path or title data' }
     $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?$')
     if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
     $duration=[int]$durationMatch.Groups[1].Value
@@ -225,6 +241,7 @@ if ($Mode -eq 'Start') {
         victory_exe=$VictoryExe;game_exe=$GameExe
         executable_sha256=$sha;started_utc=[DateTime]::UtcNow.ToString('o')
         run_id=$id
+        tearing_requested=$Tearing
     }
     [IO.File]::WriteAllText((WorkConfig $RunFolder),($cfg|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
     PublicReport $RunFolder 'READY' 'UNKNOWN' 'Unknown' 'Unknown'
@@ -232,6 +249,7 @@ if ($Mode -eq 'Start') {
     Write-Host ('Private-only logs and settings: '+(Join-Path $RunFolder 'home'))
     Write-Host 'This may reset the graphics driver or crash/reboot the PC. Back up game saves beforehand.'
     Write-Host 'This test uses an isolated VICTORY_HOME, forces RTX 5090 by name, and leaves native BVH off.'
+    Write-Host ('DXGI immediate present opt-in requested: '+$(if($Tearing -eq '1'){'ON'}else{'OFF'}))
     Write-Host 'On first launch, the NVIDIA program may offer optional DLL downloads and restart itself once to warm up.'
     $consent=Read-Host 'Type PLAY to launch; anything else keeps the initial anonymous ZIP and cancels'
     if ($consent -cne 'PLAY') { Write-Host 'Cancelled without launching'; return }
@@ -255,7 +273,12 @@ if ($Mode -eq 'Start') {
         Remove-Item Env:VICTORY_BVH_BUILDER -ErrorAction SilentlyContinue
         Remove-Item Env:VICTORY_KEYS -ErrorAction SilentlyContinue
         Write-Host 'Starting the upstream built-in play launcher now; respond to any visible NVIDIA SDK prompt yourself.'
-        & $VictoryExe play $GameExe
+        if ($Tearing -ceq '1') {
+            # One literal, allowlisted override: never arbitrary user-supplied flags.
+            & $VictoryExe play $GameExe --set 'VICTORY_TEARING=1'
+        } else {
+            & $VictoryExe play $GameExe
+        }
         if ($null -ne $LASTEXITCODE) { $exit=[string]$LASTEXITCODE }
     } catch {
         ($_|Out-String) | Set-Content -LiteralPath (Join-Path (WorkPrivate $RunFolder) 'private-launch-exception.txt')
