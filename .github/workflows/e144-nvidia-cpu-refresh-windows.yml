@@ -14,6 +14,17 @@ jobs:
     timeout-minutes: 85
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Test exactly the candidate source; PR default otherwise checks out
+          # GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact candidate source head
+        shell: pwsh
+        run: |
+          $expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual=(& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'Focused WARP tested wrong source commit' }
+          Write-Host 'E144_EXACT_CANDIDATE_HEAD=true'
       - name: Install project Rust toolchain
         shell: pwsh
         run: rustup toolchain install
