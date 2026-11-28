@@ -20,6 +20,7 @@ $RepoName='JohnTWillemsen/VIctory-W'
 $UpstreamName='trustno1-coder/VIctory-NVIDIA'
 $UpstreamCommit='63b902fe1720a5188ee79d94a88c8de0470f6349'
 $Release='v2026.11.28.01'
+$script:ThisHelper=(Resolve-Path -LiteralPath $PSCommandPath).ProviderPath
 function Exact([string]$Body,[string]$Name) {
     $hits=[regex]::Matches($Body,'(?m)^'+[regex]::Escape($Name)+'=([^\r\n]+)\r?$')
     if ($hits.Count -ne 1) { throw ('Manifest missing or duplicate field '+$Name) }
@@ -75,7 +76,7 @@ function Verify([string]$Root,[string]$Owner,[string]$ExeHash) {
     if ((Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash.ToLowerInvariant() -cne (Exact $fields 'owner_helper_sha256')) {
         throw 'Owner helper differs from CI-tested source'
     }
-    if ((Resolve-Path -LiteralPath $helper).ProviderPath -cne (Resolve-Path -LiteralPath $MyInvocation.MyCommand.Path).ProviderPath) {
+    if ((Resolve-Path -LiteralPath $helper).ProviderPath -cne $script:ThisHelper) {
         throw 'Run the helper from the CI package; do not substitute a local script'
     }
     return [pscustomobject]@{Exe=$exe;Session=$session;Sha=$actual}
@@ -100,6 +101,7 @@ if ($Mode -eq 'SelfTest') {
         $fake=Join-Path $temp 'victory.exe'
         $session=Join-Path $temp 'owner-nvidia-session.ps1'
         $helper=Join-Path $temp 'owner-vw096-upstream-test.ps1'
+        $realHelper=$script:ThisHelper
         [IO.File]::WriteAllText($fake,'Synthetic only, not an executable')
         [IO.File]::WriteAllText($session,'Synthetic E127 runner')
         [IO.File]::Copy($self,$helper,$false)
@@ -120,6 +122,7 @@ if ($Mode -eq 'SelfTest') {
         )
         $mf=Join-Path $temp 'VW096-UPSTREAM-BUILD.txt'
         [IO.File]::WriteAllLines($mf,$manifest,[Text.UTF8Encoding]::new($false))
+        $script:ThisHelper=(Resolve-Path -LiteralPath $helper).ProviderPath
         $ok=Verify $temp $owner $sha
         if ($ok.Sha -cne $sha) { throw 'Positive synthetic provenance fixture failed' }
         $bad=$false
@@ -134,6 +137,7 @@ if ($Mode -eq 'SelfTest') {
         if (-not $bad) { throw 'Duplicate upstream manifest field accepted' }
         Write-Host 'VW096 upstream/owner exact SHA, binary and E127 hashes + negative fixtures PASS; no game launched'
     } finally {
+        $script:ThisHelper=$realHelper
         if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force }
     }
     return
