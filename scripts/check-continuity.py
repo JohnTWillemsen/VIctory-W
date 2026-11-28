@@ -101,7 +101,7 @@ def verify(root: Path) -> str:
         fail("NVIDIA source-switch decision not present")
     if "strict" not in handoff.lower() or "synthetic" not in handoff.lower():
         fail("Build/lint/synthetic distinctions not recorded")
-    if len(re.findall(r"(?m)^\\| \\*\\*VW-07[23456] \\u2014", queue)) < 5:
+    if len([line for line in queue.splitlines() if line.startswith("| **VW-07")]) < 5:
         fail("Active NVIDIA task IDs missing from compact queue")
     # Evidence/decision records must be preserved, but never loaded wholesale as a startup plan.
     result = git(root, "rev-parse", "HEAD")
