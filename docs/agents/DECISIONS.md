@@ -385,3 +385,11 @@ Draft [PR42](https://github.com/JohnTWillemsen/VIctory-W/pull/42) fixed a test-o
 **Decision:** Recognize a real owner GPU session but **do NOT claim a playable 3D world** unless owner confirms actual World+Controls Yes. Preserve visual and controls as separate observations. Fix elapsed time on report-only [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) using offset-aware DateTimeOffset and deterministic Arizona timezone test; do not replay the crash-prone title merely to repair old ZIP reporting. Never publish the owner ZIP, proprietary title data or raw logs.
 
 **Revisit:** Once exact-head report privacy fixture passes, merge the narrow correction while keeping inherited GPU synthetic and Clippy failures honest. Ask owner if they saw a true rendered world and moved a character, not just menu navigation.
+
+## D-054 · 2026-11-27 AZ — Accept first controllable RTX5090 rendered 3D interior, not whole-game completion
+
+**New direct user testimony (E-139):** Following E138's original fixed-field `human_observed_visual=Unknown` and `human_observed_controls=Yes`, the owner explicitly confirmed they **saw an actual 3D room/cell rendered and moved the player character through it**. This supplements the original anonymous ZIP; it does not change the stored ZIP's historical Unknown field.
+
+**Decision:** Declare the **minimal first playable interior World+Controls on owner's RTX5090 gate PASSED on direct owner observation**, referencing source main `8caccae47243cad361038bab4d4d4025f90ccc82`, the selected real host RTX5090 event, and normal exit from E138. Do not claim outdoor/open-world traversability, visual fidelity, completed game, sustained gameplay, accurate elapsed time, or broad stability. Distinguish brief controllable 3D interior from fully playable GTA. Next milestone: additional scene progression/graphics integrity and measured repeatability, prioritized by owner experience rather than re-running the same proof.
+
+**Implementation/constraints:** Reconcile `TASK_QUEUE`, `CURRENT_STATE`, `HANDOFF`, and `LATEST_CHECKPOINT` with append-only evidence. Finish the E138 report-only UTC fix via [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) only after exact-head privacy fixture passes. Keep source/game assets and private local logs outside GitHub.
