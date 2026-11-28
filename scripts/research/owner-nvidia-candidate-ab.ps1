@@ -64,8 +64,8 @@ function AssertCheckout([string]$Source,[string]$Reports,[string]$Head,[bool]$De
         throw 'Source checkout must be main, or exact detached candidate SHA in opted-in worktree'
     }
     if ($Detached) {
-        $actual=(Resolve-Path -LiteralPath $Source).ProviderPath.TrimEnd('\\')
-        $root=(Resolve-Path -LiteralPath $Reports).ProviderPath.TrimEnd('\\')
+        $actual=(Resolve-Path -LiteralPath $Source).ProviderPath.TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $root=(Resolve-Path -LiteralPath $Reports).ProviderPath.TrimEnd([IO.Path]::DirectorySeparatorChar)
         $expected=Join-Path $root ('E158-owner-source-'+$Head.Substring(0,12))
         if ($actual -ine $expected) { throw 'Detached candidate checkout must be the exact isolated E158 folder under report root' }
     }
