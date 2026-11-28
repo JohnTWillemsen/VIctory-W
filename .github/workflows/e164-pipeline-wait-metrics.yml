@@ -60,6 +60,17 @@ jobs:
           & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest -Repo .
           if ($LASTEXITCODE -ne 0) { throw 'VW092 consent-gated owner handoff SelfTest failed' }
           Write-Host 'VW092_OWNER_WRAPPER_NO_TITLE_SELFTEST_PASS=true'
+      - name: Verify private persistent cache safety and no-game negative fixtures (WinPS 5.1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = 'scripts/research/owner-nvidia-persistent-cache.ps1'
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) { throw 'VW092-H4 cache helper PowerShell syntax error' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H4 private cache negative fixture failed' }
+          Write-Host 'VW092_H4_PRIVATE_CACHE_NO_TITLE_SELFTEST_PASS=true'
       - name: Exercise offline fixed-field wait/FPS parser and privacy ZIP (PowerShell 5.1)
         shell: pwsh
         run: |
