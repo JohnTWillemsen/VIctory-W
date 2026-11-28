@@ -29,11 +29,23 @@ jobs:
             # That one is independently FAILED on unmodified main under WARP.
             # Skip ONLY that exact inherited test in this *focused* job;
             # E127 full-synthetic-tests remains unmodified, explicitly RED.
+            # The inherited write-watch test itself documents 4/100 failures
+            # from concurrent Rust test-harness memory-map reuse (including
+            # 2/100 with faults locked), on the original upstream source.
+            # Serialize test *cases* while retaining concurrency inside each
+            # multi-threaded test. Do not exclude any watch:: tests.
             if ($filter -eq 'host::') {
-              cargo test --locked -p victory-gpu --lib -- $filter --skip pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws
+              cargo test --locked -p victory-gpu --lib -- $filter --skip pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws --test-threads=1
             } else {
-              cargo test --locked -p victory-gpu --lib -- $filter
+              cargo test --locked -p victory-gpu --lib -- $filter --test-threads=1
             }
             if ($LASTEXITCODE -ne 0) { throw ('E144 WARP test failure in '+$filter) }
           }
-          Write-Host 'E144 FOUR WARP FILTER FAMILIES PASSED; OWNER_GAME_NOT_RUN'
+          # Repeat exact previously intermittent unlocked write-fault case to
+          # distinguish a one-off parallel-harness collision from true failure.
+          for ($i=1; $i -le 3; $i++) {
+            Write-Host ('E144 unlocked watch regression serial repetition '+$i)
+            cargo test --locked -p victory-gpu --lib -- watch::tests::faults_that_take_no_lock_tell_the_same --exact --test-threads=1
+            if ($LASTEXITCODE -ne 0) { throw ('E144 serial unlocked watch regression '+$i+' failed') }
+          }
+          Write-Host 'E144 FOUR SERIAL WARP FILTER FAMILIES AND UNLOCKED REPEATS PASSED; FULL GPU SUITE IS A SEPARATE GATE'
