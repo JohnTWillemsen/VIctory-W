@@ -19,7 +19,7 @@ The owner reporting script accepts `-Tearing 0|1`, defaults 0, and asks for lite
 
 ## Exact owner test procedure once every candidate-specific gate passes
 
-**No hardware was launched while preparing this branch.** Before asking owner to run anything: inspect live final PR head, all candidate-specific CI jobs, source-built [E127 artifact](../../.github/workflows/e127-nvidia-foundation.yml) manifest `victory_w_commit` and SHA-256, exact helper code, and the expected one local source checkout.
+**No hardware was launched while preparing this branch.** Before asking owner to run anything: inspect live final PR head, all candidate-specific CI jobs, source-built [E127 artifact](../../.github/workflows/e127-nvidia-foundation-windows.yml) manifest `victory_w_commit` and SHA-256, exact helper code, and the expected one local source checkout.
 
 The owner has a pre-existing clean NVIDIA source checkout at `C:\VIctory-NVIDIA` and dedicated private report root at `C:\VIctory-NVIDIA-Tests`. To **avoid changing the old source's main branch**, fetch the *exact 40-character E158 head* into the existing Git object store and create a detached worktree named `C:\VIctory-NVIDIA-Tests\E158-owner-source-<first12SHA>`. The revised E145 harness allows detached worktrees **only** with `-AllowDetachedCandidateWorktree`, checks exact commit and fixed worktree path under the report root, canonical remote, and clean working tree; normal `main` checks remain unchanged. Never create a fake local `main` branch to bypass provenance.
 
