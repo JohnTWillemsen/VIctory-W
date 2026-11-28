@@ -44,12 +44,12 @@ jobs:
       - name: Verify full PowerShell 5.1 E127 report and artifact privacy fixtures
         shell: powershell
         run: |
-          foreach ($relative in @('owner/scripts/research/owner-nvidia-session.ps1','owner/scripts/research/owner-vw096-upstream-test.ps1')) {
+          foreach ($relative in @('owner/scripts/research/owner-vw096-e127-upstream.ps1','owner/scripts/research/owner-vw096-upstream-test.ps1')) {
             $tokens=$null; $errors=$null
             [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $relative).Path,[ref]$tokens,[ref]$errors)
             if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; throw 'Runner PowerShell syntax invalid' }
           }
-          & ./owner/scripts/research/owner-nvidia-session.ps1 -Mode SelfTest
+          & ./owner/scripts/research/owner-vw096-e127-upstream.ps1 -Mode SelfTest
           if ($LASTEXITCODE -ne 0) { throw 'Version-specific E127 fixture failed' }
           & ./owner/scripts/research/owner-vw096-upstream-test.ps1 -Mode SelfTest
           if ($LASTEXITCODE -ne 0) { throw 'VW096 artifact verification negative fixtures failed' }
@@ -70,7 +70,7 @@ jobs:
           $exe='upstream/target/release/victory.exe'
           if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No Windows victory executable' }
           $sha=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          $e127=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-nvidia-session.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $e127=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-vw096-e127-upstream.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
           $helper=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-vw096-upstream-test.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
           $lines=@(
             'format=VW096-nvidia-source-v1'
@@ -95,7 +95,7 @@ jobs:
           name: VW096-upstream-v20261128-01-sourcebuilt
           path: |
             upstream/target/release/victory.exe
-            owner/scripts/research/owner-nvidia-session.ps1
+            owner/scripts/research/owner-vw096-e127-upstream.ps1
             owner/scripts/research/owner-vw096-upstream-test.ps1
             VW096-UPSTREAM-BUILD.txt
           retention-days: 7

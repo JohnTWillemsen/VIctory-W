@@ -53,7 +53,7 @@ function Verify([string]$Root,[string]$Owner,[string]$ExeHash) {
     }
     $manifest=OneFile $Root 'VW096-UPSTREAM-BUILD.txt'
     $exe=OneFile $Root 'victory.exe'
-    $session=OneFile $Root 'owner-nvidia-session.ps1'
+    $session=OneFile $Root 'owner-vw096-e127-upstream.ps1'
     $helper=OneFile $Root 'owner-vw096-upstream-test.ps1'
     $fields=[IO.File]::ReadAllText($manifest)
     if ((Exact $fields 'format') -cne 'VW096-nvidia-source-v1' -or
@@ -99,7 +99,7 @@ if ($Mode -eq 'SelfTest') {
     try {
         New-Item -ItemType Directory -Path $temp -Force | Out-Null
         $fake=Join-Path $temp 'victory.exe'
-        $session=Join-Path $temp 'owner-nvidia-session.ps1'
+        $session=Join-Path $temp 'owner-vw096-e127-upstream.ps1'
         $helper=Join-Path $temp 'owner-vw096-upstream-test.ps1'
         $realHelper=$script:ThisHelper
         [IO.File]::WriteAllText($fake,'Synthetic only, not an executable')
