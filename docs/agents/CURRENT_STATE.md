@@ -13,17 +13,6 @@ Prior main RTX5090 E140/E141 longer log 90 scene-like windows, median 10.9 FPS (
 **FIRST REAL RTX5090 CONTROLLABLE RENDERED 3D INTERIOR = CONFIRMED.** Following the E138 ZIP's original `human_observed_visual=Unknown` and `human_observed_controls=Yes`, the owner explicitly confirmed seeing a rendered 3D interior room/cell and moving the player through it. This direct follow-up upgrades **initial indoor World+Controls acceptance only**, without rewriting E138 ZIP or implying outdoor/open-world access, wide scene progression, fidelity, sustained play, or overall stability. The first session ran a source-matched NVIDIA-v8 binary SHA-256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f` from clean source main `8caccae47243cad361038bab4d4d4025f90ccc82`; RTX5090 was the selected host adapter, exit code 0 and 0 recognized GPU fault markers. Original ZIP's `elapsed_seconds=26020` is invalid, inflated by Phoenix UTC offset; reporting-only [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) fixes calculation. E138 original and E139 owner follow-up are separate append-only evidence rows. No need to rerun dangerous GPU test merely to answer visual question. **Next:** investigate wider scene progression, renderer correctness and measured stability; check live `main` before use.
 
 
-## First real owner RTX5090 report — E135–E138 (2026-11-27 AZ)
-
-The owner E135 inspection showed an existing **empty** `C:\\VIctory-NVIDIA` folder; the E136 fixed-field report then **verified a clean clone** of the same GitHub `main` at `8caccae47243cad361038bab4d4d4025f90ccc82`. E137 verified the matching [GitHub Actions source-built artifact](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089270184), binary SHA-256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f`, and anonymous PowerShell self-test PASS. Old checkout and title files were not moved by these steps.
-
-**FIRST OWNER GPU SESSION NOW VERIFIED:** E127 ZIP (not committed) was `FINALIZED`, `exit_code=0`, selected real host RTX5090 (2 adapter events, zero other), zero recognized device removed/hung/DRED/pagefault/slow submission/GPU failure markers. However it reported `human_observed_visual=Unknown`, `human_observed_controls=Yes`. **World+Controls gate remains UNKNOWN, NOT proven playable.** Ask whether the owner saw and moved within a rendered 3D world or only controlled menus. No new risky game run needed to clarify.
-
-**E138 timekeeping bug:** The anonymized `elapsed_seconds=26020` is invalid; UTC run ID started at 01:24:17 and checkpoint was 01:37:58, a ~821-second interval, not a measured gameplay duration. [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) fixes offset-naive UTC arithmetic. The source [main Windows E127 CI](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089270184) release and privacy fixture PASS, **three inherited GPU synthetic tests FAIL**, and strict Clippy still FAIL. Verify later CI and live main SHA, never claim global green CI.
-
-
-**Checkpoint:** 2026-11-27 America/Phoenix. **Live GitHub overrides this snapshot.** Canonical complete overview: [HANDOFF.md](HANDOFF.md).
-
 ## Source and preserved history
 
 - Repo: [JohnTWillemsen/VIctory-W](https://github.com/JohnTWillemsen/VIctory-W), default branch `main`; last verified SHA `88a60ea1d26664e9c04f184da6db153c0c3cde0c`. A changed main SHA is expected after new work—review commits, don't assume a pinned SHA is permanently current.
@@ -39,10 +28,6 @@ Historical source-built game launcher executable [artifact 15237799712](https://
 ## Current task and next agent action
 
 **First** requery live `main`, PRs and CI. **Then** follow [E127 testing/upload protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md): one consent-gated actual host adapter + rendered world + input owner checkpoint (only when useful); one privacy-safe anonymous ZIP, never raw logs. Diagnose existing three source synthetic failures separately, likely WARP/hardware-feature dependent but not yet established as harmless. Do not ask to repeat obsolete E087/E091 multi-ZIP experiments or reintroduce patches from the old source.
-
-## E131/E133 merged and E132 deferred
-
-**E134 latest verified main:** `88a60ea1d26664e9c04f184da6db153c0c3cde0c` (2026-11-27 America/Phoenix). [E131 PR41](https://github.com/JohnTWillemsen/VIctory-W/pull/41) merged `d7f0ae3c`, preserving `VICTORY_HOME` and `VICTORY_ADAPTER` across NVIDIA `play::prepare`. Its [Windows CI](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46088218108) passed the release executable build, E127 privacy fixture and new Rust regression; **same 3 inherited GPU synthetic failures** remained. [E133 PR43](https://github.com/JohnTWillemsen/VIctory-W/pull/43) merged `88a60ea1`: E127 conditionally scans a bounded head for initial RTX adapter evidence after scanning the bounded crash tail; [3600-line private-path-safe fixture](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089003044) passed. [PR42](https://github.com/JohnTWillemsen/VIctory-W/pull/42) is still a **draft** partial Clippy cleanup; ~26 further inherited GPU lint errors were revealed and should not delay actual GPU acceptance. **No owner RTX5090 World+Controls result or new Windows folder creation has been verified.** Current GitHub SHA and CI must still be rechecked.
 
 ## Durable records and unresolved concerns
 
