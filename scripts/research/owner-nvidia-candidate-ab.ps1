@@ -56,7 +56,10 @@ function AssertCheckout([string]$Source,[string]$Reports,[string]$Head,[bool]$De
     if (-not (Test-Path -LiteralPath $Reports -PathType Container)) { throw 'NVIDIA private test directory missing' }
     $branchOutput=& git -C $Source branch --show-current
     if ($LASTEXITCODE -ne 0) { throw 'Git branch probe failed' }
-    $branch=([string]$branchOutput).Trim()
+    # On Windows PowerShell 5.1, casting null native output to string can
+    # still produce null, so test for null *before* invoking any method.
+    if ($null -eq $branchOutput) { $branch='' }
+    else { $branch=([string]$branchOutput).Trim() }
     $shaOutput=& git -C $Source rev-parse HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Git HEAD probe failed' }
     $sha=([string]$shaOutput).Trim().ToLowerInvariant()
@@ -146,6 +149,13 @@ if ($Mode -eq 'SelfTest') {
         if (-not $rejected) { throw 'Detached checkout accepted without explicit opt-in' }
         Write-Host 'E145 real detached worktree branch/SHA/remote fail-closed fixtures PASS; no title launched'
         Write-Host 'E145 source artifact SHA and commit verification, fail-closed fixtures PASS; no title launched'
+    }
+    catch {
+        # Fixed synthetic diagnostic only. Do not print real source paths,
+        # arbitrary owner logs, or title data.
+        Write-Host ('E145_SYNTHETIC_FAIL_LINE='+$_.InvocationInfo.ScriptLineNumber)
+        Write-Host ('E145_SYNTHETIC_FAIL_TYPE='+$_.Exception.GetType().Name)
+        throw
     }
     finally {
         if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
