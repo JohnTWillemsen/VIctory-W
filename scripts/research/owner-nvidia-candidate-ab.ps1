@@ -49,6 +49,34 @@ function CheckoutAllowed([string]$Branch,[string]$Current,[string]$Expected,[boo
     if ($Detached) { return (($Branch -ceq '') -and ($Current -ceq $Expected)) }
     return ($Branch -ceq 'main')
 }
+# PowerShell returns $null for 'git branch --show-current' on a detached
+# HEAD. This real-checkout validator prevents calling .Trim() on null.
+function AssertCheckout([string]$Source,[string]$Reports,[string]$Head,[bool]$Detached) {
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw 'NVIDIA source directory missing' }
+    if (-not (Test-Path -LiteralPath $Reports -PathType Container)) { throw 'NVIDIA private test directory missing' }
+    $branchOutput=& git -C $Source branch --show-current
+    if ($LASTEXITCODE -ne 0) { throw 'Git branch probe failed' }
+    $branch=([string]$branchOutput).Trim()
+    $shaOutput=& git -C $Source rev-parse HEAD
+    if ($LASTEXITCODE -ne 0) { throw 'Git HEAD probe failed' }
+    $sha=([string]$shaOutput).Trim().ToLowerInvariant()
+    if (-not (CheckoutAllowed $branch $sha $Head $Detached)) {
+        throw 'Source checkout must be main, or exact detached candidate SHA in opted-in worktree'
+    }
+    if ($Detached) {
+        $actual=(Resolve-Path -LiteralPath $Source).ProviderPath.TrimEnd('\\')
+        $root=(Resolve-Path -LiteralPath $Reports).ProviderPath.TrimEnd('\\')
+        $expected=Join-Path $root ('E158-owner-source-'+$Head.Substring(0,12))
+        if ($actual -ine $expected) { throw 'Detached candidate checkout must be the exact isolated E158 folder under report root' }
+    }
+    $remoteOutput=& git -C $Source remote get-url origin
+    if ($LASTEXITCODE -ne 0 -or ([string]$remoteOutput).Trim() -cne 'https://github.com/JohnTWillemsen/VIctory-W.git') {
+        throw 'Source Git remote is not the existing official project'
+    }
+    $statusOutput=@(& git -C $Source status --porcelain)
+    if ($LASTEXITCODE -ne 0) { throw 'Git clean status probe failed' }
+    if ($statusOutput.Count -ne 0) { throw 'Local source has uncommitted changes; no changes made' }
+}
 function Harness([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw 'Required GitHub test script missing' }
     & $Path -Mode SelfTest
@@ -94,6 +122,29 @@ if ($Mode -eq 'SelfTest') {
         if (CheckoutAllowed '' ('b'*40) $expected $true) { throw 'Wrong detached worktree SHA accepted' }
         if (CheckoutAllowed 'main' $expected $expected $true) { throw 'Attached branch accepted as detached worktree' }
         if (-not (CheckoutAllowed 'main' ('b'*40) $expected $false)) { throw 'Old main-based preflight regressed' }
+        # Real Git worktree integration: detached HEAD has no branch-name text.
+        $source=Join-Path $root 'synthetic-main'
+        $reports=Join-Path $root 'reports'
+        New-Item -ItemType Directory -Force -Path $reports | Out-Null
+        & git init -q --initial-branch=main $source
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic main git init failed' }
+        & git -C $source -c user.name=Test -c user.email=synthetic@example.invalid commit -q --allow-empty -m synthetic
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic main commit failed' }
+        & git -C $source remote add origin 'https://github.com/JohnTWillemsen/VIctory-W.git'
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic origin setup failed' }
+        $realHead=([string](& git -C $source rev-parse HEAD)).Trim()
+        AssertCheckout $source $reports $realHead $false
+        $work=Join-Path $reports ('E158-owner-source-'+$realHead.Substring(0,12))
+        & git -C $source worktree add -q --detach $work $realHead
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic detached worktree creation failed' }
+        AssertCheckout $work $reports $realHead $true
+        $rejected=$false
+        try { AssertCheckout $work $reports ('b'*40) $true } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Actual detached worktree wrong HEAD was not rejected' }
+        $rejected=$false
+        try { AssertCheckout $work $reports $realHead $false } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Detached checkout accepted without explicit opt-in' }
+        Write-Host 'E145 real detached worktree branch/SHA/remote fail-closed fixtures PASS; no title launched'
         Write-Host 'E145 source artifact SHA and commit verification, fail-closed fixtures PASS; no title launched'
     }
     finally {
@@ -117,23 +168,7 @@ if ($Mode -eq 'Recover') {
 }
 if ($ExpectedHeadSha -cnotmatch '^[0-9a-f]{40}$') { throw 'Provide exact 40-hex candidate head from verified GitHub CI' }
 if ($GithubRun -lt 1) { throw 'Provide exact GitHub Actions source release run ID' }
-if (-not (Test-Path -LiteralPath $Repo -PathType Container)) { throw 'NVIDIA source directory missing' }
-if (-not (Test-Path -LiteralPath $ReportRoot -PathType Container)) { throw 'NVIDIA private test directory missing' }
-$checkedBranch=(& git -C $Repo branch --show-current).Trim()
-$checkedSha=(& git -C $Repo rev-parse HEAD).Trim().ToLowerInvariant()
-if (-not (CheckoutAllowed $checkedBranch $checkedSha $ExpectedHeadSha ([bool]$AllowDetachedCandidateWorktree))) {
-    throw 'Source checkout must be main, or exact detached candidate SHA in opted-in worktree'
-}
-if ($AllowDetachedCandidateWorktree) {
-    $work=(Resolve-Path -LiteralPath $Repo).ProviderPath.TrimEnd('\')
-    $test=(Resolve-Path -LiteralPath $ReportRoot).ProviderPath.TrimEnd('\')
-    $expectedWork=Join-Path $test ('E158-owner-source-'+$ExpectedHeadSha.Substring(0,12))
-    if ($work -ine $expectedWork) { throw 'Detached candidate checkout must be the exact isolated E158 folder under report root' }
-}
-if ((& git -C $Repo remote get-url origin).Trim() -cne 'https://github.com/JohnTWillemsen/VIctory-W.git') {
-    throw 'Source Git remote is not the existing official project'
-}
-if (@(& git -C $Repo status --porcelain).Count -ne 0) { throw 'Local source has uncommitted changes; no changes made' }
+AssertCheckout $Repo $ReportRoot $ExpectedHeadSha ([bool]$AllowDetachedCandidateWorktree)
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI (gh) is required to fetch a verified artifact' }
 Harness $session
 Harness $perf
