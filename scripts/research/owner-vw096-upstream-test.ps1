@@ -76,8 +76,8 @@ function Verify([string]$Root,[string]$Owner,[string]$ExeHash) {
     if ((Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash.ToLowerInvariant() -cne (Exact $fields 'owner_helper_sha256')) {
         throw 'Owner helper differs from CI-tested source'
     }
-    if ((Resolve-Path -LiteralPath $helper).ProviderPath -cne $script:ThisHelper) {
-        throw 'Run the helper from the CI package; do not substitute a local script'
+    if ((Get-FileHash -LiteralPath $script:ThisHelper -Algorithm SHA256).Hash.ToLowerInvariant() -cne (Exact $fields 'owner_helper_sha256')) {
+        throw 'Executing helper does not match the CI package helper SHA256'
     }
     return [pscustomobject]@{Exe=$exe;Session=$session;Sha=$actual}
 }
