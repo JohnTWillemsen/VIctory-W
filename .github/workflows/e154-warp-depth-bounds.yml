@@ -2,6 +2,9 @@ name: E154 WARP depth bounds enabled-depth diagnostic
 
 on:
   pull_request:
+  push:
+    branches:
+      - experiment/e154-warp-depth-bounds-depth-enable-20261127
   workflow_dispatch:
 
 permissions:
