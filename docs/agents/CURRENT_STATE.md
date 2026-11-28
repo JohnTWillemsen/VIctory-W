@@ -6,7 +6,7 @@
 
 - Repo: [JohnTWillemsen/VIctory-W](https://github.com/JohnTWillemsen/VIctory-W), default branch `main`; last verified SHA `6b6bdf4219fc31eb35a8411e1b76fa9c03b2b1b7`. A changed main SHA is expected after new work—review commits, don't assume a pinned SHA is permanently current.
 - The user approved and completed an entire runtime/launcher switch to [trustno1-coder/VIctory-NVIDIA v2026.11.27.8](https://github.com/trustno1-coder/VIctory-NVIDIA), pinned original source `64d4931b3dd90305134512b805fc98f04119fb6e`. [PR37](https://github.com/JohnTWillemsen/VIctory-W/pull/37) and [PR38](https://github.com/JohnTWillemsen/VIctory-W/pull/38) **merged**. Historic old source `archive/pre-nvidia-foundation-20261127` at `63bcca43c6a00a758510398fa43096ce7e4f7df0`. No AMD-derived experimental source patch is automatically active.
-- User's agreed Windows workspace: `C:\VIctory-NVIDIA` (clone) and `C:\VIctory-NVIDIA-Tests` (reports); old `C:\VIctory-W` untouched. **Actual folder creation not independently verified.**
+- User's agreed Windows workspace: `C:\VIctory-NVIDIA` (fresh clone of the **same GitHub remote**, not a second GitHub repo) and `C:\VIctory-NVIDIA-Tests` (new sessions/private report root); old `C:\VIctory-W` untouched; game files remain where they are. Use [LOCAL_WORKSPACE.md](LOCAL_WORKSPACE.md), verify `origin`, branch and status, and pass `-ReportRoot 'C:\VIctory-NVIDIA-Tests'`. **Actual folder creation not independently verified.**
 
 ## Verified source checks and their limitations
 
