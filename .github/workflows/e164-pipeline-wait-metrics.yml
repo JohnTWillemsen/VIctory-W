@@ -36,6 +36,17 @@ jobs:
           & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest
           if ($LASTEXITCODE -ne 0) { throw 'VW092-H4 private cache negative fixture failed' }
           Write-Host 'VW092_H4_PRIVATE_CACHE_NO_TITLE_SELFTEST_PASS=true'
+      - name: Verify offline cache library counters and fixed-field ZIP privacy (WinPS 5.1; no game)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = 'scripts/research/owner-nvidia-cache-observations.ps1'
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) { throw 'VW092-H5 offline cache observation PowerShell syntax failure' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H5 offline cache privacy fixture failed' }
+          Write-Host 'VW092_H5_CACHE_LOAD_OFFLINE_PRIVACY_PASS=true'
       - name: Install pinned project Rust
         shell: pwsh
         run: rustup toolchain install
