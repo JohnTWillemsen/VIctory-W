@@ -8,7 +8,7 @@ param(
     [string]$VictoryExe,
     [string]$GameExe,
     [string]$ExpectedSha256,
-    [string]$ReportRoot='C:\VIctory-Tests',
+    [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$RunFolder,
     [ValidateSet('Unknown','Menu','Black','World')][string]$Visual='Unknown',
     [ValidateSet('Unknown','No','Yes')][string]$Controls='Unknown'

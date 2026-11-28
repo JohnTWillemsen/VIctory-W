@@ -20,13 +20,13 @@ As checked on 2026-11-27:
 
 ## Owner's local organization and objective
 
-Owner's Windows workstation uses NVIDIA RTX 5090 and Intel Core Ultra 9 285K. Their agreed **new separate local workspace** is `C:\VIctory-NVIDIA` (clone of this repo), reporting root `C:\VIctory-NVIDIA-Tests`; `C:\VIctory-W` is their older checkout and should be left untouched. **These are intended local paths, not independently confirmed present.** Game files remain in their existing local folder; never copy/upload titles to GitHub.
+Owner's Windows workstation uses NVIDIA RTX 5090 and Intel Core Ultra 9 285K. Their agreed **new separate local workspace** is `C:\VIctory-NVIDIA` (**fresh clone of this existing GitHub VIctory-W repo**, not a separate remote), reporting root `C:\VIctory-NVIDIA-Tests`; `C:\VIctory-W` is their older checkout and should be left untouched. **These are intended local paths, not independently confirmed present.** Game files remain in their existing local folder; never copy/upload titles to GitHub. **Mandatory local instructions:** [LOCAL_WORKSPACE.md](LOCAL_WORKSPACE.md) provides the safe PowerShell bootstrap, remote/branch/status verification, ownership of local build/report folders, and privacy boundaries. Never run or clean the old local checkout.
 
 **Mission:** Make the unofficial Xbox-to-Windows compatibility layer reach a rendered 3D world with working controls, with correctness and stable performance. No native BVH builder for the first baseline. **The user's own observed world/control success is the milestone**, not more speculative shader fixes.
 
 ## Testing and uploads: one session = one privacy-safe ZIP
 
-Use [E127 protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md) and `scripts/research/owner-nvidia-session.ps1` from verified `main`:
+Use [E127 protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md), [local workspace agreement](LOCAL_WORKSPACE.md), and `scripts/research/owner-nvidia-session.ps1` from verified `main`; always pass `-ReportRoot 'C:\VIctory-NVIDIA-Tests'` for owner-run sessions:
 - Strict compiled-executable SHA check; **owner consent ('PLAY')**; back up game saves; normal non-admin PowerShell; NVIDIA fork's built-in `victory play`, clean isolated `VICTORY_HOME`, `VICTORY_ADAPTER=RTX 5090`, RT BVH/debug/scripted keys off.
 - The report harness checkpoints **one** `E127-anonymous-summary.zip`; after reboot `-Mode Recover` reconstructs from private local files without relaunch. Report fixed fields only: actual host adapter name match, exit/device-loss markers, human-observed World/Controls acceptance, stage (`Unknown/Menu/Black/World`), movement (`Unknown/No/Yes`). Ask for **only the anonymous ZIP**.
 - Keep raw title logs, screenshots, title files, local paths, shaders, caches and dumps on owner PC; never paste them in GitHub. `VIctory-W` repo was **PUBLIC** at checkpoint; recheck visibility before any change involving sensitive data.

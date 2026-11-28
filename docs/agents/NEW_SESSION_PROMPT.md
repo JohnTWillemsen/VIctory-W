@@ -1,17 +1,15 @@
-# Paste-ready new-session prompt — VIctory-W
+# Paste-ready new-session prompt — NVIDIA-based VIctory-W
 
-Copy only the text below into a new ChatGPT session. It deliberately avoids a fixed SHA or dated test result; GitHub must supply current facts.
+The paragraph below is the **complete message** to paste into a new session. It contains no fixed commit SHA: GitHub live main and its docs are authoritative.
 
-> Continue as lead developer and GitHub orchestrator for my **VIctory-W NVIDIA-based Xbox-to-Windows compatibility project** at https://github.com/JohnTWillemsen/VIctory-W.
+> Continue development as lead engineer and GitHub orchestrator for my **VIctory-W NVIDIA-based Xbox-to-Windows compatibility project**: https://github.com/JohnTWillemsen/VIctory-W.
 >
-> **GitHub is the source of truth.** First verify the live `main` SHA, PRs, current CI and upstream NVIDIA changes. Read `AGENTS.md`, `docs/agents/HANDOFF.md`, `CURRENT_STATE.md`, `LATEST_CHECKPOINT.md`, `EVIDENCE_LOG.md`, `DECISIONS.md` and the E127 test/upload protocol from that live branch. Treat old AMD/Marvisak source and experimental PRs as *history*; we switched the codebase to trustno1-coder/VIctory-NVIDIA.
+> **GitHub is the development source of truth.** Verify the live `main` SHA, recent commits, open PRs, CI jobs, and relevant upstream NVIDIA changes. Read `AGENTS.md`, `docs/agents/HANDOFF.md`, and **`docs/agents/LOCAL_WORKSPACE.md`**, then follow their links to current state, active tasks, evidence, decisions and the E127 test/upload protocol. Correct contradictions only when independently verified.
 >
-> Continue from the **latest verified** evidence, not stale handoff claims. Goal: playable 3D world and working controls on my RTX 5090. Our new intended local checkout is `C:\VIctory-NVIDIA` and test folder is `C:\VIctory-NVIDIA-Tests`; leave old `C:\VIctory-W` untouched. Keep raw logs/game data local; request only one privacy-safe E127 ZIP when a real hardware test is necessary. Distinguish source builds, lint, synthetic/WARP tests and actual observed gameplay.
+> **Repository vs local folders:** Keep using the existing GitHub repo `JohnTWillemsen/VIctory-W` with the already-merged NVIDIA-based source. It is **not** a newly created GitHub repo; the **fresh, separate Windows clone** belongs at `C:\VIctory-NVIDIA`. All new private test sessions and anonymous report ZIPs belong under `C:\VIctory-NVIDIA-Tests`; pass that as `-ReportRoot` even though the script fallback should also be updated. The old local checkout `C:\VIctory-W` must remain untouched. **Leave game files in their existing location.** Verify local folders/remotes before assuming they exist; do not move old binaries, experiment configurations or caches into the new clone.
 >
-> Do useful GitHub engineering independently on a focused PR; don't blindly merge fixes, claim playability, or ask me to repeat old tests. At each milestone update the canonical handoff, evidence, decisions and exact CI references. Only tell me what to download or run when my PC is actually needed.
+> **Continue from the latest *verified* checkpoint.** Do not restart development, revive AMD/Marvisak-based experimental branches, assume gameplay works, repeat completed GPU tests, or blindly merge old fixes. Aim for a correctly rendered and controllable 3D world on my RTX 5090, then graphics correctness and stability. Separate Windows release build, strict Clippy, synthetic/WARP GPU failures, and actual owner-observed 5090 World+Controls evidence.
+>
+> Work independently in isolated GitHub branches and PRs; review exact-head CI, fix actual outstanding issues, and update canonical handoff/evidence/decisions at significant milestones. No unapproved force-pushes or experimental runtime merges. Keep raw logs/game data, shaders, crash dumps, private paths and title assets local; for a hardware test request only **one E127 anonymous report ZIP** after explicit `PLAY` confirmation. Only ask me for a verified download or PowerShell command when my actual PC is required.
 
----
-
-**How to use:** The user may simply say "Continue VIctory-W from GitHub and follow AGENTS.md and HANDOFF.md." The longer prompt above makes the objective and restrictions explicit for a session with no prior context.
-
-**Storage:** This file is a reusable bootstrap message, not a historical task transcript or live status source. A new agent must read GitHub before acting. Earlier ~135 KB revisions are preserved in Git history, not silently lost.
+The handoff is stored **in GitHub**, not in an external document, ChatGPT chat transcript or local artifact. A new session fetches live source/evidence and discovers any later changes. The former longer prompts are in Git history only.

@@ -4,6 +4,7 @@ For the NVIDIA-based VIctory-W, **read [AGENTS.md](../../AGENTS.md) and [HANDOFF
 
 | Source | What it means | Updating it |
 | --- | --- | --- |
+| [LOCAL_WORKSPACE.md](LOCAL_WORKSPACE.md) | Safe Windows clone/bootstrap, new source and report roots, and old checkout/game isolation | Verify locally; update when owner changes directory agreement |
 | [HANDOFF.md](HANDOFF.md) | Canonical short *dated* NVIDIA source/CI/owner gameplay/workspace handoff | Update whenever the accepted foundation, playability evidence or owner test procedure changes |
 | [CURRENT_STATE.md](CURRENT_STATE.md) | Short current state, exact linked runs/commit as of last checkpoint | Refresh at each substantial milestone; **always recheck live GitHub** |
 | [LATEST_CHECKPOINT.md](LATEST_CHECKPOINT.md) | Quick last milestone plus immediate next step | Refresh with accepted evidence, no speculative progress |

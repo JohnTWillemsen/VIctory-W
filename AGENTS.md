@@ -5,10 +5,11 @@
 ## Required reading — short first, deeper only as needed
 
 1. [**HANDOFF.md**](docs/agents/HANDOFF.md) — canonical *dated* state, exact provenance, known CI failures, owner local workspace, privacy/report protocol and active priorities.
-2. [CURRENT_STATE.md](docs/agents/CURRENT_STATE.md) and [LATEST_CHECKPOINT.md](docs/agents/LATEST_CHECKPOINT.md) — concise maintained snapshots. For a restart, use [NEW_SESSION_PROMPT.md](docs/agents/NEW_SESSION_PROMPT.md).
-3. [WORKFLOW.md](docs/agents/WORKFLOW.md) and [TESTING.md](docs/agents/TESTING.md) — roles, branch gates, independent source/synthetic/hardware acceptance.
-4. [EVIDENCE_LOG.md](docs/agents/EVIDENCE_LOG.md) and [DECISIONS.md](docs/agents/DECISIONS.md) — append-only history. Consult older [TASK_QUEUE.md](docs/agents/TASK_QUEUE.md) only for historical task IDs; current active tasks are in HANDOFF.
-5. [NVIDIA_SOURCE_PIN.md](docs/migration/NVIDIA_SOURCE_PIN.md), [E127 report/upload protocol](docs/research/E127-TESTING-AND-UPLOAD-PROTOCOL.md), actual source, licenses, current tests and applicable upstream source.
+2. [LOCAL_WORKSPACE.md](docs/agents/LOCAL_WORKSPACE.md) — mandatory clean local source/test folders, safe bootstrap and no cross-contamination of old builds.
+3. [CURRENT_STATE.md](docs/agents/CURRENT_STATE.md) and [LATEST_CHECKPOINT.md](docs/agents/LATEST_CHECKPOINT.md) — concise maintained snapshots. For a restart, use [NEW_SESSION_PROMPT.md](docs/agents/NEW_SESSION_PROMPT.md).
+4. [WORKFLOW.md](docs/agents/WORKFLOW.md) and [TESTING.md](docs/agents/TESTING.md) — roles, branch gates, independent source/synthetic/hardware acceptance.
+5. [EVIDENCE_LOG.md](docs/agents/EVIDENCE_LOG.md) and [DECISIONS.md](docs/agents/DECISIONS.md) — append-only history. Consult older [TASK_QUEUE.md](docs/agents/TASK_QUEUE.md) only for historical task IDs; current active tasks are in HANDOFF.
+6. [NVIDIA_SOURCE_PIN.md](docs/migration/NVIDIA_SOURCE_PIN.md), [E127 report/upload protocol](docs/research/E127-TESTING-AND-UPLOAD-PROTOCOL.md), actual source, licenses, current tests and applicable upstream source.
 
 **Never treat a static SHA, status, artifact link, or PR description as permanently current. At every fresh session, use GitHub tools to verify live default branch SHA, repo visibility, changed files, PR heads/bases, upstream changes and exact-head CI jobs.** Historical paragraphs may be superseded. If GitHub cannot be checked, say `UNKNOWN` and do not claim a verified state.
 
@@ -16,7 +17,7 @@
 
 Reach a rendered, correctly functioning Xbox-to-Windows game world with working input and then improve stability/performance on the owner's Windows RTX 5090. The NVIDIA fork uses renderer approximations with native BVH builder off for the first controlled baseline; **build success, a video/logo, audio, a process exit or maintainer report is not verified owner gameplay**.
 
-The owner's intended new local checkout is `C:\VIctory-NVIDIA`, test/report root `C:\VIctory-NVIDIA-Tests`; old `C:\VIctory-W` stays untouched. These local directories must be verified on the owner's PC, not presumed created by GitHub.
+The owner's intended new local checkout is `C:\VIctory-NVIDIA`, test/report root `C:\VIctory-NVIDIA-Tests`; old `C:\VIctory-W` stays untouched. The **GitHub remote is still this same VIctory-W repository**, not a new repo; only the owner's local checkout is fresh. The game stays in its existing local folder. Follow [LOCAL_WORKSPACE.md](docs/agents/LOCAL_WORKSPACE.md) before providing any Windows command. These local directories must be verified on the owner's PC, not presumed created by GitHub.
 
 ## Nonnegotiable rules
 
