@@ -10,6 +10,8 @@ The paragraph below is the **complete message** to paste into a new session. It 
 >
 > **Continue from the latest *verified* checkpoint.** Do not restart development, revive AMD/Marvisak-based experimental branches, assume gameplay works, repeat completed GPU tests, or blindly merge old fixes. Aim for a correctly rendered and controllable 3D world on my RTX 5090, then graphics correctness and stability. Separate Windows release build, strict Clippy, synthetic/WARP GPU failures, and actual owner-observed 5090 World+Controls evidence.
 >
+> Before the first E127 owner GPU launch, verify NVIDIA `play::prepare` still preserves `VICTORY_HOME` and `VICTORY_ADAPTER`. A source fix is staged in draft PR #41 at this dated checkpoint; recheck live GitHub status before relying on it. Do not request a hardware run using a pre-fix binary.
+>
 > Work independently in isolated GitHub branches and PRs; review exact-head CI, fix actual outstanding issues, and update canonical handoff/evidence/decisions at significant milestones. No unapproved force-pushes or experimental runtime merges. Keep raw logs/game data, shaders, crash dumps, private paths and title assets local; for a hardware test request only **one E127 anonymous report ZIP** after explicit `PLAY` confirmation. Only ask me for a verified download or PowerShell command when my actual PC is required.
 
 The handoff is stored **in GitHub**, not in an external document, ChatGPT chat transcript or local artifact. A new session fetches live source/evidence and discovers any later changes. The former longer prompts are in Git history only.
