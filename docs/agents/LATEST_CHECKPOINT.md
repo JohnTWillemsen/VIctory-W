@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**E142 latest:** E141 owner ZIP: two source logs; 90 scene windows **10.9 FPS median** (first half 11.7, last 9.6), other 5 windows **3.6 FPS** (first 3.7, last 3.6). Both very slow; **warmup alone not established**. These are multi-second averages, not true 1% lows or utilization. **P0 stop deeper exploration**, isolate performance candidate upstream [PR614](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/614) before next consented GPU A/B. E142/E143, D056.
+**E147 latest:** Owner E141 logs: 90 scene windows median **10.9 FPS**, 5 windows **3.6 FPS**, no long-log recovery. **P0 performance, defer exploration.** [Draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) CPU optimization compiles; 3 inherited GPU reds and a focused intermittent write-watch failure remain under investigation; **no owner candidate run**. [Merged PR51](https://github.com/JohnTWillemsen/VIctory-W/pull/51) adds hash-verified E127+E141 owner test helper. E144–E146, D057; check live CI.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 
