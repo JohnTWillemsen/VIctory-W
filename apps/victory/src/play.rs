@@ -110,9 +110,9 @@ const SETTINGS: &[(&str, &str)] = &[
     ("VICTORY_PIPELINE_BOOK", "1"),
 ];
 
-/// Path settings a start keeps from its surroundings; every other
-/// `VICTORY_...` variable is cleared before the settings are put in (a
-/// restart from the menu inherits the last run's).
+/// Settings read again after `prepare` must survive the reset: HOME controls
+/// local saves/caches and warm-up/F1 restarts; ADAPTER controls the host GPU.
+/// All other `VICTORY_...` switches are cleared before play settings are set.
 const KEPT: &[&str] = &[
     "VICTORY_HOME",
     "VICTORY_ADAPTER",
