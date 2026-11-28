@@ -1,6 +1,6 @@
 # VIctory-W — canonical handoff (read this first)
 
-## E152 research / PR56 draft — 2 stale indirect budget fixtures isolated (NOT a gameplay fix)
+## E155 — all 3 inherited Windows WARP tests corrected in test fixtures (DRAFT; full CI pending)
 
 Live NVIDIA `main` verified at `ea186566a868430a51e416d4c94695f6aff3fce1` when E152 branch began; verify again before decisions. [Draft PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) updates **only two test fixture assumptions** in `indirect.rs`, using source-reviewed upstream commit `9b712a6` and a Windows WARP gate checking `VICTORY_INDIRECT_REST=0/1`. The original [main E127 full synthetic run 46100529280](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46100529280) remains 433 passed/3 failed/36 ignored. E152 [exact-head WARP 46101133650](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46101133650) **PASS**: both cases with REST 0 and 1. [E127 46101133726](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46101133726) release and reporter fixture **PASS**, full GPU suite **435 PASS / 1 FAIL** (depth bounds) / 36 ignored. Strict Clippy remains **FAIL**. No game run or runtime change; PR draft. [Research](../research/E152-NVIDIA-INDIRECT-BUDGET-TEST-FIX.md); VW089 and D061. Runtime renderer unchanged, no owner GPU run requested.
 
