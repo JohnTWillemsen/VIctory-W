@@ -39,6 +39,10 @@ Use [E127 protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md), [local wor
 3. **P2: consider upstream NVIDIA fixes only after comparing their actual commits against our pinned source and independently verifying them**. Preserve attribution and isolation.
 4. **Governance:** keep `AGENTS.md`, this file, `CURRENT_STATE.md`, `LATEST_CHECKPOINT.md` and `NEW_SESSION_PROMPT.md` aligned on each significant milestone; append evidence to `EVIDENCE_LOG.md` and decisions to `DECISIONS.md`. Historical `TASK_QUEUE.md` rows are not active authorization.
 
+## E131 — gated preflight correction (new draft)
+
+On verified `main` `b801b5218d1ace78fd473dcb197f3eabd235fb97`, NVIDIA `play::prepare` drops E127's `VICTORY_HOME` and `VICTORY_ADAPTER`. This breaks the intended isolated report/cache/save home and explicit GPU selection after launch setup. [Draft PR #41](https://github.com/JohnTWillemsen/VIctory-W/pull/41) stages a two-key source fix and Rust regression test, based on upstream [PR #511](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/511). **Not merged; verify current CI and test before owner GPU run.** Windows folder creation and NVIDIA-v8 real-world playability remain **NOT_RUN**.
+
 ## Fresh-session boot procedure (mandatory)
 
 1. Read `AGENTS.md`, **this file**, `CURRENT_STATE.md`, `LATEST_CHECKPOINT.md`, `NEW_SESSION_PROMPT.md`, then relevant `EVIDENCE_LOG.md`, `DECISIONS.md`, [E127 protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md) and actual source. Do **not** load 100 KB of old prose before checking the live branch.

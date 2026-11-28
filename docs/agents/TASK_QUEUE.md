@@ -12,6 +12,9 @@
 
 | **VW-077 — Isolate owner's new NVIDIA Windows workspace (E130)** | **Documentation and report-root correction under review.** Owner selected `C:\VIctory-NVIDIA` and `C:\VIctory-NVIDIA-Tests` while preserving old `C:\VIctory-W`. | Verify [LOCAL_WORKSPACE.md](LOCAL_WORKSPACE.md), E127 new report root, full prompt, CI, and first local clone output when owner provides it. Remote GitHub cannot confirm Windows folder creation. |
 
+| **VW-078 — E131 protect E127 home + named RTX adapter during NVIDIA play** | **DRAFT PR #41 / source fix staged, unmerged; CI pending** | Verify pinned new PR head, release compile, regression test, report SelfTest and inherited independent Clippy/GPU synthetic gates before merging. Owner E127 hardware test only afterward using explicit `-ReportRoot`. |
+
+
 **Task ownership:** Never infer a task is unclaimed solely from this dated Markdown. Query open PRs, branch tips, recent main commits and Actions first. The original source and old experimental PRs are preserved for research but are **not** active Nvidia runtime changes. Use one focused branch/PR per task. No commits to `main` without owner authorization and exact-head review.
 
 **Privacy:** No title executable, proprietary data, raw GPU logs, screenshots, identifying file paths or dumps in this PUBLIC repo. For owner tests accept only the fixed-schema E127 anonymous summary ZIP.

@@ -110,10 +110,12 @@ const SETTINGS: &[(&str, &str)] = &[
     ("VICTORY_PIPELINE_BOOK", "1"),
 ];
 
-/// Path settings a start keeps from its surroundings; every other
-/// `VICTORY_...` variable is cleared before the settings are put in (a
-/// restart from the menu inherits the last run's).
+/// Settings read again after `prepare` must survive the reset: HOME controls
+/// local saves/caches and warm-up/F1 restarts; ADAPTER controls the host GPU.
+/// All other `VICTORY_...` switches are cleared before play settings are set.
 const KEPT: &[&str] = &[
+    "VICTORY_HOME",
+    "VICTORY_ADAPTER",
     "VICTORY_CONFIG",
     "VICTORY_GAME_DIR",
     "VICTORY_CACHE_DIR",
@@ -1015,6 +1017,21 @@ mod tests {
         assert!(older_rtx("NVIDIA GeForce RTX 3080 Ti") && older_rtx("NVIDIA GeForce RTX 2060 SUPER") && older_rtx("NVIDIA GeForce RTX 3050 Laptop GPU"));
         assert!(!older_rtx("NVIDIA GeForce RTX 5070") && !older_rtx("NVIDIA GeForce RTX 4090") && !older_rtx("NVIDIA GeForce GTX 1080"));
         assert!(!older_rtx("NVIDIA RTX A2000") && !older_rtx("AMD Radeon RX 7900 XTX") && !older_rtx(""));
+    }
+
+    /// E127's isolated home and explicit host adapter must survive the
+    /// play settings reset before runtime device creation and restarts.
+    #[test]
+    fn nvidia_session_home_and_adapter_survive_prepare_reset() {
+        for name in [
+            "VICTORY_HOME",
+            "VICTORY_ADAPTER",
+            "VICTORY_CACHE_DIR",
+            "VICTORY_DATA_DIR",
+        ] {
+            assert!(KEPT.contains(&name), "{name} must survive prepare");
+        }
+        assert!(!KEPT.contains(&"VICTORY_PRELOAD"), "transient switches remain reset");
     }
 
     #[test]
