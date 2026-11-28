@@ -1,5 +1,7 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
+**E152 staged, not merged:** NVIDIA main `ea186566a868430a51e416d4c94695f6aff3fce1` at investigation start. [Draft PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) narrows two inherited `indirect.rs` WARP test-fixture budget expectations to actual `VICTORY_INDIRECT_REST` 0/1 semantics, no renderer edits. Dedicated exact-head Windows CI is pending final result; main still has three documented full synthetic reds and inherited strict Clippy red. E152/D061/VW089. Main's original RTX5090 cell remains controllable. P0 [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) 29.1 FPS longer-log candidate **visual/input unknown**; do not merge performance candidate from metrics alone.
+
 **E151 now:** Owner E127 candidate RTX5090 report `FINALIZED`, exit 0, SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, selected GPU, no recognized fault markers; **visual Unknown, controls Unknown**. E141 longer log 30 scene windows p50 **29.1 FPS** vs prior 90 windows **10.9 FPS**; short 5-window log **3.6 FPS** in both. Promising 2.67x sampled median, **NOT controlled scene/fps benchmark nor playable visual acceptance**. PR50 remains DRAFT, main preserves owner-confirmed original controllable cell. See E151/D060 and [research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
 ## E140–E151 performance investigation (newest supersedes old snapshots)
