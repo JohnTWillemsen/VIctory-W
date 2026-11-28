@@ -261,6 +261,75 @@ fn screens_first() -> bool {
     !screen_budget().is_zero()
 }
 
+/// Optional numeric-only pipeline-wait sample for the five-second host meter.
+/// Disabled by default: avoid adding a contended atomic to normal draws.
+/// The duration is summed across title threads; it is neither GPU time nor
+/// a non-overlapping portion of wall-clock frame time.
+#[derive(Default)]
+struct WaitSample {
+    calls: AtomicU64,
+    us: AtomicU64,
+}
+
+impl WaitSample {
+    fn note(&self, elapsed: Duration) {
+        self.calls.fetch_add(1, Ordering::Relaxed);
+        let us = u64::try_from(elapsed.as_micros()).unwrap_or(u64::MAX);
+        self.us.fetch_add(us, Ordering::Relaxed);
+    }
+
+    fn take(&self) -> (u64, u64) {
+        // Independent swaps: concurrent calls near a window boundary may
+        // land on either side. Never use these as an atomic per-frame pair.
+        (self.calls.swap(0, Ordering::Relaxed), self.us.swap(0, Ordering::Relaxed))
+    }
+}
+
+/// Waits for ordinary pipelines and screen-wide passes have separate
+/// budgets. Observe them separately without changing either budget.
+#[derive(Default)]
+struct ClassifiedWaitSample {
+    ordinary: WaitSample,
+    screen: WaitSample,
+}
+
+impl ClassifiedWaitSample {
+    fn note(&self, screen: bool, elapsed: Duration) {
+        if screen {
+            self.screen.note(elapsed);
+        } else {
+            self.ordinary.note(elapsed);
+        }
+    }
+
+    fn take(&self) -> ((u64, u64), (u64, u64)) {
+        (self.ordinary.take(), self.screen.take())
+    }
+}
+
+static WAIT_SAMPLE: ClassifiedWaitSample = ClassifiedWaitSample {
+    ordinary: WaitSample {
+        calls: AtomicU64::new(0),
+        us: AtomicU64::new(0),
+    },
+    screen: WaitSample {
+        calls: AtomicU64::new(0),
+        us: AtomicU64::new(0),
+    },
+};
+
+fn wait_sample_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("VICTORY_PIPELINE_WAIT_STATS").is_some_and(|v| v == "1"))
+}
+
+/// Returns an opt-in aggregate for the most recent host meter interval.
+/// None on ordinary runs, where the extra per-wait atomics are disabled.
+/// Returns (ordinary calls/us, screen-wide calls/us); independent drains.
+pub(crate) fn take_wait_sample() -> Option<((u64, u64), (u64, u64))> {
+    wait_sample_enabled().then(|| WAIT_SAMPLE.take())
+}
+
 /// Pipelines queued and not made yet.
 static WAITING: AtomicU64 = AtomicU64::new(0);
 
@@ -371,6 +440,9 @@ fn wait(p: &Pending, frame: u64) {
     }
     drop(held);
     let waited = started.elapsed().min(left);
+    if wait_sample_enabled() {
+        WAIT_SAMPLE.note(screen, waited);
+    }
     if screen && waited > Duration::from_millis(500) {
         tracing::info!(
             ms = waited.as_millis() as u64,
@@ -619,6 +691,29 @@ fn drained() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn opt_in_wait_sample_counts_numeric_durations_and_drains() {
+        let sample = WaitSample::default();
+        sample.note(Duration::from_micros(1_250));
+        sample.note(Duration::from_micros(2_750));
+        assert_eq!(sample.take(), (2, 4_000));
+        assert_eq!(sample.take(), (0, 0));
+        sample.note(Duration::ZERO);
+        assert_eq!(sample.take(), (1, 0));
+    }
+
+    #[test]
+    fn opt_in_classifies_screen_and_ordinary_waits_without_changing_budgets() {
+        let sample = ClassifiedWaitSample::default();
+        sample.note(false, Duration::from_micros(1_000));
+        sample.note(true, Duration::from_micros(9_500));
+        sample.note(false, Duration::from_micros(2_000));
+        assert_eq!(sample.take(), ((2, 3_000), (1, 9_500)));
+        assert_eq!(sample.take(), ((0, 0), (0, 0)));
+        sample.note(true, Duration::ZERO);
+        assert_eq!(sample.take(), ((0, 0), (1, 0)));
+    }
 
     #[test]
     fn worker_count_follows_the_processors_and_the_switch() {

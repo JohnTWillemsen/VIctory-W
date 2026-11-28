@@ -10023,6 +10023,25 @@ impl Meter {
                 placed = crate::descriptor::host::PLACED_TEXTURE_SLOTS.load(Ordering::Relaxed),
                 objects = crate::descriptor::host::OBJECT_TEXTURE_SLOTS.load(Ordering::Relaxed)
             );
+            // Optional E164 numeric-only sample. The regular FPS log above
+            // retains its original format for E127/E141/E162 parsers.
+            // This is summed CPU wait across threads, not card time or an
+            // additive part of the reported frame-window duration.
+            if let Some(((ordinary_calls, ordinary_us), (screen_calls, screen_us))) =
+                crate::pipeline::take_wait_sample()
+            {
+                let calls = ordinary_calls.saturating_add(screen_calls);
+                let wait_us = ordinary_us.saturating_add(screen_us);
+                tracing::info!(
+                    calls,
+                    summed_wait_ms = wait_us as f64 / 1000.0,
+                    ordinary_calls,
+                    ordinary_wait_ms = ordinary_us as f64 / 1000.0,
+                    screen_calls,
+                    screen_wait_ms = screen_us as f64 / 1000.0,
+                    "opt-in host pipeline waits in the last meter window (title threads; not GPU time)"
+                );
+            }
             #[cfg(feature = "diagnostics")]
             {
                 let put = [0, 1, 2, 3].map(|i| crate::shadow::PUT[i].swap(0, Ordering::Relaxed) as f64 / frames);

@@ -2,6 +2,12 @@
 
 **Canonical current source:** [JohnTWillemsen/VIctory-W](https://github.com/JohnTWillemsen/VIctory-W) **live `main`**, fully switched by the owner to NVIDIA v2026.11.27.8 ([merged PR37](https://github.com/JohnTWillemsen/VIctory-W/pull/37), upstream commit `64d4931b3dd90305134512b805fc98f04119fb6e`). Pre-NVIDIA source is archived at `archive/pre-nvidia-foundation-20261127`. **Do not resume the old AMD/Marvisak or E087/E108/E109/E121 experimental branches as active work.**
 
+## P0 owner instruction — Implementation-first (2026-11-28)
+
+**Build the game, not another chain of reports.** H2/H3/H4 all used exactly the same RTX5090 executable. H4 rendered the world and controls with a verified private cache, but no new performance code was delivered by those diagnostics. **Every new performance milestone must now be an actual source change or proven new compatibility capability, with independent Windows tests and a clearly measured owner hardware difference before calling it an FPS improvement.** Don't ask owner to run repeated diagnostics without a candidate whose test is necessary. Keep original verified binary, isolated owner saves/cache and PR branches untouched.
+
+Upstream MUST be compared before implementing a fix: NVIDIA `trustno1-coder/VIctory-NVIDIA` live `main` `63b902fe1720a5188ee79d94a88c8de0470f6349` on 2026-11-28, **56 commits newer** than pinned v2026.11.27.8 `64d4931b3dd90305134512b805fc98f04119fb6e`, releases through **v2026.11.28.01**. Do not wholesale merge; review isolated fixes and preserve source provenance. Initial actual runtime candidate is [**draft PR62 VW093 opt-in DXGI immediate present**](https://github.com/JohnTWillemsen/VIctory-W/pull/62), based on separate clean `main`, default off, Windows test + driver fallback, **no owner FPS proof yet**. Independent [**draft PR63 VW094**](https://github.com/JohnTWillemsen/VIctory-W/pull/63) ports upstream per-pipeline panic fencing to preserve worker/Condvar progress; **not a measured FPS fix**. PR61 remains draft measurement/continuity, not FPS optimization. GitHub Issues are disabled in this repo (410), so handoff/PRs are authoritative.
+
 ## Required reading — short first, deeper only as needed
 
 1. [**HANDOFF.md**](docs/agents/HANDOFF.md) — canonical *dated* state, exact provenance, known CI failures, owner local workspace, privacy/report protocol and active priorities.

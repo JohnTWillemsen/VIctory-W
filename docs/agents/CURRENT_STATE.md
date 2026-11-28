@@ -1,5 +1,8 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
+**VW-092 H5 newest:** H4 RTX5090 338s exit0, World/Controls Yes, scene FPS p50 **28.8**/p10 **18.8** (42 windows, one slow). H5 offline: **1,883 D3D12 library loads**, **2,424 made**, **4,275 early**, zero rejection markers. Previous-session cache hits not proven. H3 32.9, H2 23.5, unmatched scenes. PR61 draft.
+
+
 **E151 now:** Owner E127 candidate RTX5090 report `FINALIZED`, exit 0, SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, selected GPU, no recognized fault markers; **visual Unknown, controls Unknown**. E141 longer log 30 scene windows p50 **29.1 FPS** vs prior 90 windows **10.9 FPS**; short 5-window log **3.6 FPS** in both. Promising 2.67x sampled median, **NOT controlled scene/fps benchmark nor playable visual acceptance**. PR50 remains DRAFT, main preserves owner-confirmed original controllable cell. See E151/D060 and [research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
 ## E140–E151 performance investigation (newest supersedes old snapshots)

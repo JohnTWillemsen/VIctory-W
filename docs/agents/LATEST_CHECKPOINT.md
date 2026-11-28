@@ -1,5 +1,8 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
+**VW-092 H5 latest:** H4 RTX5090 World/Controls Yes, 338s exit0; 42 scene windows FPS p50 **28.8**, p10 **18.8**, one slow. H5 offline 2 logs/37,269 lines, 8 saved records: **1,883 loaded**, **2,424 made**, **4,275 early**, 0 rejection markers. Latest per-log snapshots, not proven prior-run hits or complete session totals. H3 p50 32.9; scenes unmatched. [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) draft, main unchanged.
+
+
 **E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
 ## E140–E151 NVIDIA performance evidence

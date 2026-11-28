@@ -1,0 +1,91 @@
+name: E164 optional NVIDIA pipeline wait window regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wait-sample:
+    name: E164 exact-head Windows numeric wait sample (no game)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checked-out commit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'E164 source checkout mismatch' }
+          Write-Host 'E164_EXACT_SOURCE_HEAD=true'
+      - name: Verify private persistent cache safety and no-game negative fixtures (WinPS 5.1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = 'scripts/research/owner-nvidia-persistent-cache.ps1'
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) { throw 'VW092-H4 cache helper PowerShell syntax error' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H4 private cache negative fixture failed' }
+          Write-Host 'VW092_H4_PRIVATE_CACHE_NO_TITLE_SELFTEST_PASS=true'
+      - name: Verify offline cache library counters and fixed-field ZIP privacy (WinPS 5.1; no game)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = 'scripts/research/owner-nvidia-cache-observations.ps1'
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) { throw 'VW092-H5 offline cache observation PowerShell syntax failure' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H5 offline cache privacy fixture failed' }
+          Write-Host 'VW092_H5_CACHE_LOAD_OFFLINE_PRIVACY_PASS=true'
+      - name: Install pinned project Rust
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Exercise optional numeric sample without a title
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_wait_sample_counts_numeric_durations_and_drains -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'E164 numeric sample test failed' }
+          Write-Host 'E164_NUMERIC_SAMPLE_DRAIN_PASS=true'
+      - name: Classify ordinary vs screen-wide waits without title
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_classifies_screen_and_ordinary_waits_without_changing_budgets -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H2 wait class numeric test failed' }
+          Write-Host 'VW092_H2_WAIT_CLASSES_PASS=true'
+      - name: Ensure explicit wait opt-in survives play reset (no title)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory --bin victory play::tests::nvidia_opt_in_pipeline_wait_stats_survives_prepare_reset -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW092 NVIDIA play opt-in preservation test failed' }
+          Write-Host 'VW092_PLAY_WAIT_OPTIN_PASS=true'
+      - name: Exercise consent-gated owner wrapper preflight (PowerShell 5.1; no title)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $parseTokens = $null; $parseErrors = $null
+          $script = 'scripts/research/owner-nvidia-wait-owner.ps1'
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$parseTokens,[ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw 'VW092 owner wrapper PowerShell syntax error' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest -Repo .
+          if ($LASTEXITCODE -ne 0) { throw 'VW092 consent-gated owner handoff SelfTest failed' }
+          Write-Host 'VW092_OWNER_WRAPPER_NO_TITLE_SELFTEST_PASS=true'
+      - name: Exercise offline fixed-field wait/FPS parser and privacy ZIP (PowerShell 5.1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts/research/owner-nvidia-wait-audit.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092 offline wait report synthetic privacy self-test failed' }
+          Write-Host 'VW092_OFFLINE_WAIT_REPORT_PRIVACY_PASS=true'
