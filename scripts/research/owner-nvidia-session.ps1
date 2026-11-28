@@ -92,13 +92,18 @@ function LogSummary([string]$Folder) {
     }
     return $counts
 }
+function ElapsedSeconds([string]$StartedUtc,[DateTimeOffset]$Now) {
+    # Both values represent absolute instants. Naive DateTime.Parse converts
+    # a UTC Z stamp to local wall-clock time, inflating Phoenix runs by 7h.
+    $started=[DateTimeOffset]::Parse($StartedUtc,[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::RoundtripKind)
+    return [math]::Max(0,[math]::Floor(($Now - $started).TotalSeconds))
+}
 function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$VisualCode,[string]$ControlsCode) {
     $cfg=ReadConfig $Folder
     $summary=LogSummary $Folder
     $pub=Join-Path $Folder 'UPLOAD-ONLY'
     New-Item -ItemType Directory -Force -Path $pub | Out-Null
-    $started=[DateTimeOffset]::Parse([string]$cfg.started_utc,[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::RoundtripKind)
-    $elapsed=[math]::Max(0,[math]::Floor(([DateTimeOffset]::UtcNow - $started).TotalSeconds))
+    $elapsed=ElapsedSeconds ([string]$cfg.started_utc) ([DateTimeOffset]::UtcNow)
     $gpu='UNKNOWN'
     if ($summary.host_5090 -gt 0) { $gpu='HOST_RTX5090_NAME_MATCH' }
     elseif ($summary.host_other -gt 0) { $gpu='OTHER_HOST_ADAPTER_REPORTED' }
@@ -158,6 +163,9 @@ function Answer([string]$Message,[string[]]$Choices,[string]$Default) {
     return $Default
 }
 if ($Mode -eq 'SelfTest') {
+    # Deterministic Phoenix -07:00 vs UTC test, independent of CI host TZ.
+    $fakeNow=[DateTimeOffset]::Parse('2026-11-27T18:24:29-07:00',[Globalization.CultureInfo]::InvariantCulture)
+    if ((ElapsedSeconds '2026-11-28T01:24:17Z' $fakeNow) -ne 12) { throw 'Phoenix/UTC elapsed math mismatch' }
     $root=Join-Path $env:TEMP ('E127-fixture-'+[Guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Force -Path (WorkPrivate $root),(Join-Path $root 'home\logs') | Out-Null
     $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
