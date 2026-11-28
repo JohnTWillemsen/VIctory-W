@@ -369,3 +369,11 @@ Owner physically launched exact validated E108 [PR32](https://github.com/JohnTWi
 **Decision:** Stage only the two missing kept switches with a regression test on [draft PR #41](https://github.com/JohnTWillemsen/VIctory-W/pull/41). Keep it isolated and unmerged until exact-head source review and CI; do not claim gameplay or conceal unrelated strict Clippy and three GPU synthetic failures. Do not request a risky owner E127 run using a pre-fix binary. Preserve separate new source/test roots, old local checkout and private title assets.
 
 **Revisit:** If exact-head gates support it, merge with reviewed provenance; afterward issue a hash-verified E127 run with explicit `-ReportRoot` and owner `PLAY` confirmation. Record actual 5090 World+Controls only from E127 owner evidence.
+
+## D-051 · 2026-11-27 AZ — Defer broad inherited strict Clippy cleanup behind first playability evidence
+
+Draft [PR42](https://github.com/JohnTWillemsen/VIctory-W/pull/42) fixed a test-only precedence warning and four test function-pointer transmute annotations; [strict CI](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46088669955) then exposed roughly 26 more inherited GPU lint warnings. Keep this as an isolated draft, do not waive all warnings or change rendering to appease Clippy, and prioritize a consent-gated RTX5090 World+Controls E127 run.
+
+## D-052 · 2026-11-27 AZ — Keep initial GPU-selection evidence in fixed-field E127 ZIP without exposing logs
+
+[PR43](https://github.com/JohnTWillemsen/VIctory-W/pull/43) merged E133 as `88a60ea1d26664e9c04f184da6db153c0c3cde0c`. Adapter selection messages near startup may fall outside E127's last-3500-line scan. Keep the crash-marker tail, and only if no GPU-selection event appears there read a bounded head for adapter name and count. The Windows PowerShell 3600-line synthetic fixture passed with once-only RTX5090 and device-loss matches and no private log text leakage. No real title executed. Raw logs, game data, dumps and caches remain solely local. Future hardware success requires genuine selected RTX5090, rendered World and Controls Yes.
