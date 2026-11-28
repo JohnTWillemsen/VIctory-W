@@ -92,12 +92,18 @@ function LogSummary([string]$Folder) {
     }
     return $counts
 }
+function ElapsedSeconds([string]$StartedUtc,[DateTimeOffset]$Now) {
+    # UTC timestamps must be compared as absolute instants; naive DateTime.Parse
+    # converts Z timestamps to Phoenix local wall-clock and adds seven hours.
+    $started=[DateTimeOffset]::Parse($StartedUtc,[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::RoundtripKind)
+    return [math]::Max(0,[math]::Floor(($Now - $started).TotalSeconds))
+}
 function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$VisualCode,[string]$ControlsCode) {
     $cfg=ReadConfig $Folder
     $summary=LogSummary $Folder
     $pub=Join-Path $Folder 'UPLOAD-ONLY'
     New-Item -ItemType Directory -Force -Path $pub | Out-Null
-    $elapsed=[math]::Max(0,[math]::Floor(([DateTime]::UtcNow - [DateTime]::Parse($cfg.started_utc)).TotalSeconds))
+    $elapsed=ElapsedSeconds ([string]$cfg.started_utc) ([DateTimeOffset]::UtcNow)
     $gpu='UNKNOWN'
     if ($summary.host_5090 -gt 0) { $gpu='HOST_RTX5090_NAME_MATCH' }
     elseif ($summary.host_other -gt 0) { $gpu='OTHER_HOST_ADAPTER_REPORTED' }
@@ -157,6 +163,9 @@ function Answer([string]$Message,[string[]]$Choices,[string]$Default) {
     return $Default
 }
 if ($Mode -eq 'SelfTest') {
+    # Check -07:00 relative to Z, independent of host timezone.
+    $fakeNow=[DateTimeOffset]::Parse('2026-11-27T18:24:29-07:00',[Globalization.CultureInfo]::InvariantCulture)
+    if ((ElapsedSeconds '2026-11-28T01:24:17Z' $fakeNow) -ne 12) { throw 'Phoenix/UTC elapsed math mismatch' }
     $root=Join-Path $env:TEMP ('E127-fixture-'+[Guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Force -Path (WorkPrivate $root),(Join-Path $root 'home\logs') | Out-Null
     $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
@@ -181,6 +190,10 @@ if ($Mode -eq 'SelfTest') {
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
+    $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?$')
+    if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
+    $duration=[int]$durationMatch.Groups[1].Value
+    if ($duration -lt 0 -or $duration -gt 180) { throw 'Synthetic 12-second duration invalid; check UTC conversion' }
     Write-Host 'E127 synthetic fixed-field privacy, D3D12 host adapter and crash parsers PASS; no game launched'
     Remove-Item -LiteralPath $root -Recurse -Force
     exit 0
