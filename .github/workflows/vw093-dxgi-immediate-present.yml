@@ -34,6 +34,13 @@ jobs:
           cargo test --locked -p victory-gpu --lib host::vw093_present_tests -- --test-threads=1
           if ($LASTEXITCODE -ne 0) { throw 'VW093 targeted DXGI opt-in regressions failed' }
           Write-Host 'VW093_IMMEDIATE_PRESENT_OPTIN_DEFAULT_OFF_PASS=true'
+      - name: Verify tear opt-in survives play settings reset (no game)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory --bin victory play::tests::nvidia_session_home_and_adapter_survive_prepare_reset -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW093 play option preservation test failed' }
+          Write-Host 'VW093_TEARING_OPTIN_SURVIVES_PLAY_RESET_PASS=true'
       - name: Build the source-only Windows launcher and GPU host
         shell: pwsh
         run: |
