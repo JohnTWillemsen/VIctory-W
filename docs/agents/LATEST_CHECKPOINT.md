@@ -1,6 +1,7 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**VW-092 / E-165 (new draft research, not a new hardware result):** NVIDIA main `ea186566a868430a51e416d4c94695f6aff3fce1` remains intact. PR60's E161 confirms same-binary DXGI ON/OFF both World+Controls, with descriptive OFF window FPS higher; E163's *offline* reports associate 3–5 FPS bursts with unfinished pipeline work and CPU copies, causal attribution still unknown. New [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) adds opt-in-only numeric wait measurement and source test, default OFF, **no game or RTX5090 test**. Await exact-head CI before promotion; no rerun requested. PR60's E-164 is a separate editorial correction; this development is VW-092/E-165.
+**VW-092/E-165:** [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) draft; default-OFF numeric wait probe, based on PR60 E163 offline queued-pipeline/copy evidence. No game launch or performance fix; exact-head CI required. NVIDIA main unchanged.
+
 
 **E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
