@@ -1,0 +1,47 @@
+name: E152 NVIDIA indirect REST budget regressions
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  indirect-budget-rest:
+    name: E152 Windows WARP indirect budget, REST off and on
+    runs-on: windows-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'E152 tested a different source commit' }
+          Write-Host 'E152_EXACT_SOURCE_HEAD=true'
+      - name: Install pinned project Rust
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Exercise both indirect-budget regressions with REST off/on
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:VICTORY_D3D12_WARP = '1'
+          foreach ($rest in @('0','1')) {
+            $env:VICTORY_INDIRECT_REST = $rest
+            foreach ($name in @(
+              'indirect::tests::host_list_budget_starts_empty_at_each_submission',
+              'indirect::tests::warp_batch_charges_every_execution'
+            )) {
+              Write-Host ("E152 REST=" + $rest + " test=" + $name)
+              cargo test --locked -p victory-gpu --lib $name -- --exact --test-threads=1
+              if ($LASTEXITCODE -ne 0) { throw ("E152 failed REST=" + $rest + " test=" + $name) }
+            }
+          }
+          Write-Host 'E152_BOTH_WARP_BUDGET_TESTS_PASS_REST_0_AND_1=true'
