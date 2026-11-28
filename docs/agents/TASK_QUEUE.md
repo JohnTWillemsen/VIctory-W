@@ -16,7 +16,7 @@
 | **VW-079 — E133 long-log host GPU evidence** | **MERGED PR43 / synthetic 3600-line privacy SelfTest PASS** | Read bounded log head for adapter only when tail lacks event; anonymous ZIP only, no raw private logs. |
 
 | **VW-089 — E157 WARP fixtures** | **[PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) DRAFT** | [E127 46104177631](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46104177631): GPU 436/0, 36 ignored; source/privacy PASS. Strict Clippy RED; no renderer or GPU play, no owner-authorized merge. |
-| **VW-090 — DXGI opt-in handoff** | **[PR57](https://github.com/JohnTWillemsen/VIctory-W/pull/57), [PR59](https://github.com/JohnTWillemsen/VIctory-W/pull/59) DRAFT** | E156 anonymous ON/OFF synthetic PASS; runtime opt-in default OFF. Hardware validation still required. |
+| **VW-090 — P0 E158 owner DXGI candidate** | **[PR60](https://github.com/JohnTWillemsen/VIctory-W/pull/60) DRAFT, exact-head CI pending** | Integrates PR57 opt-in renderer, PR56 test-only WARP and PR59 fixed-field owner harness; require matched exact-source artifact, private E127/E141 report, explicit non-admin `PLAY` and owner World/Controls. No merge. |
 
 **Task ownership:** Never infer a task is unclaimed solely from this dated Markdown. Query open PRs, branch tips, recent main commits and Actions first. The original source and old experimental PRs are preserved for research but are **not** active Nvidia runtime changes. Use one focused branch/PR per task. No commits to `main` without owner authorization and exact-head review.
 
