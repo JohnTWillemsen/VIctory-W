@@ -112,8 +112,10 @@ const SETTINGS: &[(&str, &str)] = &[
 
 /// Settings read again after `prepare` must survive the reset: HOME controls
 /// local saves/caches and warm-up/F1 restarts; ADAPTER controls the host GPU.
-/// All other `VICTORY_...` switches are cleared before play settings are set.
+/// The optional pipeline-wait counter must also survive so an opt-in
+/// measurement can reach the runtime. Other `VICTORY_...` switches are reset.
 const KEPT: &[&str] = &[
+    "VICTORY_PIPELINE_WAIT_STATS",
     "VICTORY_HOME",
     "VICTORY_ADAPTER",
     "VICTORY_CONFIG",
@@ -1032,6 +1034,19 @@ mod tests {
             assert!(KEPT.contains(&name), "{name} must survive prepare");
         }
         assert!(!KEPT.contains(&"VICTORY_PRELOAD"), "transient switches remain reset");
+    }
+
+    /// Only the explicitly requested numeric timing probe survives play.
+    /// The probe is absent by default; do not preserve wait-budget knobs.
+    #[test]
+    fn nvidia_opt_in_pipeline_wait_stats_survives_prepare_reset() {
+        assert!(KEPT.contains(&"VICTORY_PIPELINE_WAIT_STATS"));
+        assert!(
+            !SETTINGS.iter().any(|(key, _)| *key == "VICTORY_PIPELINE_WAIT_STATS"),
+            "an unrequested play launch must not turn on wait instrumentation"
+        );
+        assert!(!KEPT.contains(&"VICTORY_PIPELINE_WAIT_MS"));
+        assert!(!KEPT.contains(&"VICTORY_SCREEN_WAIT_MS"));
     }
 
     #[test]
