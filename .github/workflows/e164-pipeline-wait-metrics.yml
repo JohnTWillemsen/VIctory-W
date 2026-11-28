@@ -42,6 +42,17 @@ jobs:
           cargo test --locked -p victory --bin victory play::tests::nvidia_opt_in_pipeline_wait_stats_survives_prepare_reset -- --exact --test-threads=1
           if ($LASTEXITCODE -ne 0) { throw 'VW092 NVIDIA play opt-in preservation test failed' }
           Write-Host 'VW092_PLAY_WAIT_OPTIN_PASS=true'
+      - name: Exercise consent-gated owner wrapper preflight (PowerShell 5.1; no title)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $parseTokens = $null; $parseErrors = $null
+          $script = 'scripts/research/owner-nvidia-wait-owner.ps1'
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$parseTokens,[ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw 'VW092 owner wrapper PowerShell syntax error' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -Mode SelfTest -Repo .
+          if ($LASTEXITCODE -ne 0) { throw 'VW092 consent-gated owner handoff SelfTest failed' }
+          Write-Host 'VW092_OWNER_WRAPPER_NO_TITLE_SELFTEST_PASS=true'
       - name: Exercise offline fixed-field wait/FPS parser and privacy ZIP (PowerShell 5.1)
         shell: pwsh
         run: |
