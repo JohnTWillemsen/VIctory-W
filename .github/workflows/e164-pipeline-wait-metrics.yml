@@ -1,0 +1,37 @@
+name: E164 optional NVIDIA pipeline wait window regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wait-sample:
+    name: E164 exact-head Windows numeric wait sample (no game)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checked-out commit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'E164 source checkout mismatch' }
+          Write-Host 'E164_EXACT_SOURCE_HEAD=true'
+      - name: Install pinned project Rust
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Exercise optional numeric sample without a title
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_wait_sample_counts_numeric_durations_and_drains -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'E164 numeric sample test failed' }
+          Write-Host 'E164_NUMERIC_SAMPLE_DRAIN_PASS=true'
