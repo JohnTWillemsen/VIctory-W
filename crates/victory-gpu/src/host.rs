@@ -9597,6 +9597,16 @@ fn chain_flags(tearing: bool) -> DXGI_SWAP_CHAIN_FLAG {
     if tearing { DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING } else { DXGI_SWAP_CHAIN_FLAG(0) }
 }
 
+/// A refused immediate present disables opt-in for this session exactly once.
+/// Pure so the fallback decision can be exercised without creating a GPU device.
+fn disable_immediate_after_refusal(active: &mut bool, failed: bool) -> bool {
+    if failed && *active {
+        *active = false;
+        return true;
+    }
+    false
+}
+
 struct Presenter {
     swap_chain: IDXGISwapChain3,
     width: u32,
@@ -10431,7 +10441,7 @@ impl Host {
                 0,
                 if p.presents_tearing { DXGI_PRESENT_ALLOW_TEARING } else { DXGI_PRESENT(0) },
             );
-            if shown.is_err() && p.presents_tearing {
+            if disable_immediate_after_refusal(&mut p.presents_tearing, shown.is_err()) {
                 // A driver/proxy might refuse an immediate present (upstream
                 // observed a white window on an RTX 5070). Retry normally and
                 // never ask for immediate presentation again this run.
@@ -10439,7 +10449,6 @@ impl Host {
                     code = %shown, frame,
                     "opt-in immediate DXGI present refused; ordinary presents for the rest of the run"
                 );
-                p.presents_tearing = false;
                 let _ = p.swap_chain.Present(0, DXGI_PRESENT(0));
             } else if shown.is_err() && !p.present_refused {
                 p.present_refused = true;
@@ -12009,7 +12018,7 @@ mod batch {   // Batch::texture_due lives here; `mod tests` is already taken at 
 /// VW093: CPU-only opt-in/rollback tests; no game, GPU or DXGI device needed.
 #[cfg(test)]
 mod vw093_present_tests {
-    use super::{chain_flags, tearing_requested};
+    use super::{chain_flags, disable_immediate_after_refusal, tearing_requested};
     use windows::Win32::Graphics::Dxgi::DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     #[test]
@@ -12019,6 +12028,18 @@ mod vw093_present_tests {
         }
         assert!(tearing_requested(Some("1")));
         assert!(tearing_requested(Some(" 1 ")));
+    }
+
+    #[test]
+    fn a_rejected_immediate_present_is_retried_normally_once() {
+        let mut enabled = true;
+        assert!(!disable_immediate_after_refusal(&mut enabled, false));
+        assert!(enabled, "successful immediate present stays enabled");
+        assert!(disable_immediate_after_refusal(&mut enabled, true));
+        assert!(!enabled, "first refusal permanently disables immediate mode");
+        assert!(!disable_immediate_after_refusal(&mut enabled, true));
+        let mut normal = false;
+        assert!(!disable_immediate_after_refusal(&mut normal, true));
     }
 
     #[test]
