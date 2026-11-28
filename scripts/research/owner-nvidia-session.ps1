@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# E127: first NVIDIA-fork gameplay baseline. Public upload is a fixed-field allowlisted ZIP.
+# VW096/E127: pinned newer upstream NVIDIA gameplay candidate, unchanged E127 privacy contract. Public upload is a fixed-field allowlisted ZIP.
 # Game files, raw logs, local paths, crash dumps and title-derived data NEVER enter that ZIP.
 # Start and Recover require owner interaction; Watch and SelfTest never launch a title.
 [CmdletBinding()]
@@ -111,8 +111,8 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
     $lines=@(
         'format=E127-nvidia-session-v1',
         'source_repository=trustno1-coder/VIctory-NVIDIA',
-        'source_release=v2026.11.27.8',
-        'source_commit=64d4931b3dd90305134512b805fc98f04119fb6e',
+        'source_release=v2026.11.28.01',
+        'source_commit=63b902fe1720a5188ee79d94a88c8de0470f6349',
         ('source_executable_sha256='+$cfg.executable_sha256),
         ('run_id='+$cfg.run_id),
         ('state='+$State),
@@ -190,6 +190,7 @@ if ($Mode -eq 'SelfTest') {
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
+    if (-not $report.Contains('source_release=v2026.11.28.01') -or -not $report.Contains('source_commit=63b902fe1720a5188ee79d94a88c8de0470f6349')) { throw 'New upstream source identity missing' }
     $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?$')
     if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
     $duration=[int]$durationMatch.Groups[1].Value

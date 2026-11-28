@@ -1,0 +1,147 @@
+name: VW096 full pinned upstream NVIDIA release screening (no title)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vw096-upstream-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UPSTREAM_SHA: 63b902fe1720a5188ee79d94a88c8de0470f6349
+
+jobs:
+  release-build:
+    name: Source-built upstream Windows release + verified E127 fixture
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: owner
+      - uses: actions/checkout@v4
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: 63b902fe1720a5188ee79d94a88c8de0470f6349
+          path: upstream
+          persist-credentials: false
+      - name: Verify exact owner and upstream commits and absence of title material
+        shell: pwsh
+        run: |
+          $wantOwner='${{ github.event.pull_request.head.sha || github.sha }}'
+          $owner=(& git -C owner rev-parse HEAD).Trim()
+          $upstream=(& git -C upstream rev-parse HEAD).Trim()
+          if ($owner -cne $wantOwner -or $upstream -cne $env:UPSTREAM_SHA) { throw 'Unpinned owner/upstream checkout; no build' }
+          if (@(& git -C upstream ls-files | Where-Object { $_ -match '(?i)(^|/)(game_scarlett_master\.exe|appdata\d+\.rpf|[^/]+\.(xvd|xci|nsp))$' }).Count -gt 0) { throw 'Unexpected proprietary title files' }
+          Write-Host 'VW096_OWNER_SHA=' $owner
+          Write-Host 'VW096_UPSTREAM_SHA=' $upstream
+      - name: Verify full PowerShell 5.1 E127 report and artifact privacy fixtures
+        shell: powershell
+        run: |
+          foreach ($relative in @('owner/scripts/research/owner-nvidia-session.ps1','owner/scripts/research/owner-vw096-upstream-test.ps1')) {
+            $tokens=$null; $errors=$null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $relative).Path,[ref]$tokens,[ref]$errors)
+            if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; throw 'Runner PowerShell syntax invalid' }
+          }
+          & ./owner/scripts/research/owner-nvidia-session.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'Version-specific E127 fixture failed' }
+          & ./owner/scripts/research/owner-vw096-upstream-test.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW096 artifact verification negative fixtures failed' }
+      - name: Install pinned upstream Rust toolchain
+        shell: pwsh
+        working-directory: upstream
+        run: rustup toolchain install
+      - name: Build exact unmodified upstream source Windows release
+        shell: pwsh
+        working-directory: upstream
+        run: cargo build --release --locked -p victory
+      - name: Emit per-file SHA256 and exact two-repository source manifest
+        shell: pwsh
+        run: |
+          $want='${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual=(& git -C owner rev-parse HEAD).Trim()
+          if ($want -cne $actual) { throw 'Owner helper source changed during build' }
+          $exe='upstream/target/release/victory.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'No Windows victory executable' }
+          $sha=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $e127=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-nvidia-session.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $helper=(Get-FileHash -LiteralPath 'owner/scripts/research/owner-vw096-upstream-test.ps1' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $lines=@(
+            'format=VW096-nvidia-source-v1'
+            'owner_repository=JohnTWillemsen/VIctory-W'
+            ('owner_pr_head='+$actual)
+            'upstream_repository=trustno1-coder/VIctory-NVIDIA'
+            'upstream_release=v2026.11.28.01'
+            'upstream_commit=63b902fe1720a5188ee79d94a88c8de0470f6349'
+            ('source_built_sha256='+$sha)
+            ('e127_harness_sha256='+$e127)
+            ('owner_helper_sha256='+$helper)
+            'game_executed=false'
+            'proprietary_title_assets_in_artifact=false'
+          )
+          [IO.File]::WriteAllLines('VW096-UPSTREAM-BUILD.txt',$lines,[Text.UTF8Encoding]::new($false))
+          Write-Host ('VW096_EXACT_OWNER='+$actual)
+          Write-Host ('VW096_EXACT_UPSTREAM='+$env:UPSTREAM_SHA)
+          Write-Host ('VW096_SOURCE_BUILT_EXE_SHA256='+$sha)
+          Write-Host 'VW096_GAME_LAUNCHED=false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VW096-upstream-v20261128-01-sourcebuilt
+          path: |
+            upstream/target/release/victory.exe
+            owner/scripts/research/owner-nvidia-session.ps1
+            owner/scripts/research/owner-vw096-upstream-test.ps1
+            VW096-UPSTREAM-BUILD.txt
+          retention-days: 7
+          if-no-files-found: error
+
+  source-tests:
+    name: Full exact upstream locked Windows tests (WARP/synthetic)
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: 63b902fe1720a5188ee79d94a88c8de0470f6349
+          persist-credentials: false
+      - name: Verify source identity
+        shell: pwsh
+        run: |
+          if ((& git rev-parse HEAD).Trim() -cne $env:UPSTREAM_SHA) { throw 'Wrong upstream source' }
+      - name: Install upstream Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Full locked upstream tests
+        shell: pwsh
+        run: cargo test --workspace --locked
+
+  clippy:
+    name: Exact upstream strict Clippy (default and diagnostics)
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: trustno1-coder/VIctory-NVIDIA
+          ref: 63b902fe1720a5188ee79d94a88c8de0470f6349
+          persist-credentials: false
+      - name: Verify source identity
+        shell: pwsh
+        run: |
+          if ((& git rev-parse HEAD).Trim() -cne $env:UPSTREAM_SHA) { throw 'Wrong upstream source' }
+      - name: Install upstream Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Strict Clippy
+        shell: pwsh
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Strict Clippy diagnostics
+        shell: pwsh
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
