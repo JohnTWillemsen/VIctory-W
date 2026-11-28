@@ -22,6 +22,7 @@
 //! 18e57db8 found the same).
 
 use std::collections::VecDeque;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
@@ -183,11 +184,25 @@ impl Pending {
     }
 
     fn make(&self) {
-        self.made.get_or_init(|| {
+        self.make_with(|| {
             let began = Instant::now();
             let made = HostPipeline::new(&self.shaders, self.graphics.as_deref());
             super::library::note_time(&self.key, began.elapsed().as_millis() as u64);
             made
+        });
+    }
+
+    /// VW094: an unwinding host shader/pipeline build must not abandon this
+    /// OnceLock or kill the worker. Refuse that pipeline and wake all waiters.
+    fn make_with(&self, build: impl FnOnce() -> Option<HostPipeline>) {
+        self.made.get_or_init(|| {
+            match catch_unwind(AssertUnwindSafe(build)) {
+                Ok(pipeline) => pipeline,
+                Err(_) => {
+                    tracing::warn!(shaders = ?self.shaders, "host pipeline build panicked; refusing pipeline and continuing worker");
+                    None
+                }
+            }
         });
         let (lock, done) = &DONE;
         let _held = lock.lock().unwrap_or_else(|e| e.into_inner());
@@ -645,6 +660,26 @@ mod tests {
             std::thread::yield_now();
         }
         assert!(matches!(p.made.get(), Some(None)));
+    }
+
+    /// A panic while building an individual host pipeline must not terminate
+    /// its worker or leave an incomplete entry that blocks future draws.
+    #[test]
+    fn a_panicking_pipeline_is_refused_and_the_worker_continues() {
+        let bad = Arc::new(Pending::new(Vec::new(), None));
+        let good = Arc::new(Pending::new(Vec::new(), None));
+        let bad_worker = bad.clone();
+        let good_worker = good.clone();
+        let worker = std::thread::spawn(move || {
+            bad_worker.make_with(|| panic!("synthetic pipeline-build panic"));
+            good_worker.make_with(|| None);
+        });
+        worker.join().expect("the worker must survive an individual build panic");
+        assert!(matches!(bad.made.get(), Some(None)));
+        assert!(matches!(good.made.get(), Some(None)));
+        // A refused pipeline stays resolved; it cannot panic repeatedly.
+        bad.make_with(|| panic!("a completed failed entry must not be rebuilt"));
+        assert!(matches!(bad.made.get(), Some(None)));
     }
 
     /// A pipeline left out on purpose (a ray-tracing resolve without the structure builder)
