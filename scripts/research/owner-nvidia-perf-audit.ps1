@@ -40,6 +40,8 @@ function ScanPerf([string]$LogDirectory) {
     $lines=0
     $limited=0
     $noSampleLogs=0
+    # Only ordinal numeric profiles are retained; no filenames or private paths.
+    $profiles=New-Object 'System.Collections.Generic.List[object]'
 
     $files=@()
     if (Test-Path -LiteralPath $LogDirectory -PathType Container) {
@@ -55,6 +57,11 @@ function ScanPerf([string]$LogDirectory) {
         $seen++
         $perFile=0
         $sampleBefore=$fps.Count
+        $fileScene=New-Object 'System.Collections.Generic.List[double]'
+        $fileMs=New-Object 'System.Collections.Generic.List[double]'
+        $fileCpu=New-Object 'System.Collections.Generic.List[double]'
+        $fileGpu=New-Object 'System.Collections.Generic.List[double]'
+        $fileBack=New-Object 'System.Collections.Generic.List[double]'
         $stream=$null
         $reader=$null
         try {
@@ -81,11 +88,22 @@ function ScanPerf([string]$LogDirectory) {
                 $fpsScene.Add($f)
                 $msScene.Add($ms)
                 $cpuScene.Add($cpu)
+                $fileScene.Add($f)
+                $fileMs.Add($ms)
+                $fileCpu.Add($cpu)
                 $drawsScene.Add($drawCount)
                 $gpu=[regex]::Match($line,'(?<n>\d{1,6}(?:\.\d{1,3})?) on the GPU;')
-                if ($gpu.Success) { $gpuScene.Add((Number $gpu.Groups['n'].Value)) }
+                if ($gpu.Success) {
+                    $value=Number $gpu.Groups['n'].Value
+                    $gpuScene.Add($value)
+                    $fileGpu.Add($value)
+                }
                 $back=[regex]::Match($line,'(?<n>\d{1,6}(?:\.\d{1,3})?) copying back')
-                if ($back.Success) { $backScene.Add((Number $back.Groups['n'].Value)) }
+                if ($back.Success) {
+                    $value=Number $back.Groups['n'].Value
+                    $backScene.Add($value)
+                    $fileBack.Add($value)
+                }
             }
             if ($perFile -ge 250000 -and -not $reader.EndOfStream) { $limited++ }
         }
@@ -94,12 +112,36 @@ function ScanPerf([string]$LogDirectory) {
             elseif ($null -ne $stream) { $stream.Dispose() }
         }
         if ($fps.Count -eq $sampleBefore) { $noSampleLogs++ }
+        # All windows in each file are kept in log order. Compare the first
+        # and second halves only when >= 2 scene-like windows exist.
+        $n=$fileScene.Count
+        $first=[double[]]@()
+        $last=[double[]]@()
+        if ($n -ge 2) {
+            $half=[int][math]::Floor($n/2)
+            $first=New-Object double[] $half
+            $last=New-Object double[] $half
+            $fileScene.CopyTo(0,$first,0,$half)
+            $fileScene.CopyTo(($n-$half),$last,0,$half)
+        }
+        $profiles.Add(@{
+            rank=$profiles.Count+1
+            windows=$n
+            fps_p50=(Percentile $fileScene.ToArray() 0.50)
+            fps_first_half_p50=(Percentile $first 0.50)
+            fps_last_half_p50=(Percentile $last 0.50)
+            frame_ms_p50=(Percentile $fileMs.ToArray() 0.50)
+            cpu_ms_p50=(Percentile $fileCpu.ToArray() 0.50)
+            gpu_ms_p50=(Percentile $fileGpu.ToArray() 0.50)
+            copyback_ms_p50=(Percentile $fileBack.ToArray() 0.50)
+        })
     }
     return @{
         files=$seen
         lines=$lines
         limited=$limited
         no_sample_logs=$noSampleLogs
+        per_log=$profiles.ToArray()
         fps=$fps.ToArray()
         scene_fps=$fpsScene.ToArray()
         scene_ms=$msScene.ToArray()
@@ -115,7 +157,7 @@ function MakeReport([string]$RunFolder,[string]$SessionId,[string]$OutputRoot) {
             elseif ($stats.fps.Count -gt 0) { 'ONLY_NONSCENE_FPS_SAMPLES' }
             else { 'NO_FPS_SAMPLES_FOUND' }
     $lines=@(
-        'format=E140-nvidia-offline-perf-v1',
+        'format=E141-nvidia-offline-perf-v2',
         ('source_run_id='+$SessionId),
         ('status='+$status),
         'source=existing_private_victory_runtime_logs',
@@ -142,8 +184,23 @@ function MakeReport([string]$RunFolder,[string]$SessionId,[string]$OutputRoot) {
         'percentiles_not_1pct_lows=true',
         'scene_type_not_identified=true',
         'gpu_utilization_not_measured=true',
-        'raw_logs_paths_assets_or_dumps_included=false'
+        'raw_logs_paths_assets_or_dumps_included=false',
+        ('per_log_scene_profile_count='+$stats.per_log.Count),
+        'per_log_order=most_recently_modified_first_not_guaranteed_run_order'
     )
+    foreach ($profile in $stats.per_log) {
+        $prefix='log_'+$profile.rank+'_'
+        $lines+=@(
+            ($prefix+'scene_like_window_count='+$profile.windows),
+            ($prefix+'scene_like_fps_p50='+$profile.fps_p50),
+            ($prefix+'scene_like_fps_first_half_p50='+$profile.fps_first_half_p50),
+            ($prefix+'scene_like_fps_last_half_p50='+$profile.fps_last_half_p50),
+            ($prefix+'scene_like_frame_ms_p50='+$profile.frame_ms_p50),
+            ($prefix+'scene_like_cpu_prepare_ms_p50='+$profile.cpu_ms_p50),
+            ($prefix+'scene_like_host_gpu_ms_p50='+$profile.gpu_ms_p50),
+            ($prefix+'scene_like_copyback_ms_p50='+$profile.copyback_ms_p50)
+        )
+    }
     New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
     $txt=Join-Path $OutputRoot 'E140-fixed-fields.txt'
     $zip=Join-Path $OutputRoot $ZipName
@@ -172,7 +229,11 @@ if ($Mode -eq 'SelfTest') {
         $report=[IO.File]::ReadAllText($files[0].FullName)
         foreach ($term in @('scene_like_window_sample_count=2','all_fps_window_sample_count=3',
                             'scene_like_fps_p50=19.0','scene_like_frame_ms_p50=58.5',
-                            'scene_like_host_gpu_ms_p50=29.0','game_relaunched=false')) {
+                            'scene_like_host_gpu_ms_p50=29.0','game_relaunched=false',
+                            'per_log_scene_profile_count=1','log_1_scene_like_window_count=2',
+                            'log_1_scene_like_fps_p50=19.0',
+                            'log_1_scene_like_fps_first_half_p50=13.0',
+                            'log_1_scene_like_fps_last_half_p50=25.0')) {
             if (-not $report.Contains($term)) { throw ('E140 fixture mismatch: '+$term) }
         }
         if ($report.Contains('never-upload') -or $report.Contains('C:\secret') -or $report.Contains($testRoot)) {
