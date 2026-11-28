@@ -33,6 +33,11 @@ function AuditLogs([string]$LogDir) {
     $scene=New-Object 'System.Collections.Generic.List[object]'
     $slow=New-Object 'System.Collections.Generic.List[object]'
     $fast=New-Object 'System.Collections.Generic.List[object]'
+    $classAll=New-Object 'System.Collections.Generic.List[object]'
+    $classScene=New-Object 'System.Collections.Generic.List[object]'
+    $classSlow=New-Object 'System.Collections.Generic.List[object]'
+    $classFast=New-Object 'System.Collections.Generic.List[object]'
+    $classInvalid=0
     $seen=0; $lines=0; $skipped=0; $unpaired=0
     $files=@()
     if (Test-Path -LiteralPath $LogDir -PathType Container) {
@@ -94,6 +99,35 @@ function AuditLogs([string]$LogDir) {
                     if ($pending.fps -le 10) { $slow.Add($item) }
                     elseif ($pending.fps -ge 20) { $fast.Add($item) }
                 }
+                # Classification is optional for H1 logs. Absence is UNKNOWN,
+                # not evidence that screen passes waited for zero milliseconds.
+                $keys=@('ordinary_calls','ordinary_wait_ms','screen_calls','screen_wait_ms')
+                $values=@{}
+                $foundCount=0
+                foreach ($key in $keys) {
+                    $mClass=[regex]::Match($line,'(?<!\w)'+$key+'=(?<v>\d{1,9}(?:\.\d{1,6})?)(?![\d.])')
+                    if ($mClass.Success) {
+                        $values[$key]=Decimal $mClass.Groups['v'].Value
+                        $foundCount++
+                    }
+                }
+                if ($foundCount -eq 4) {
+                    $oc=$values['ordinary_calls']; $ow=$values['ordinary_wait_ms']
+                    $sc=$values['screen_calls']; $sw=$values['screen_wait_ms']
+                    if ($oc -le 10000000 -and $sc -le 10000000 -and
+                        $ow -le 10000000 -and $sw -le 10000000 -and
+                        [math]::Abs(($oc+$sc)-$c) -lt 0.001 -and
+                        [math]::Abs(($ow+$sw)-$w) -lt 0.005) {
+                        $item.ordinary=$ow
+                        $item.screen=$sw
+                        $classAll.Add($item)
+                        if ($pending.scene) {
+                            $classScene.Add($item)
+                            if ($pending.fps -le 10) { $classSlow.Add($item) }
+                            elseif ($pending.fps -ge 20) { $classFast.Add($item) }
+                        }
+                    } else { $classInvalid++ }
+                } elseif ($foundCount -gt 0) { $classInvalid++ }
                 $pending=$null
             }
             if ($read -ge 250000 -and -not $reader.EndOfStream) { $skipped++ }
@@ -107,6 +141,9 @@ function AuditLogs([string]$LogDir) {
         files=$seen; lines=$lines; skipped=$skipped; unpaired=$unpaired
         all=$all.ToArray(); scene=$scene.ToArray()
         slow=$slow.ToArray(); fast=$fast.ToArray()
+        class_all=$classAll.ToArray(); class_scene=$classScene.ToArray()
+        class_slow=$classSlow.ToArray(); class_fast=$classFast.ToArray()
+        class_invalid=$classInvalid
     }
 }
 function Metric([object[]]$Items,[string]$Field) {
@@ -118,7 +155,7 @@ function MakeReport([string]$RunFolder,[string]$Session,[string]$OutputDir) {
     $s=AuditLogs (Join-Path $RunFolder 'home\logs')
     $status=if ($s.all.Count -gt 0) { 'NUMERIC_WAIT_WINDOWS_FOUND' } else { 'NO_MATCHED_WAIT_WINDOWS' }
     $fields=@(
-        'format=VW092-nvidia-wait-audit-v1',
+        'format=VW092-nvidia-wait-audit-v2',
         ('source_run_id='+$Session),
         ('status='+$status),
         'source=existing_private_logs',
@@ -132,6 +169,17 @@ function MakeReport([string]$RunFolder,[string]$Session,[string]$OutputDir) {
         ('scene_like_wait_window_count='+$s.scene.Count),
         ('slow_scene_like_wait_window_count='+$s.slow.Count),
         ('fast_scene_like_wait_window_count='+$s.fast.Count),
+        ('classified_wait_window_count='+$s.class_all.Count),
+        ('classified_scene_like_wait_window_count='+$s.class_scene.Count),
+        ('classified_slow_scene_like_wait_window_count='+$s.class_slow.Count),
+        ('classified_fast_scene_like_wait_window_count='+$s.class_fast.Count),
+        ('classified_missing_or_invalid_window_count='+($s.all.Count-$s.class_all.Count)),
+        ('classified_invalid_window_count='+$s.class_invalid),
+        ('slow_scene_ordinary_wait_ms_p50='+(Metric $s.class_slow 'ordinary')),
+        ('slow_scene_screen_wait_ms_p50='+(Metric $s.class_slow 'screen')),
+        ('fast_scene_ordinary_wait_ms_p50='+(Metric $s.class_fast 'ordinary')),
+        ('fast_scene_screen_wait_ms_p50='+(Metric $s.class_fast 'screen')),
+        'wait_classes=ordinary_per_frame_or_screen_wide_pass',
         ('all_wait_calls_p50='+(Metric $s.all 'calls')),
         ('all_summed_wait_ms_p50='+(Metric $s.all 'wait')),
         ('scene_like_wait_calls_p50='+(Metric $s.scene 'calls')),
@@ -164,11 +212,11 @@ if ($Mode -eq 'SelfTest') {
         [IO.File]::WriteAllLines((Join-Path $log 'fixture.log'),@(
             'PRIVATE C:\secret\never-upload-title.rpf',
             'INFO victory_gpu::host: 5.0 fps, 200.0 ms/frame (50.0 preparing:), 300 draws/frame',
-            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=2 summed_wait_ms=750.0 PRIVATE C:\secret',
+            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=2 summed_wait_ms=750.0 ordinary_calls=1 ordinary_wait_ms=250.0 screen_calls=1 screen_wait_ms=500.0 PRIVATE C:\secret',
             'INFO victory_gpu::host: 30.0 fps, 33.3 ms/frame (15.0 preparing:), 400 draws/frame',
-            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=0 summed_wait_ms=0.0',
+            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=0 summed_wait_ms=0.0 ordinary_calls=0 ordinary_wait_ms=0.0 screen_calls=0 screen_wait_ms=0.0',
             'INFO victory_gpu::host: 15.0 fps, 66.7 ms/frame (20.0 preparing:), 50 draws/frame',
-            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=7 summed_wait_ms=350.0',
+            'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=7 summed_wait_ms=350.0 ordinary_calls=6 ordinary_wait_ms=300.0 screen_calls=1 screen_wait_ms=50.0',
             'INFO victory_gpu::host: opt-in host pipeline waits in the last meter window (title threads; not GPU time) calls=2 summed_wait_ms=1.0'
         ))
         $out=Join-Path $root 'public'
@@ -186,6 +234,16 @@ if ($Mode -eq 'SelfTest') {
                 'slow_scene_like_summed_wait_ms_p50=750.000',
                 'fast_scene_like_summed_wait_ms_p50=0.000',
                 'scene_like_wait_calls_p50=1.000',
+                'classified_wait_window_count=3',
+                'classified_scene_like_wait_window_count=2',
+                'classified_slow_scene_like_wait_window_count=1',
+                'classified_fast_scene_like_wait_window_count=1',
+                'classified_missing_or_invalid_window_count=0',
+                'classified_invalid_window_count=0',
+                'slow_scene_ordinary_wait_ms_p50=250.000',
+                'slow_scene_screen_wait_ms_p50=500.000',
+                'fast_scene_ordinary_wait_ms_p50=0.000',
+                'fast_scene_screen_wait_ms_p50=0.000',
                 'game_relaunched=false','no_causal_pipeline_stall_claim=true')) {
             if (-not $public.Contains($expected)) { throw ('Synthetic report missing '+$expected) }
         }

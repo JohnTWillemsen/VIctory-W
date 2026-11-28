@@ -35,6 +35,13 @@ jobs:
           cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_wait_sample_counts_numeric_durations_and_drains -- --exact --test-threads=1
           if ($LASTEXITCODE -ne 0) { throw 'E164 numeric sample test failed' }
           Write-Host 'E164_NUMERIC_SAMPLE_DRAIN_PASS=true'
+      - name: Classify ordinary vs screen-wide waits without title
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_classifies_screen_and_ordinary_waits_without_changing_budgets -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW092-H2 wait class numeric test failed' }
+          Write-Host 'VW092_H2_WAIT_CLASSES_PASS=true'
       - name: Ensure explicit wait opt-in survives play reset (no title)
         shell: pwsh
         run: |
