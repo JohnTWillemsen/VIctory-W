@@ -1,0 +1,25 @@
+# E160 — Actual owner RTX5090 DXGI ON 3D World and Controls accepted
+
+**2026-11-27 Phoenix / 2026-11-28 UTC; status: observed single run.** [Draft PR60](https://github.com/JohnTWillemsen/VIctory-W/pull/60) **executed code** `01064d5a556d7babf7f15b4b489ed486d397d6e2`; upstream NVIDIA pin `64d4931b3dd90305134512b805fc98f04119fb6e`. **This SHA, not any later documentation-only PR head, is the exact source built and run.** No assets, screenshots or raw logs from the title were uploaded; only two fixed-field E127/E141 anonymous ZIPs.
+
+## Exact source and test gates
+
+E127 `source_executable_sha256=1f0f0e3247bd2dfd66b427eb668f526bf66ebc82579e5e9713510c7a371523a2` **exactly matches** `NVIDIA_V8_SOURCE_BUILT_SHA256` from successful [E127 Windows CI 46106490410](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46106490410), source-only artifact `E127-source-built-nvidia-v8` (artifact ID 15247038488). Full synthetic GPU suite **437 pass, 0 fail, 36 ignored**; source-build + E127 privacy selftest PASS. E152 WARP [46106490379](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46106490379), E153 DXGI [46106490347](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46106490347), E156 PS5.1 dual-mode privacy [46106490428](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46106490428), E145 real detached worktree/negative SHA [46106490461](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46106490461), E140 and E129 all PASS. Separate inherited strict Clippy CI RED; no merge authorized.
+
+The initial owner E158 `Prepare` failed on `(& git branch --show-current).Trim()` returning null in detached HEAD. E159 fixed it, added a real synthetic Windows detached-worktree test, and the owner confirmed `E159 LOCAL WORKTREE AND SELF-TEST PASSED` followed by `E159 ARTIFACT VERIFIED — NO GAME LAUNCHED`. The later actual game run is distinct; main checkout and old worktree remained untouched.
+
+## E127 fixed-fields — actual one-run hardware acceptance
+
+Run ID `e127-20261128043635-abc825`; `state=FINALIZED`, exit_code **0**, elapsed **350 seconds**; host RTX5090 name matched in **2** detected host events, no other adapter. Human-observed `visual=World`, `controls=Yes`: **direct candidate 3D+input acceptance** (not proof of complete game progression or pixel-identical rendering). Opt-in `dxgi_tearing_requested=ON`; `dxgi_tearing_feature_query=FEATURE_SUPPORTED`; fallback marker **0**. E127 scanned bounded **2 logs/7000 lines**; reported device removed/hung, DRED/pagefault, slow submission, GPU failure and warmup text markers **all 0**. No recognized error is not a long-duration stability guarantee. DXGI query support + no fallback markers do **not** independently prove every frame used requested immediate Present.
+
+## E141 per-log offline meter windows
+
+Same run ID, `SCENE_LIKE_SAMPLES_FOUND`; **2 logs**, 33,071 log lines, **56 all FPS windows**, **38 scene-like windows** (`draws_per_frame_gte_100`), none skipped/truncated. Aggregate scene-like **FPS min 3.5 / p10 3.5 / p50 23.4 / p90 29.1**. Frame-window milliseconds p50 42.8 / p90 281.7. CPU prepare p50 **27.2 ms**, copyback p50 **5.5 ms**, host-GPU-associated p50 **0.0 ms**, draws/frame p50 **5288.5**. The 0.0 measurement is NOT GPU utilization or proof GPU is idle.
+
+Larger `log_1`: 33 scene windows, p50 **25.3 FPS**, first/last halves p50 **14.7/27.4**, frame ms p50 39.5, CPU prepare p50 26.9, copyback 5.5. Smaller `log_2`: 5 scene windows, p50 **3.5 FPS**, first/last halves 3.5/3.5, frame ms p50 281.7, CPU prepare p50 41.3, copyback 7.6. Log order is *most recently modified first*, **not guaranteed chronological phase order**. All percentiles summarize telemetry windows, **not individual frames, 1% lows, true GPU usage, or identified scene types**. Severe low-end stutter persists.
+
+## No misleading causal FPS comparison
+
+Prior owner-confirmed E139 main rendered a controllable 3D interior; earlier main larger log 90 windows p50 **10.9 FPS**. Separate PR50 CPU experiment larger log 30 windows p50 **29.1 FPS**, but **its World/Controls remained Unknown**. This E159 DXGI-ON candidate larger log 33 windows p50 **25.3 FPS**, World/Controls Yes. Source changes, scenes/cache/log samples/time were NOT matched, so none proves a 2x FPS gain or regression caused by DXGI. PR50 and PR60 remain draft/unmerged.
+
+**Next bounded experiment:** volunteer one `-Tearing 0` run of the **same exact executable SHA + code commit**, not latest docs-only PR head, via E145 with GitHub run **46106490410** and the existing detached `E158-owner-source-01064d5a556d` checkout. Back up saves, confirm ordinary non-admin shell, type literal `PLAY` only after consent, spend comparable time in same opening interior, upload only new E127/E141 anonymous ZIPs. Compare ON vs OFF scene-like/per-log windows carefully, not assume controlled equivalence. Independently investigate CPU prepare and sparse low-FPS log with synthetic source tests before changing runtime.

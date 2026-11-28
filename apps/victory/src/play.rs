@@ -765,6 +765,18 @@ fn warmup_mark(home: &Path, program: &Path) -> Option<PathBuf> {
     Some(home.join("warmed").join(&hash.as_str()[..16]))
 }
 
+/// The explicit DXGI opt-in must survive the fork's first-run warm-up
+/// restart. Keep every other --set flag's historical non-persistent behavior.
+fn menu_play_args(exe: &Path, no_framegen_ready: bool, tearing: bool) -> String {
+    let quoted = |p: &Path| format!("'{}'", p.to_string_lossy().replace('\'', "''"));
+    format!(
+        "play {}{}{}",
+        quoted(exe),
+        if no_framegen_ready { " --no-framegen-ready" } else { "" },
+        if tearing { " --set VICTORY_TEARING=1" } else { "" },
+    )
+}
+
 /// What a start needs once its settings are in the environment.
 pub(crate) struct Ready {
     pub(crate) exe: PathBuf,
@@ -852,13 +864,15 @@ pub(crate) fn prepare(o: &Play) -> Result<Ready> {
         s.insert("VICTORY_WARMUP_RESTART".to_owned(), WARMUP_SECONDS.to_string());
         s.insert("VICTORY_WARMUP_MARK".to_owned(), mark.to_string_lossy().into_owned());
     }
-    // Where the menu saves, and how it starts the title again (`--set` is not carried over).
-    let quoted = |p: &Path| format!("'{}'", p.to_string_lossy().replace('\'', "''"));
+    // Where the menu saves, and how it starts the title again. The single
+    // approved opt-in DXGI present flag is carried over for comparable runs.
+    // Other arbitrary --set overrides remain deliberately non-persistent.
+    let tearing = s.get("VICTORY_TEARING").is_some_and(|v| v == "1");
     s.insert("VICTORY_MENU_FILE".to_owned(), menu_file.to_string_lossy().into_owned());
     s.insert("VICTORY_MENU_PLAY".to_owned(), program.to_string_lossy().into_owned());
     s.insert(
         "VICTORY_MENU_ARGS".to_owned(),
-        format!("play {}{}", quoted(&exe), if o.no_framegen_ready { " --no-framegen-ready" } else { "" }),
+        menu_play_args(&exe, o.no_framegen_ready, tearing),
     );
     let log = log_file(&home.join("logs"))?;
     let console = if series_s { "series-s" } else { "series-x" };
@@ -903,6 +917,20 @@ pub(crate) fn hold_window() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dxgi_tearing_is_opt_in_and_survives_warmup_restart_only_when_enabled() {
+        let exe = Path::new(r"C:\Games\Some Title\game_scarlett_master.exe");
+        let off = menu_play_args(exe, false, false);
+        let on = menu_play_args(exe, false, true);
+        let ready = menu_play_args(exe, true, true);
+        assert_eq!(off, "play 'C:\\Games\\Some Title\\game_scarlett_master.exe'");
+        assert_eq!(on, format!("{off} --set VICTORY_TEARING=1"));
+        assert_eq!(ready, format!("{off} --no-framegen-ready --set VICTORY_TEARING=1"));
+        // No arbitrary source or user-provided value is interpolated.
+        assert!(!off.contains("--set"));
+    }
+
 
     fn options() -> Play {
         Play {

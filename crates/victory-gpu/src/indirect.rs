@@ -2697,7 +2697,10 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
             }
             sig.unwrap()
         };
-        // Three records of 65,535 x 16 groups: about half the budget each.
+        // Two records of 65,535 x 16 groups (64 threads each, 2^26 - 1,024
+        // threads), then one of 32 groups (2,048 threads): together exactly
+        // the budget, so the small record after them does not fit whether
+        // or not a record that does not fit takes the rest (`rest`).
         let Some((big, big_ptr)) = host.shared_buffer(3 * u64::from(STRIDE)) else {
             return;
         };
@@ -2710,7 +2713,7 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
         // SAFETY: mapped buffers of these sizes; nothing runs yet.
         unsafe {
             for i in 0..3 {
-                let words = [65535u32, 16, 1];
+                let words = if i < 2 { [65535u32, 16, 1] } else { [32, 1, 1] };
                 std::ptr::copy_nonoverlapping(
                     words.as_ptr().cast::<u8>(),
                     big_ptr.add(i * STRIDE as usize),
@@ -3193,7 +3196,21 @@ void main(uint3 group : SV_GroupID, uint3 thread : SV_DispatchThreadID) {
             };
             assert_eq!(out.iter().filter(|&&v| v == 1 << 22).count(), filled, "{times} times {records}: {out:?}");
             assert!(out.iter().all(|&v| v == 0 || v == 1 << 22));
-            assert_eq!(spent, BUDGET.min((1 << 26) * times * records as u32));
+            // The clamp charges 2^26 threads per execution, in record order.
+            // If a record does not fit, REST=1 exhausts the budget while
+            // REST=0 skips it; never assume oversize records consume budget.
+            let rest = super::rest() != 0;
+            let expected = (0..records).fold(0u32, |at, _| {
+                let cost = (1u32 << 26) * times;
+                if BUDGET - at >= cost {
+                    at + cost
+                } else if rest {
+                    BUDGET
+                } else {
+                    at
+                }
+            });
+            assert_eq!(spent, expected, "{times} times {records}");
         }
     }
 

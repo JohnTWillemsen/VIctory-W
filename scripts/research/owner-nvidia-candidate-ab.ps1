@@ -6,6 +6,8 @@ param(
     [ValidateSet('SelfTest','Prepare','Run','Recover')][string]$Mode='Prepare',
     [long]$GithubRun=0,
     [string]$ExpectedHeadSha='',
+    [ValidateSet('0','1')][string]$Tearing='0',
+    [switch]$AllowDetachedCandidateWorktree,
     [string]$Repo='C:\VIctory-NVIDIA',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$GameRoot='C:\Grand Theft Auto',
@@ -40,6 +42,43 @@ function VerifiedBuild([string]$Folder,[string]$Head) {
     $sha=(Get-FileHash -LiteralPath $exes[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($sha -cne (ExactLine $text 'source_built_sha256')) { throw 'Downloaded executable SHA-256 mismatch' }
     return [pscustomobject]@{ Exe=$exes[0].FullName; Sha=$sha; Commit=$Head }
+}
+# A dedicated, detached owner worktree can run an exact candidate without
+# changing the existing normal main checkout at C:\VIctory-NVIDIA.
+function CheckoutAllowed([string]$Branch,[string]$Current,[string]$Expected,[bool]$Detached) {
+    if ($Detached) { return (($Branch -ceq '') -and ($Current -ceq $Expected)) }
+    return ($Branch -ceq 'main')
+}
+# PowerShell returns $null for 'git branch --show-current' on a detached
+# HEAD. This real-checkout validator prevents calling .Trim() on null.
+function AssertCheckout([string]$Source,[string]$Reports,[string]$Head,[bool]$Detached) {
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw 'NVIDIA source directory missing' }
+    if (-not (Test-Path -LiteralPath $Reports -PathType Container)) { throw 'NVIDIA private test directory missing' }
+    $branchOutput=& git -C $Source branch --show-current
+    if ($LASTEXITCODE -ne 0) { throw 'Git branch probe failed' }
+    # On Windows PowerShell 5.1, casting null native output to string can
+    # still produce null, so test for null *before* invoking any method.
+    if ($null -eq $branchOutput) { $branch='' }
+    else { $branch=([string]$branchOutput).Trim() }
+    $shaOutput=& git -C $Source rev-parse HEAD
+    if ($LASTEXITCODE -ne 0) { throw 'Git HEAD probe failed' }
+    $sha=([string]$shaOutput).Trim().ToLowerInvariant()
+    if (-not (CheckoutAllowed $branch $sha $Head $Detached)) {
+        throw 'Source checkout must be main, or exact detached candidate SHA in opted-in worktree'
+    }
+    if ($Detached) {
+        $actual=(Resolve-Path -LiteralPath $Source).ProviderPath.TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $root=(Resolve-Path -LiteralPath $Reports).ProviderPath.TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $expected=Join-Path $root ('E158-owner-source-'+$Head.Substring(0,12))
+        if ($actual -ine $expected) { throw 'Detached candidate checkout must be the exact isolated E158 folder under report root' }
+    }
+    $remoteOutput=& git -C $Source remote get-url origin
+    if ($LASTEXITCODE -ne 0 -or ([string]$remoteOutput).Trim() -cne 'https://github.com/JohnTWillemsen/VIctory-W.git') {
+        throw 'Source Git remote is not the existing official project'
+    }
+    $statusOutput=@(& git -C $Source status --porcelain)
+    if ($LASTEXITCODE -ne 0) { throw 'Git clean status probe failed' }
+    if ($statusOutput.Count -ne 0) { throw 'Local source has uncommitted changes; no changes made' }
 }
 function Harness([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw 'Required GitHub test script missing' }
@@ -82,7 +121,41 @@ if ($Mode -eq 'SelfTest') {
         $rejected=$false
         try { [void](VerifiedBuild $root $expected) } catch { $rejected=$true }
         if (-not $rejected) { throw 'Duplicated manifest hash was not rejected' }
+        if (-not (CheckoutAllowed '' $expected $expected $true)) { throw 'Exact detached candidate rejected' }
+        if (CheckoutAllowed '' ('b'*40) $expected $true) { throw 'Wrong detached worktree SHA accepted' }
+        if (CheckoutAllowed 'main' $expected $expected $true) { throw 'Attached branch accepted as detached worktree' }
+        if (-not (CheckoutAllowed 'main' ('b'*40) $expected $false)) { throw 'Old main-based preflight regressed' }
+        # Real Git worktree integration: detached HEAD has no branch-name text.
+        $source=Join-Path $root 'synthetic-main'
+        $reports=Join-Path $root 'reports'
+        New-Item -ItemType Directory -Force -Path $reports | Out-Null
+        & git init -q --initial-branch=main $source
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic main git init failed' }
+        & git -C $source -c user.name=Test -c user.email=synthetic@example.invalid commit -q --allow-empty -m synthetic
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic main commit failed' }
+        & git -C $source remote add origin 'https://github.com/JohnTWillemsen/VIctory-W.git'
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic origin setup failed' }
+        $realHead=([string](& git -C $source rev-parse HEAD)).Trim()
+        AssertCheckout $source $reports $realHead $false
+        $work=Join-Path $reports ('E158-owner-source-'+$realHead.Substring(0,12))
+        & git -C $source worktree add -q --detach $work $realHead
+        if ($LASTEXITCODE -ne 0) { throw 'Synthetic detached worktree creation failed' }
+        AssertCheckout $work $reports $realHead $true
+        $rejected=$false
+        try { AssertCheckout $work $reports ('b'*40) $true } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Actual detached worktree wrong HEAD was not rejected' }
+        $rejected=$false
+        try { AssertCheckout $work $reports $realHead $false } catch { $rejected=$true }
+        if (-not $rejected) { throw 'Detached checkout accepted without explicit opt-in' }
+        Write-Host 'E145 real detached worktree branch/SHA/remote fail-closed fixtures PASS; no title launched'
         Write-Host 'E145 source artifact SHA and commit verification, fail-closed fixtures PASS; no title launched'
+    }
+    catch {
+        # Fixed synthetic diagnostic only. Do not print real source paths,
+        # arbitrary owner logs, or title data.
+        Write-Host ('E145_SYNTHETIC_FAIL_LINE='+$_.InvocationInfo.ScriptLineNumber)
+        Write-Host ('E145_SYNTHETIC_FAIL_TYPE='+$_.Exception.GetType().Name)
+        throw
     }
     finally {
         if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
@@ -105,13 +178,7 @@ if ($Mode -eq 'Recover') {
 }
 if ($ExpectedHeadSha -cnotmatch '^[0-9a-f]{40}$') { throw 'Provide exact 40-hex candidate head from verified GitHub CI' }
 if ($GithubRun -lt 1) { throw 'Provide exact GitHub Actions source release run ID' }
-if (-not (Test-Path -LiteralPath $Repo -PathType Container)) { throw 'NVIDIA source directory missing' }
-if (-not (Test-Path -LiteralPath $ReportRoot -PathType Container)) { throw 'NVIDIA private test directory missing' }
-if ((& git -C $Repo branch --show-current).Trim() -cne 'main') { throw 'Local source must remain on main; no experimental branch checkout' }
-if ((& git -C $Repo remote get-url origin).Trim() -cne 'https://github.com/JohnTWillemsen/VIctory-W.git') {
-    throw 'Source Git remote is not the existing official project'
-}
-if (@(& git -C $Repo status --porcelain).Count -ne 0) { throw 'Local source has uncommitted changes; no changes made' }
+AssertCheckout $Repo $ReportRoot $ExpectedHeadSha ([bool]$AllowDetachedCandidateWorktree)
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI (gh) is required to fetch a verified artifact' }
 Harness $session
 Harness $perf
@@ -128,6 +195,7 @@ $candidate=VerifiedBuild $build $ExpectedHeadSha
     ('source_commit='+$UpstreamPin)
     ('github_actions_run_id='+$GithubRun)
     'verified_provenance=true'
+    ('dxgi_tearing_requested='+$(if($Tearing -eq '1'){'ON'}else{'OFF'}))
     'game_launched_during_preflight=false'
     'private_paths_or_title_assets_in_report=false'
 ) | Set-Content -LiteralPath (Join-Path $build 'E145-anonymous-preflight.txt') -Encoding ASCII
@@ -147,7 +215,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $games[0].DirectoryName 'appdata0.rp
 $before=@(Get-ChildItem -LiteralPath $ReportRoot -Directory -Filter 'e127-*' | Select-Object -ExpandProperty Name)
 Write-Host 'E127 will request explicit PLAY consent. Back up saves before typing PLAY.'
 Write-Host 'Stay in the same first playable interior; observe movement/FPS, not broad progression.'
-& $session -Mode Start -VictoryExe $candidate.Exe -GameExe $game -ExpectedSha256 $candidate.Sha -ReportRoot $ReportRoot
+& $session -Mode Start -VictoryExe $candidate.Exe -GameExe $game -ExpectedSha256 $candidate.Sha -ReportRoot $ReportRoot -Tearing $Tearing
 $after=@(Get-ChildItem -LiteralPath $ReportRoot -Directory -Filter 'e127-*' | Where-Object { $before -cnotcontains $_.Name })
 if ($after.Count -ne 1) {
     Write-Warning 'Could not identify one new E127 run; E127 checkpoint is under the test root, use Recover after crash/reboot.'

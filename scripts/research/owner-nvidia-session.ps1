@@ -8,6 +8,7 @@ param(
     [string]$VictoryExe,
     [string]$GameExe,
     [string]$ExpectedSha256,
+    [ValidateSet('0','1')][string]$Tearing='0',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$RunFolder,
     [ValidateSet('Unknown','Menu','Black','World')][string]$Visual='Unknown',
@@ -39,7 +40,7 @@ function PutText([string]$File,[string[]]$Lines) {
     } else { [IO.File]::Move($tmp,$File) }
 }
 function LogSummary([string]$Folder) {
-    $counts=@{ files=0; lines=0; host_seen=0; host_5090=0; host_other=0; removed=0; hung=0; fault=0; slow=0; gpu_errors=0; warmup=0 }
+    $counts=@{ files=0; lines=0; host_seen=0; host_5090=0; host_other=0; dxgi_supported=0; dxgi_unsupported=0; dxgi_fallback=0; removed=0; hung=0; fault=0; slow=0; gpu_errors=0; warmup=0 }
     $appHome=Join-Path $Folder 'home'
     $paths=@()
     $logs=Join-Path $appHome 'logs'
@@ -60,6 +61,7 @@ function LogSummary([string]$Folder) {
             # adapter creation is often at the beginning. Inspect only bounded
             # samples, and never put any raw line in the anonymous ZIP.
             $tailHostSeen=$false
+            $tailDxgiSeen=$false
             foreach ($line in @(Get-Content -LiteralPath $p -Tail 3500 -ErrorAction Stop)) {
                 $counts.lines++
                 if ($line -match 'host device on the card with the most memory') {
@@ -68,6 +70,12 @@ function LogSummary([string]$Folder) {
                     if ($line -match 'adapter\s*=\s*"?[^"\r\n]*RTX\s*5090') { $counts.host_5090++ }
                     elseif ($line -match 'adapter\s*=') { $counts.host_other++ }
                 }
+                if ($line -match 'DXGI immediate presentation: opt in via VICTORY_TEARING=1') {
+                    $tailDxgiSeen=$true
+                    if ($line -match '(?i)\btearing\s*=\s*true\b') { $counts.dxgi_supported++ }
+                    elseif ($line -match '(?i)\btearing\s*=\s*false\b') { $counts.dxgi_unsupported++ }
+                }
+                if ($line -match 'immediate present refused; disabling tearing for this run') { $counts.dxgi_fallback++ }
                 if ($line -match '(?i)(device removed|0x887A0005|DXGI_ERROR_DEVICE_REMOVED)') { $counts.removed++ }
                 if ($line -match '(?i)(0x887A0006|DXGI_ERROR_DEVICE_HUNG)') { $counts.hung++ }
                 if ($line -match '(?i)(page fault|DRED|breadcrumb)') { $counts.fault++ }
@@ -75,16 +83,18 @@ function LogSummary([string]$Folder) {
                 if ($line -match '(?i)(host GPU failure|failed to allocate upload buffer)') { $counts.gpu_errors++ }
                 if ($line -match '(?i)(warm.up restart|warming up|restarting after warmup)') { $counts.warmup++ }
             }
-            # The initial host card selection can scroll out of the last 3500
-            # lines. Read an equally bounded head ONLY if the tail lacked a
-            # device-creation event; this avoids counting one event twice.
-            # Head lines are counted for GPU selection only, not crash markers.
-            if (-not $tailHostSeen) {
+            # Read bounded head for initial host/DXGI feature events outside
+            # the tail. Count each signal from one end only, never raw lines.
+            if (-not $tailHostSeen -or -not $tailDxgiSeen) {
                 foreach ($line in @(Get-Content -LiteralPath $p -TotalCount 3500 -ErrorAction Stop)) {
-                    if ($line -match 'host device on the card with the most memory') {
+                    if (-not $tailHostSeen -and $line -match 'host device on the card with the most memory') {
                         $counts.host_seen++
                         if ($line -match 'adapter\s*=\s*"?[^"\r\n]*RTX\s*5090') { $counts.host_5090++ }
                         elseif ($line -match 'adapter\s*=') { $counts.host_other++ }
+                    }
+                    if (-not $tailDxgiSeen -and $line -match 'DXGI immediate presentation: opt in via VICTORY_TEARING=1') {
+                        if ($line -match '(?i)\btearing\s*=\s*true\b') { $counts.dxgi_supported++ }
+                        elseif ($line -match '(?i)\btearing\s*=\s*false\b') { $counts.dxgi_unsupported++ }
                     }
                 }
             }
@@ -100,6 +110,11 @@ function ElapsedSeconds([string]$StartedUtc,[DateTimeOffset]$Now) {
 }
 function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$VisualCode,[string]$ControlsCode) {
     $cfg=ReadConfig $Folder
+    # A single fixed enum; never include arbitrary CLI flags or private paths.
+    $tearingCode='OFF'
+    if ($cfg.PSObject.Properties['tearing_requested'] -and ([string]$cfg.tearing_requested -ceq '1')) {
+        $tearingCode='ON'
+    }
     $summary=LogSummary $Folder
     $pub=Join-Path $Folder 'UPLOAD-ONLY'
     New-Item -ItemType Directory -Force -Path $pub | Out-Null
@@ -107,6 +122,11 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
     $gpu='UNKNOWN'
     if ($summary.host_5090 -gt 0) { $gpu='HOST_RTX5090_NAME_MATCH' }
     elseif ($summary.host_other -gt 0) { $gpu='OTHER_HOST_ADAPTER_REPORTED' }
+    # An observed capability query does not establish a successful Present().
+    $dxgi='UNKNOWN'
+    if ($summary.dxgi_supported -gt 0 -and $summary.dxgi_unsupported -gt 0) { $dxgi='MIXED' }
+    elseif ($summary.dxgi_supported -gt 0) { $dxgi='FEATURE_SUPPORTED' }
+    elseif ($summary.dxgi_unsupported -gt 0) { $dxgi='FEATURE_UNSUPPORTED_OR_OFF' }
     $statusFile=Join-Path $pub 'E127-fixed-fields.txt'
     $lines=@(
         'format=E127-nvidia-session-v1',
@@ -124,6 +144,9 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
         'd3d12_debug_layer=OFF',
         'native_bvh_builder=OFF',
         'frame_generation=SOURCE_DEFAULT',
+        ('dxgi_tearing_requested='+$tearingCode),
+        ('dxgi_tearing_feature_query='+$dxgi),
+        ('dxgi_tearing_fallback_marker_count='+$summary.dxgi_fallback),
         'expected_host_gpu_name=RTX5090',
         ('observed_host_gpu='+$gpu),
         ('host_adapter_event_count='+$summary.host_seen),
@@ -168,7 +191,7 @@ if ($Mode -eq 'SelfTest') {
     if ((ElapsedSeconds '2026-11-28T01:24:17Z' $fakeNow) -ne 12) { throw 'Phoenix/UTC elapsed math mismatch' }
     $root=Join-Path $env:TEMP ('E127-fixture-'+[Guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Force -Path (WorkPrivate $root),(Join-Path $root 'home\logs') | Out-Null
-    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
+    $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o');tearing_requested='0' }
     [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
     $log=Join-Path $root 'home\logs\victory-nvidia-play-synthetic.log'
     # Force the host adapter event outside the sampled tail without a title.
@@ -176,6 +199,7 @@ if ($Mode -eq 'SelfTest') {
     $fixtureLines=New-Object 'System.Collections.Generic.List[string]'
     $fixtureLines.Add('private user path C:\\private\\title\\never-upload.rpf')
     $fixtureLines.Add('2026-11-27 INFO victory_gpu::host: host device on the card with the most memory of its own adapter="NVIDIA GeForce RTX 5090" own_memory_mb=32768')
+    $fixtureLines.Add('2026-11-27 INFO victory_gpu::host: DXGI immediate presentation: opt in via VICTORY_TEARING=1, requires system support tearing=false')
     for ($i=0; $i -lt 3600; $i++) { $fixtureLines.Add('synthetic filler line, no host device') }
     $fixtureLines.Add('ERROR victory_gpu::host: host GPU failure device removed 0x887A0005')
     [IO.File]::WriteAllLines($log,$fixtureLines)
@@ -190,6 +214,24 @@ if ($Mode -eq 'SelfTest') {
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
+    if (-not $report.Contains('dxgi_tearing_requested=OFF')) { throw 'Default DXGI opt-in enum absent' }
+    if (-not $report.Contains('dxgi_tearing_feature_query=FEATURE_UNSUPPORTED_OR_OFF')) { throw 'DXGI OFF feature log not parsed' }
+    if (-not $report.Contains('dxgi_tearing_fallback_marker_count=0')) { throw 'Spurious DXGI fallback parsed' }
+    # Fixed-field ON state is verified with the synthetic manifest only; no title run.
+    $cfg.tearing_requested='1'
+    [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
+    # Simulate a second cold presentation log, including an actual proxy fallback.
+    # These exact strings are synthetic and contain no title-derived data.
+    $fixtureLines[2]='2026-11-27 INFO victory_gpu::host: DXGI immediate presentation: opt in via VICTORY_TEARING=1, requires system support tearing=true'
+    $fixtureLines.Add('2026-11-27 WARN victory_gpu::host: immediate present refused; disabling tearing for this run')
+    [IO.File]::WriteAllLines($log,$fixtureLines)
+    PublicReport $root 'SELFTEST' 'UNKNOWN' 'World' 'Yes'
+    Expand-Archive -LiteralPath $zip -DestinationPath $testdir -Force
+    $reportOn=Get-Content -LiteralPath (Join-Path $testdir 'E127-fixed-fields.txt') -Raw
+    if (-not $reportOn.Contains('dxgi_tearing_requested=ON')) { throw 'DXGI ON fixed enum absent' }
+    if (-not $reportOn.Contains('dxgi_tearing_feature_query=FEATURE_SUPPORTED')) { throw 'DXGI ON feature support was not parsed' }
+    if (-not $reportOn.Contains('dxgi_tearing_fallback_marker_count=1')) { throw 'DXGI proxy fallback count was not parsed' }
+    if ($reportOn.Contains('C:\\private') -or $reportOn.Contains('never-upload.rpf') -or $reportOn.Contains($root)) { throw 'DXGI ON report leaked a private path or title data' }
     $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?$')
     if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
     $duration=[int]$durationMatch.Groups[1].Value
@@ -225,6 +267,7 @@ if ($Mode -eq 'Start') {
         victory_exe=$VictoryExe;game_exe=$GameExe
         executable_sha256=$sha;started_utc=[DateTime]::UtcNow.ToString('o')
         run_id=$id
+        tearing_requested=$Tearing
     }
     [IO.File]::WriteAllText((WorkConfig $RunFolder),($cfg|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
     PublicReport $RunFolder 'READY' 'UNKNOWN' 'Unknown' 'Unknown'
@@ -232,6 +275,7 @@ if ($Mode -eq 'Start') {
     Write-Host ('Private-only logs and settings: '+(Join-Path $RunFolder 'home'))
     Write-Host 'This may reset the graphics driver or crash/reboot the PC. Back up game saves beforehand.'
     Write-Host 'This test uses an isolated VICTORY_HOME, forces RTX 5090 by name, and leaves native BVH off.'
+    Write-Host ('DXGI immediate present opt-in requested: '+$(if($Tearing -eq '1'){'ON'}else{'OFF'}))
     Write-Host 'On first launch, the NVIDIA program may offer optional DLL downloads and restart itself once to warm up.'
     $consent=Read-Host 'Type PLAY to launch; anything else keeps the initial anonymous ZIP and cancels'
     if ($consent -cne 'PLAY') { Write-Host 'Cancelled without launching'; return }
@@ -255,7 +299,12 @@ if ($Mode -eq 'Start') {
         Remove-Item Env:VICTORY_BVH_BUILDER -ErrorAction SilentlyContinue
         Remove-Item Env:VICTORY_KEYS -ErrorAction SilentlyContinue
         Write-Host 'Starting the upstream built-in play launcher now; respond to any visible NVIDIA SDK prompt yourself.'
-        & $VictoryExe play $GameExe
+        if ($Tearing -ceq '1') {
+            # One literal, allowlisted override: never arbitrary user-supplied flags.
+            & $VictoryExe play $GameExe --set 'VICTORY_TEARING=1'
+        } else {
+            & $VictoryExe play $GameExe
+        }
         if ($null -ne $LASTEXITCODE) { $exit=[string]$LASTEXITCODE }
     } catch {
         ($_|Out-String) | Set-Content -LiteralPath (Join-Path (WorkPrivate $RunFolder) 'private-launch-exception.txt')

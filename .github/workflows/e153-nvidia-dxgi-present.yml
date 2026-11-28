@@ -1,0 +1,37 @@
+name: E153 opt-in NVIDIA DXGI immediate-present regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  present-flags:
+    name: E153 Windows presenter flags, no game launch
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source HEAD
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($expected -cne $actual) { throw 'E153 source checkout mismatch' }
+          Write-Host 'E153_EXACT_HEAD=true'
+      - name: Install project toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Focused no-title flag regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib -- tearing_tests:: --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'E153 DXGI flag unit regression failed' }
+          Write-Host 'E153_PRESENT_FLAG_UNIT_PASS=true'
