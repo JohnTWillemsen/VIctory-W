@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
 $Invariant=[Globalization.CultureInfo]::InvariantCulture
-$ZipName='E140-anonymous-perf-summary.zip'
+$ZipName='E141-anonymous-perf-summary.zip'
 
 function Number([string]$Value) {
     return [double]::Parse($Value,[Globalization.NumberStyles]::Float,$Invariant)
@@ -202,7 +202,7 @@ function MakeReport([string]$RunFolder,[string]$SessionId,[string]$OutputRoot) {
         )
     }
     New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
-    $txt=Join-Path $OutputRoot 'E140-fixed-fields.txt'
+    $txt=Join-Path $OutputRoot 'E141-fixed-fields.txt'
     $zip=Join-Path $OutputRoot $ZipName
     [IO.File]::WriteAllLines($txt,$lines,[Text.UTF8Encoding]::new($false))
     Compress-Archive -LiteralPath $txt -DestinationPath $zip -Force
@@ -220,26 +220,39 @@ if ($Mode -eq 'SelfTest') {
             'INFO victory_gpu::host: 65.0 fps, 15.4 ms/frame (4.0 preparing: copies 1.0 ms 2.0 MB, textures 2.0 ms 3.0 MB; 6.0 on the GPU; 1.0 copying back 0.4 MB), 12 draws/frame',
             'INFO victory_gpu::host: 25.0 fps, 40.0 ms/frame (20.0 preparing: copies 2.0 ms 2.0 MB, textures 3.0 ms 5.0 MB; 18.0 on the GPU; 2.0 copying back 1.0 MB), 420 draws/frame'
         )
-        [IO.File]::WriteAllLines((Join-Path $log 'victory-fixture.log'),$samples)
+        $oldLog=Join-Path $log 'victory-fixture.log'
+        [IO.File]::WriteAllLines($oldLog,$samples)
+        [IO.File]::SetLastWriteTimeUtc($oldLog,[DateTime]::UtcNow.AddHours(-1))
+        $newLog=Join-Path $log 'victory-another-fixture.log'
+        [IO.File]::WriteAllLines($newLog,@(
+            'INFO victory_gpu::host: 42.0 fps, 23.8 ms/frame (5.0 preparing: copies 1.0 ms 1.0 MB, textures 2.0 ms 2.0 MB; 12.0 on the GPU; 1.0 copying back 0.2 MB), 240 draws/frame',
+            'INFO victory_gpu::host: 48.0 fps, 20.8 ms/frame (4.0 preparing: copies 1.0 ms 1.0 MB, textures 2.0 ms 2.0 MB; 14.0 on the GPU; 2.0 copying back 0.2 MB), 245 draws/frame'
+        ))
+        [IO.File]::SetLastWriteTimeUtc($newLog,[DateTime]::UtcNow)
         $zip=MakeReport $run 'e127-20261128012417-dba267' (Join-Path $testRoot 'output')
         $opened=Join-Path $testRoot 'opened'
         Expand-Archive -LiteralPath $zip -DestinationPath $opened
         $files=@(Get-ChildItem -LiteralPath $opened -File)
-        if ($files.Count -ne 1 -or $files[0].Name -ne 'E140-fixed-fields.txt') { throw 'Public ZIP membership wrong' }
+        if ($files.Count -ne 1 -or $files[0].Name -ne 'E141-fixed-fields.txt') { throw 'Public ZIP membership wrong' }
         $report=[IO.File]::ReadAllText($files[0].FullName)
-        foreach ($term in @('scene_like_window_sample_count=2','all_fps_window_sample_count=3',
-                            'scene_like_fps_p50=19.0','scene_like_frame_ms_p50=58.5',
-                            'scene_like_host_gpu_ms_p50=29.0','game_relaunched=false',
-                            'per_log_scene_profile_count=1','log_1_scene_like_window_count=2',
-                            'log_1_scene_like_fps_p50=19.0',
-                            'log_1_scene_like_fps_first_half_p50=13.0',
-                            'log_1_scene_like_fps_last_half_p50=25.0')) {
+        foreach ($term in @('scene_like_window_sample_count=4','all_fps_window_sample_count=5',
+                            'all_windows_fps_p50=42.0','scene_like_fps_p50=33.5',
+                            'scene_like_frame_ms_p50=31.9',
+                            'scene_like_host_gpu_ms_p50=16.0','game_relaunched=false',
+                            'per_log_scene_profile_count=2','log_1_scene_like_window_count=2',
+                            'log_1_scene_like_fps_p50=45.0',
+                            'log_1_scene_like_fps_first_half_p50=42.0',
+                            'log_1_scene_like_fps_last_half_p50=48.0',
+                            'log_2_scene_like_window_count=2',
+                            'log_2_scene_like_fps_p50=19.0',
+                            'log_2_scene_like_fps_first_half_p50=13.0',
+                            'log_2_scene_like_fps_last_half_p50=25.0')) {
             if (-not $report.Contains($term)) { throw ('E140 fixture mismatch: '+$term) }
         }
         if ($report.Contains('never-upload') -or $report.Contains('C:\secret') -or $report.Contains($testRoot)) {
             throw 'Private data leaked into E140 ZIP'
         }
-        Write-Host 'E140 offline FPS/CPU/GPU aggregation, scene heuristic, ZIP allowlist and privacy fixture PASS; no game launched'
+        Write-Host 'E141 offline per-log FPS/CPU/GPU aggregation, scene heuristic, ZIP allowlist and privacy fixture PASS; no game launched'
     }
     finally {
         if (Test-Path -LiteralPath $testRoot) {
@@ -258,7 +271,7 @@ $run=Join-Path $ReportRoot $RunId
 if (-not (Test-Path -LiteralPath $run -PathType Container)) {
     throw 'E127 run folder missing; no game launched.'
 }
-$output=Join-Path $ReportRoot ('E140-offline-'+$RunId)
+$output=Join-Path $ReportRoot ('E141-offline-'+$RunId)
 $zip=MakeReport $run $RunId $output
 Write-Host ('Offline audit complete. Upload ONLY: '+$zip)
 Write-Host 'No game launched; all original logs, game files and source unchanged.'
