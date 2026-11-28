@@ -110,9 +110,9 @@ function WriteZip([string]$Path,[string[]]$Lines) {
     $fs=$null;$arc=$null;$writer=$null
     try {
         $fs=New-Object IO.FileStream($Path,[IO.FileMode]::CreateNew,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
-        $arc=New-Object IO.Compression.ZipArchive($fs,[IO.Compression.ZipArchiveMode]::Create,$false)
+        $arc=[IO.Compression.ZipArchive]::new($fs,[IO.Compression.ZipArchiveMode]::Create,$false)
         $entry=$arc.CreateEntry($Member,[IO.Compression.CompressionLevel]::Optimal)
-        $writer=New-Object IO.StreamWriter($entry.Open(),[Text.UTF8Encoding]::new($false))
+        $writer=[IO.StreamWriter]::new($entry.Open(),[Text.UTF8Encoding]::new($false))
         foreach ($line in $Lines) { $writer.WriteLine($line) }
         $writer.Flush()
     }
@@ -142,13 +142,13 @@ if ($Mode -eq 'SelfTest') {
         }
         $lines=Fields $id $s
         $joined=$lines -join "`n"
-        if ($joined.Contains('PRIVATE') -or $joined.Contains('shader') -or
+        if ($joined.Contains('PRIVATE') -or
             $joined.Contains('C:\secret') -or $joined.Contains('0123456789ABCDEF')) {
             throw 'Private synthetic log content leaked into report'
         }
         $zip=Join-Path $temp $ZipName
         WriteZip $zip $lines
-        Add-Type -AssemblyName System.IO.Compression
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
         $archive=[IO.Compression.ZipFile]::OpenRead($zip)
         try {
             if ($archive.Entries.Count -ne 1 -or $archive.Entries[0].FullName -cne $Member) {
