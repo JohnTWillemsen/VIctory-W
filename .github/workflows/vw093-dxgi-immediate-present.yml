@@ -1,0 +1,43 @@
+name: VW093 isolated DXGI immediate-present candidate (Windows; no game)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact pinned candidate head
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'VW093 source HEAD mismatch' }
+          Write-Host 'VW093_EXACT_CANDIDATE_SOURCE=true'
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Verify opt-in default-off and swapchain flags (no GPU title)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib host::vw093_present_tests -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW093 targeted DXGI opt-in regressions failed' }
+          Write-Host 'VW093_IMMEDIATE_PRESENT_OPTIN_DEFAULT_OFF_PASS=true'
+      - name: Build the source-only Windows launcher and GPU host
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo check --locked -p victory
+          if ($LASTEXITCODE -ne 0) { throw 'VW093 Windows source check failed' }
+          Write-Host 'VW093_WINDOWS_SOURCE_CHECK_PASS=true'
