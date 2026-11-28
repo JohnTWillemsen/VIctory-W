@@ -56,10 +56,14 @@ function LogSummary([string]$Folder) {
         if ([string]::IsNullOrWhiteSpace($p)) { continue }
         $counts.files++
         try {
-            # Only a bounded tail is parsed locally. No original line ever enters the ZIP.
+            # Error and crash markers live near the end of long runs; host
+            # adapter creation is often at the beginning. Inspect only bounded
+            # samples, and never put any raw line in the anonymous ZIP.
+            $tailHostSeen=$false
             foreach ($line in @(Get-Content -LiteralPath $p -Tail 3500 -ErrorAction Stop)) {
                 $counts.lines++
                 if ($line -match 'host device on the card with the most memory') {
+                    $tailHostSeen=$true
                     $counts.host_seen++
                     if ($line -match 'adapter\s*=\s*"?[^"\r\n]*RTX\s*5090') { $counts.host_5090++ }
                     elseif ($line -match 'adapter\s*=') { $counts.host_other++ }
@@ -70,6 +74,19 @@ function LogSummary([string]$Folder) {
                 if ($line -match '(?i)slow host submission') { $counts.slow++ }
                 if ($line -match '(?i)(host GPU failure|failed to allocate upload buffer)') { $counts.gpu_errors++ }
                 if ($line -match '(?i)(warm.up restart|warming up|restarting after warmup)') { $counts.warmup++ }
+            }
+            # The initial host card selection can scroll out of the last 3500
+            # lines. Read an equally bounded head ONLY if the tail lacked a
+            # device-creation event; this avoids counting one event twice.
+            # Head lines are counted for GPU selection only, not crash markers.
+            if (-not $tailHostSeen) {
+                foreach ($line in @(Get-Content -LiteralPath $p -TotalCount 3500 -ErrorAction Stop)) {
+                    if ($line -match 'host device on the card with the most memory') {
+                        $counts.host_seen++
+                        if ($line -match 'adapter\s*=\s*"?[^"\r\n]*RTX\s*5090') { $counts.host_5090++ }
+                        elseif ($line -match 'adapter\s*=') { $counts.host_other++ }
+                    }
+                }
             }
         } catch { }
     }
@@ -145,18 +162,22 @@ if ($Mode -eq 'SelfTest') {
     $cfg=@{ executable_sha256=('a'*64);run_id='synthetic123';started_utc=[DateTime]::UtcNow.AddSeconds(-12).ToString('o') }
     [IO.File]::WriteAllText((WorkConfig $root),($cfg|ConvertTo-Json -Compress))
     $log=Join-Path $root 'home\logs\victory-nvidia-play-synthetic.log'
-    [IO.File]::WriteAllLines($log,@(
-        'private user path C:\\private\\title\\never-upload.rpf',
-        '2026-11-27 INFO victory_gpu::host: host device on the card with the most memory of its own adapter="NVIDIA GeForce RTX 5090" own_memory_mb=32768',
-        'ERROR victory_gpu::host: host GPU failure device removed 0x887A0005'
-    ))
+    # Force the host adapter event outside the sampled tail without a title.
+    # A crash marker at the end must still be counted once, and no line leaks.
+    $fixtureLines=New-Object 'System.Collections.Generic.List[string]'
+    $fixtureLines.Add('private user path C:\\private\\title\\never-upload.rpf')
+    $fixtureLines.Add('2026-11-27 INFO victory_gpu::host: host device on the card with the most memory of its own adapter="NVIDIA GeForce RTX 5090" own_memory_mb=32768')
+    for ($i=0; $i -lt 3600; $i++) { $fixtureLines.Add('synthetic filler line, no host device') }
+    $fixtureLines.Add('ERROR victory_gpu::host: host GPU failure device removed 0x887A0005')
+    [IO.File]::WriteAllLines($log,$fixtureLines)
     PublicReport $root 'SELFTEST' 'UNKNOWN' 'World' 'Yes'
     $zip=Join-Path $root $ZipName
     if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw 'Selftest ZIP absent' }
     $testdir=Join-Path $root 'opened'
     Expand-Archive -LiteralPath $zip -DestinationPath $testdir
     $report=Get-Content -LiteralPath (Join-Path $testdir 'E127-fixed-fields.txt') -Raw
-    if (-not $report.Contains('observed_host_gpu=HOST_RTX5090_NAME_MATCH')) { throw 'Host GPU parser did not match' }
+    if (-not $report.Contains('observed_host_gpu=HOST_RTX5090_NAME_MATCH')) { throw 'Initial host GPU event outside tail was lost' }
+    if (-not $report.Contains('host_adapter_5090_name_match_count=1')) { throw 'Host GPU event double counted or missed' }
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
