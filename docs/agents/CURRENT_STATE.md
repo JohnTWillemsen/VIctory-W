@@ -1,5 +1,7 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
+**VW-092 / E-165 source staging:** Draft [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) is an opt-in-only numeric host-pipeline wait probe (default OFF) motivated by the *separately unmerged* [PR60 E163](https://github.com/JohnTWillemsen/VIctory-W/blob/experiment/e158-nvidia-optin-owner-candidate-20261127/docs/research/E163-RTX5090-COLD-PIPELINE-AND-COPY-PHASES.md) slow-window queue/copy correlation. Exact-head Windows test **pending**; no hardware run, speedup, stable world progression or merging claimed. Main baseline unchanged; do not confuse this work with PR60's E-164 correction.
+
 **E151 now:** Owner E127 candidate RTX5090 report `FINALIZED`, exit 0, SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, selected GPU, no recognized fault markers; **visual Unknown, controls Unknown**. E141 longer log 30 scene windows p50 **29.1 FPS** vs prior 90 windows **10.9 FPS**; short 5-window log **3.6 FPS** in both. Promising 2.67x sampled median, **NOT controlled scene/fps benchmark nor playable visual acceptance**. PR50 remains DRAFT, main preserves owner-confirmed original controllable cell. See E151/D060 and [research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
 ## E140–E151 performance investigation (newest supersedes old snapshots)
