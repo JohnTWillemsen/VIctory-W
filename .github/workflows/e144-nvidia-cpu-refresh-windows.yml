@@ -1,0 +1,62 @@
+name: E144 NVIDIA CPU refresh candidate Windows regression gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  focused-cpu-refresh:
+    name: E144 Win WARP shadow, watch, host and list focused regressions
+    runs-on: windows-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Test exactly the candidate source; PR default otherwise checks out
+          # GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact candidate source head
+        shell: pwsh
+        run: |
+          $expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual=(& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'Focused WARP tested wrong source commit' }
+          Write-Host 'E144_EXACT_CANDIDATE_HEAD=true'
+      - name: Install project Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Run four independent GPU-library regression families on WARP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:VICTORY_D3D12_WARP='1'
+          foreach ($filter in @('shadow::','watch::','host::','list::')) {
+            Write-Host ('E144 WARP focused filter: '+$filter)
+            # Rust substring matching means 'host::' also matches
+            # pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws.
+            # That one is independently FAILED on unmodified main under WARP.
+            # Skip ONLY that exact inherited test in this *focused* job;
+            # E127 full-synthetic-tests remains unmodified, explicitly RED.
+            # The inherited write-watch test itself documents 4/100 failures
+            # from concurrent Rust test-harness memory-map reuse (including
+            # 2/100 with faults locked), on the original upstream source.
+            # Serialize test *cases* while retaining concurrency inside each
+            # multi-threaded test. Do not exclude any watch:: tests.
+            if ($filter -eq 'host::') {
+              cargo test --locked -p victory-gpu --lib -- $filter --skip pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws --test-threads=1
+            } else {
+              cargo test --locked -p victory-gpu --lib -- $filter --test-threads=1
+            }
+            if ($LASTEXITCODE -ne 0) { throw ('E144 WARP test failure in '+$filter) }
+          }
+          # Repeat exact previously intermittent unlocked write-fault case to
+          # distinguish a one-off parallel-harness collision from true failure.
+          for ($i=1; $i -le 3; $i++) {
+            Write-Host ('E144 unlocked watch regression serial repetition '+$i)
+            cargo test --locked -p victory-gpu --lib -- watch::tests::faults_that_take_no_lock_tell_the_same --exact --test-threads=1
+            if ($LASTEXITCODE -ne 0) { throw ('E144 serial unlocked watch regression '+$i+' failed') }
+          }
+          Write-Host 'E144 FOUR SERIAL WARP FILTER FAMILIES AND UNLOCKED REPEATS PASSED; FULL GPU SUITE IS A SEPARATE GATE'
