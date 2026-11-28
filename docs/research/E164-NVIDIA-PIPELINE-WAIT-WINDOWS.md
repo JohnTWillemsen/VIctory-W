@@ -22,3 +22,16 @@ In NVIDIA source `pipeline/make.rs`, `wait()` can wait on a shared 500 ms frame 
 3. Only if a causally informative owner test becomes necessary: first review the exact source-built artifact and safe opt-in pass-through, isolate home/cache, require normal non-admin PowerShell and literal `PLAY`, collect fixed-field summary only. Do not upload raw titles, pipeline logs, screenshots or cache contents.
 
 **Rollback:** leave this draft unmerged; on any candidate build setting `VICTORY_PIPELINE_WAIT_STATS` absent has no extra counters or new output. No performance hypothesis has yet been accepted.
+
+## VW-092 offline aggregation — read-only, no new GPU run
+
+Added scripts/research/owner-nvidia-wait-audit.ps1 as a **separate** offline PowerShell 5.1 audit, checked by the exact-head E164 Windows workflow's synthetic SelfTest. This script:
+
+- Reads at most six already-existing E127 private .log files (no file above 256 MiB; at most 250,000 lines per file) without launching or changing the game, saves, shader cache or runtime flags.
+- Associates each numeric-only wait line with the **immediately preceding 5-second FPS meter** within a four-line gap in the **same** log. Reports numeric medians of summed title-thread waiting in scene-like (>=100 draws/frame), slow (<=10 FPS), and fast (>=20 FPS) windows.
+- Exports exactly **one** fixed-field member, VW092-fixed-fields.txt, inside VW092-anonymous-wait-summary.zip, with run ID and numeric/enum fields only. Does not export private log lines, paths, filenames, shader hashes or game content. SelfTest uses synthetic data with injected private paths and checks ZIP membership plus fixed-field privacy.
+- A report with status=NO_MATCHED_WAIT_WINDOWS **does not imply zero pipeline waiting**. It can simply mean the E164 runtime opt-in was absent, the build was different, a log was truncated, or no suitable pair was found.
+
+**Critical:** Existing E160/E161/E162 owner runs used a different executable built before the E164 probe. Their old logs cannot produce these measurements, and **there is no reason to ask the owner to rerun them**. Before any eventual owner hardware test, confirm an exact source-built E164 executable, normal non-admin PowerShell and VICTORY_PIPELINE_WAIT_STATS=1 propagation through the authorized launcher; require explicit PLAY and upload only sanitized ZIPs. Mere completion of the offline analyzer is not authorization for such a run.
+
+**Quantitative limitation:** Medians of five-second aggregate thread wait sums have no per-frame attribution. Thread wait durations may overlap; an apparent large wait sum does not mean that many milliseconds were added to FPS-window wall time. Unlike the E162 backlog, this gives a direct host-thread wait-duration measure, still not a causal mechanism by itself.
