@@ -120,6 +120,8 @@ const KEPT: &[&str] = &[
     "VICTORY_GAME_DIR",
     "VICTORY_CACHE_DIR",
     "VICTORY_DATA_DIR",
+    // VW093 explicit opt-in must survive `victory play` prepare/reset.
+    "VICTORY_TEARING",
     "VICTORY_STREAMLINE_DIR",
     "VICTORY_FIDELITYFX_DIR",
     "VICTORY_LOG",
@@ -1028,6 +1030,7 @@ mod tests {
             "VICTORY_ADAPTER",
             "VICTORY_CACHE_DIR",
             "VICTORY_DATA_DIR",
+            "VICTORY_TEARING",
         ] {
             assert!(KEPT.contains(&name), "{name} must survive prepare");
         }
