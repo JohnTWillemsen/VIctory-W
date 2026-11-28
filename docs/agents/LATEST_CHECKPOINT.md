@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**VW-092/E-152:** [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) draft; default-OFF numeric wait probe, based on PR60 E163 offline queued-pipeline/copy evidence. No game launch or performance fix; exact-head CI required. NVIDIA main unchanged.
+**VW-092/E-152/E-153:** [PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) draft; default-OFF numeric wait timing, read-only fixed-field privacy audit, explicit play-launcher opt-in passthrough. No GPU title run or proven FPS fix. Exact-head CI required; main unchanged.
 
 
 **E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).

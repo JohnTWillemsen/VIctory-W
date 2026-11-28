@@ -452,3 +452,11 @@ Draft [PR42](https://github.com/JohnTWillemsen/VIctory-W/pull/42) fixed a test-o
 **Decision:** Stage a **default-OFF**, numeric-only wait probe and unit fixture on separate [draft PR61](https://github.com/JohnTWillemsen/VIctory-W/pull/61) before considering pipeline wait/worker/cache changes. This is **VW-092 / E-152**, not PR60's editorial E-164 evidence correction. Keep original FPS report format for existing E127/E141/E162 regex, leave prior game code and main unchanged, and do not treat added counters as a performance fix.
 
 **Next:** Verify exact-head Windows source/fixture CI, inspect build and privacy impact, and only design a sanitized opt-in future hardware protocol if the measurement will answer a specific unresolved question. No new owner GPU test authorized by creating this branch. Revert by leaving PR61 unmerged; default OFF has no extra per-wait atomic writes. No causal performance claim.
+
+## D-062 · 2026-11-27 AZ — Preserve only the explicit wait stats flag and produce sanitized offline comparisons
+
+**Evidence:** Source review found `apps/victory/src/play.rs::prepare` intentionally removes every `VICTORY_*` variable not in `KEPT` before launching NVIDIA runtime. Consequently the new `VICTORY_PIPELINE_WAIT_STATS=1` opt-in on draft PR61 would otherwise be silently discarded. The E164 source logger emits a numeric-only line after the existing five-second FPS meter; old E160/E161 logs predate the probe.
+
+**Decision:** On draft PR61, allowlist **only** `VICTORY_PIPELINE_WAIT_STATS` for pass-through; do **not** preserve wait-budget, screen-wait, worker or unrelated settings, and do not enable the probe by default. Add a Rust regression and a separate offline PowerShell 5.1 privacy/ZIP self-test. No title is launched during these checks. A five-second summed wait interval is CPU thread time and may overlap across threads, not GPU time or frame pacing.
+
+**Revisit:** Verify exact-head Windows compile, three focused E164 gates, privacy ZIP and CI; retain existing full-suite/Clippy reds explicitly. Only if later useful, check normal non-admin owner preflight and require a source-matched binary, save backup and literal PLAY for one bounded hardware test. Do not merge or claim a causal FPS improvement now. These D-062/E-153 records are branch-local and conflict numerically with still-draft PR60; reconcile before merging.
