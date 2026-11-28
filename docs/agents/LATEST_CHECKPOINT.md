@@ -1,5 +1,10 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
+## E140 measured severe interior lag — E141 offline per-log follow-up
+
+Owner E140 fixed-field ZIP from the existing E127 RTX5090 session reported **95 scene-like multi-second FPS windows (2 local log files), FPS p50 10.3, p10 4.0, min 2.9, p90 18.7; mean frame-window ms p50 96.9 / p90 249.4; CPU preparing 25.2ms, GPU-associated 30.5ms, copyback 5.0ms medians.** Not individual frame times, true 1% lows, hardware GPU utilization or a definitive CPU-vs-GPU diagnosis. First controllable 3D interior E139 remains VERIFIED, but performance is severely impaired. **Defer wider exploration.** [PR48 E141](https://github.com/JohnTWillemsen/VIctory-W/pull/48) extends the already merged E140 offline privacy-safe analyzer to compare separate logs/early vs late windows and evaluate one-time NVIDIA warm-up hypothesis, without launching game or changing runtime. No per-log owner data yet; exact-head CI and owner E141 ZIP required before performance root-cause claims. See [E141 research](../research/E141-OFFLINE-PER-LOG-COMPARISON.md), E140/E141 evidence and D055. Source/Clippy/GPU synthetic statuses remain independently red as previously recorded.
+
+
 **Updated 2026-11-27 Arizona.** Read live GitHub `main`, open PRs and CI before new action. This is a dated snapshot, not an immutable branch lock. Canonical [HANDOFF](HANDOFF.md), [CURRENT_STATE](CURRENT_STATE.md), append-only [EVIDENCE_LOG](EVIDENCE_LOG.md) and [DECISIONS](DECISIONS.md).
 
 ## VERIFIED: FIRST RENDERED CONTROLLABLE 3D INTERIOR ON OWNER RTX5090
