@@ -1,5 +1,11 @@
 # VIctory-W — canonical handoff (read this first)
 
+## E152 research / PR56 draft — 2 stale indirect budget fixtures isolated (NOT a gameplay fix)
+
+Live NVIDIA `main` verified at `ea186566a868430a51e416d4c94695f6aff3fce1` when E152 branch began; verify again before decisions. [Draft PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) updates **only two test fixture assumptions** in `indirect.rs`, using source-reviewed upstream commit `9b712a6` and a Windows WARP gate checking `VICTORY_INDIRECT_REST=0/1`. The original [main E127 full synthetic run 46100529280](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46100529280) remains 433 passed/3 failed/36 ignored. E152 CI **PENDING until the exact final head finishes**; do not claim any regression fixed until then. The third depth-bounds GPU failure and Clippy failure are **not** addressed by this PR. [Research](../research/E152-NVIDIA-INDIRECT-BUDGET-TEST-FIX.md); VW089 and D061. Runtime renderer unchanged, no owner GPU run requested.
+
+**P0 remains [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50):** candidate visual+controls Unknown, 29.1 vs 10.9 FPS sampled longer-log medians not matched-scene benchmark; no merge without correctness confirmation. New upstream [PR661](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/661) lock-release during texture pool allocation includes independent 5070 Ti wait benchmarks but differs substantially from our current `pool.rs`; **no wholesale port or proven title FPS result**. Review source history and staged compatibility before runtime experiments.
+
 ## E151 latest — PR50 RTX5090 FPS promising, visuals/controls NOT CONFIRMED
 
 Owner uploaded **both fixed-field E127/E141 ZIPs** for [draft PR50](https://github.com/JohnTWillemsen/VIctory-W/pull/50) candidate source `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`, E127 run `e127-20261128024702-726c06`, verified [CI 46098122107](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46098122107). E127 `FINALIZED`, exit 0, 336 sec, selected real RTX5090, zero recognized GPU fault markers in 7,000 scanned lines; **visual=Unknown and controls=Unknown.**
