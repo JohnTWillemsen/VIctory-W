@@ -36,7 +36,6 @@ function ReportFor([string]$Folder,[string]$ReportRoot,[string]$Audit) {
         throw 'Only a direct E127 run folder under the approved test root can be audited'
     }
     & $Audit -Mode Audit -RunId $run -ReportRoot $ReportRoot
-    if ($LASTEXITCODE -ne 0) { throw 'Offline VW092 report failed, original E127 ZIP still retained' }
     $zip=Join-Path (Join-Path $ReportRoot ('VW092-offline-'+$run)) 'VW092-anonymous-wait-summary.zip'
     if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw 'VW092 ZIP missing' }
     Write-Host ('UPLOAD ONLY VW092: '+$zip)
@@ -60,7 +59,6 @@ if ($Mode -eq 'Recover') {
     if ([string]::IsNullOrWhiteSpace($RunFolder) -or
         -not (Test-Path -LiteralPath $RunFolder -PathType Container)) { throw 'Recover needs a real prior E127 run folder' }
     & $handoff -Mode Recover -RunFolder $RunFolder -Repo $Repo -ReportRoot $ReportRoot
-    if ($LASTEXITCODE -ne 0) { throw 'Existing E127/E141 recovery failed; no game launched' }
     ReportFor $RunFolder $ReportRoot $audit
     return
 }
@@ -69,20 +67,27 @@ if ($ExpectedHeadSha -cnotmatch '^[0-9a-f]{40}$' -or $GithubRun -lt 1) {
 }
 if ($Mode -eq 'Prepare') {
     & $handoff -Mode Prepare -GithubRun $GithubRun -ExpectedHeadSha $ExpectedHeadSha -Repo $Repo -ReportRoot $ReportRoot -GameRoot $GameRoot
-    if ($LASTEXITCODE -ne 0) { throw 'Existing E145 preparation failed; no game launched' }
     Write-Host 'VW092 prepared only; no game launched. Use -Mode Run for owner-consented hardware measurement.'
     return
 }
 $prior=SessionIds $ReportRoot
 $hadValue=Test-Path Env:VICTORY_PIPELINE_WAIT_STATS
 $oldValue=$env:VICTORY_PIPELINE_WAIT_STATS
+$handoffProblem=$null
 try {
     # ONLY numeric instrumentation. E145/E127 independently validate source
     # SHA, RTX5090, user session, game location, and literal PLAY consent.
     $env:VICTORY_PIPELINE_WAIT_STATS='1'
     Write-Host 'VW092 numeric waiting measurement opt-in enabled for this launch ONLY.'
-    & $handoff -Mode Run -GithubRun $GithubRun -ExpectedHeadSha $ExpectedHeadSha -Repo $Repo -ReportRoot $ReportRoot -GameRoot $GameRoot
-    if ($LASTEXITCODE -ne 0) { throw 'Existing E145 owner launcher failed; E127 checkpoint may still be recoverable' }
+    try {
+        & $handoff -Mode Run -GithubRun $GithubRun -ExpectedHeadSha $ExpectedHeadSha -Repo $Repo -ReportRoot $ReportRoot -GameRoot $GameRoot
+    }
+    catch {
+        # A nonzero game exit may leave LASTEXITCODE nonzero even after an
+        # offline PowerShell report succeeds. Do not discard an E127 crash
+        # checkpoint just because the existing E145 wrapper then throws.
+        $handoffProblem=$_
+    }
 }
 finally {
     if ($hadValue) { $env:VICTORY_PIPELINE_WAIT_STATS=$oldValue }
@@ -90,7 +95,22 @@ finally {
 }
 $now=SessionIds $ReportRoot
 $new=@($now | Where-Object { $prior -cnotcontains $_ })
-if ($new.Count -eq 0) { Write-Host 'No new E127 run created; no wait report generated.'; return }
+if ($new.Count -eq 0) {
+    if ($null -ne $handoffProblem) { throw $handoffProblem }
+    Write-Host 'No new E127 run created; no wait report generated.'
+    return
+}
 if ($new.Count -ne 1) { throw 'Ambiguous E127 run count: do not guess; recover with explicit run folder.' }
-ReportFor (Join-Path $ReportRoot $new[0]) $ReportRoot $audit
+$session=Join-Path $ReportRoot $new[0]
+$e141=Join-Path (Join-Path $ReportRoot ('E141-offline-'+$new[0])) 'E141-anonymous-perf-summary.zip'
+if (-not (Test-Path -LiteralPath $e141 -PathType Leaf)) {
+    # E141 reads only existing private logs and does not relaunch the title.
+    $perf=RequiredScript (Join-Path $Repo 'scripts\research\owner-nvidia-perf-audit.ps1')
+    & $perf -Mode Audit -RunId $new[0] -ReportRoot $ReportRoot
+    if (-not (Test-Path -LiteralPath $e141 -PathType Leaf)) { throw 'E141 offline ZIP missing; E127 may still be recoverable' }
+}
+ReportFor $session $ReportRoot $audit
+if ($null -ne $handoffProblem) {
+    Write-Warning 'The original launcher reported an error. Anonymous reports were preserved; do not infer gameplay success.'
+}
 Write-Host 'The VW092 ZIP reports only numeric aggregates. No performance fix is claimed.'
