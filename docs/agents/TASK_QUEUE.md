@@ -5,8 +5,8 @@
 | Task | Status at dated checkpoint | Acceptance and next action |
 | --- | --- | --- |
 | **VW-072 — Full NVIDIA source replacement** | **COMPLETE, not merely a proposal.** Merged PR37/PR38; NVIDIA v8 is `main` `6b6bdf4`, old source archived. | Verify current main SHA on every session; no reimport. |
-| **VW-073 — RTX5090 first actual playable-world acceptance** | **P0 INITIAL CONTROLLABLE 3D INTERIOR CONFIRMED (E139).** E138 fixed ZIP showed selected RTX5090, normal exit, controls Yes but visual Unknown; owner subsequently explicitly confirmed visible rendered 3D interior and character movement. Broader world NOT RUN. | First baseline accepted from owner follow-up for **3D interior only**; next seek scene progression/graphics and longer-term stability as separate measured gates. Preserve original ZIP field and private logs. |
-| **VW-074 — Inherited NVIDIA D3D12 GPU synthetic failures** | **P1 / REPRODUCED RED** on Windows Actions. Tests: `indirect::tests::host_list_budget_starts_empty_at_each_submission`, `indirect::tests::warp_batch_charges_every_execution`, `pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws`. | Identify test adapter/device capabilities (WARP vs GPU), distinguish test expectation vs source bug, develop bounded regression/repair on branch, don't mask red by disabling tests. |
+| **VW-073 — RTX5090 initial 3D room acceptance** | **E139 CONFIRMED** | Owner observed rendered controllable first interior. Broader world not yet tested; preserve main rollback. |
+| **VW-074 — Inherited Windows GPU synthetic tests** | **E157 FIXED TEST-ONLY IN DRAFT PR56** | Original main had 3 WARP fixture failures; PR56 demonstrated 436 pass/0 fail/36 ignored, no runtime merge. |
 | **VW-075 — Inherited strict upstream Clippy warnings** | **P2 / RED; draft PR42 reveals many further inherited GPU lint warnings.** | Fix justified style/test warnings on an isolated branch, no global suppressions or claims of playability. |
 | **VW-076 — Maintain anti-stale continuity handoff** | **COMPLETE (E129):** canonical docs and fresh-clone smoke test merged through PR39; main continuity check green at that checkpoint. | Keep [HANDOFF](HANDOFF.md), CURRENT_STATE, LATEST_CHECKPOINT, NEW_SESSION_PROMPT and evidence aligned. Automated CI check must PASS. |
 
@@ -17,7 +17,7 @@
 
 | **VW-089 — E157 WARP fixtures** | **[PR56](https://github.com/JohnTWillemsen/VIctory-W/pull/56) DRAFT** | [E127 46104177631](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46104177631): GPU 436/0, 36 ignored; source/privacy PASS. Strict Clippy RED; no renderer or GPU play, no owner-authorized merge. |
 | **VW-090 — E161 owner ON/OFF comparison** | **PR60 DRAFT; same exe SHA, World/Controls YES both** | OFF sampled p50 28.3 vs ON 23.4; p10 11.6 vs 3.5, but ~18% fewer draws OFF; no proven causal gain. Default OFF. Severe low FPS persists, no merge. |
-| **VW-091 — E163 pipeline queue / cold-cache analysis** | **P0 OWNER E162 OFFLINE EVIDENCE PASS; CAUSE UNPROVEN** | ON/OFF slow <=10 FPS windows 12/4; queue p50 37.5/197.5, very slow log 664/371, fast >=20 FPS queue p50 0 in both. Source verifies real outstanding jobs; fresh isolated home may reset caches unless override. Next source-only queue/prioritization/cache fixture, preserve graphics correctness, no new play. |
+| **VW-091 — E163 pipeline queue/copy investigation** | **P0; offline evidence, causality unknown** | Slow queued jobs p50 ON/OFF 37.5/197.5, fast 0. Source-only cache/worker/copy tests next; no new gameplay. |
 
 **Task ownership:** Never infer a task is unclaimed solely from this dated Markdown. Query open PRs, branch tips, recent main commits and Actions first. The original source and old experimental PRs are preserved for research but are **not** active Nvidia runtime changes. Use one focused branch/PR per task. No commits to `main` without owner authorization and exact-head review.
 
