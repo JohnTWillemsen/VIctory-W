@@ -1,27 +1,27 @@
-# Agent operating system — navigation index
+# Agent documentation — authoritative navigation
 
-**Read [AGENTS.md](../../AGENTS.md) first.** This directory makes the project reproducible between sessions; it is not a replacement for the live repository or CI. Avoid duplicating the same fact in several files.
+For the NVIDIA-based VIctory-W, **read [AGENTS.md](../../AGENTS.md) and [HANDOFF.md](HANDOFF.md) first.** Do not start from the 2026-11-26 Marvisak experiments or historical draft PRs.
 
-| File | One job | Update policy |
+| Source | What it means | Updating it |
 | --- | --- | --- |
-| [LATEST_CHECKPOINT.md](LATEST_CHECKPOINT.md) | Short newest-session waypoint: exact CI, owner pending results, next steps | Refresh at substantial milestones; never replace live verification |
-| [CURRENT_STATE.md](CURRENT_STATE.md) | **Only mutable present-tense handoff:** exact verified refs, task in progress, blockers, next actions | Update at the end of a substantive task; stamp date, author/context, source URLs |
-| [ROADMAP.md](ROADMAP.md) | Stable priority order, acceptance gates, scope | Update when priorities change; add a decision record |
-| [TASK_QUEUE.md](TASK_QUEUE.md) | Bounded work IDs, owners, allowed edits and branch coordination | Update at claim, PR and closure; no pretend background progress |
-| [WORKFLOW.md](WORKFLOW.md) | Orchestrator/worker/validator boundaries, branch + PR process | Version with an explanatory PR |
-| [RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md) | How to review issues, compare forks, prevent duplicate or imaginary fixes | Version with explanatory PR |
-| [TESTING.md](TESTING.md) | Source checks, evidence tiers and safe Windows/5090 testing | Update with validated test procedures |
-| [EVIDENCE_LOG.md](EVIDENCE_LOG.md) | **Append-only** source, CI, synthetic and device test observations | Append a dated entry; correct mistakes with a linked correction, not deletion |
-| [DECISIONS.md](DECISIONS.md) | **Append-only** rationale for strategy, risky changes, promotions and rejections | Append an ID and relevant evidence |
-| [UPSTREAM_TRACKER.md](UPSTREAM_TRACKER.md) | Candidates and upstream PR statuses, with explicit freshness limits | Reverify before each implementation |
-| [ARCHITECTURE_INDEX.md](ARCHITECTURE_INDEX.md) | Directory-to-subsystem source map, no copy of architecture | Update if crate layout changes |
-| [LEGACY_CONTEXT.md](LEGACY_CONTEXT.md) | Historical pointers to previous fork; **not imported into this fork** | Historical, link-only; never promote on memory |
-| [EXPERIMENT_TEMPLATE.md](EXPERIMENT_TEMPLATE.md) | One-page reproducible hypothesis and A/B experiment template | Copy to PR description or private test notes |
-| [NEW_SESSION_PROMPT.md](NEW_SESSION_PROMPT.md) | Paste-ready handoff for a new agent | Keep concise, in sync with AGENTS |
-| [RESTART_TEST_PROTOCOL.md](RESTART_TEST_PROTOCOL.md) | Reproducible cold-start, interruption and conflict simulations with explicit AI limitations | Update when CI rehearsal scenarios change |
+| [HANDOFF.md](HANDOFF.md) | Canonical short *dated* NVIDIA source/CI/owner gameplay/workspace handoff | Update whenever the accepted foundation, playability evidence or owner test procedure changes |
+| [CURRENT_STATE.md](CURRENT_STATE.md) | Short current state, exact linked runs/commit as of last checkpoint | Refresh at each substantial milestone; **always recheck live GitHub** |
+| [LATEST_CHECKPOINT.md](LATEST_CHECKPOINT.md) | Quick last milestone plus immediate next step | Refresh with accepted evidence, no speculative progress |
+| [NEW_SESSION_PROMPT.md](NEW_SESSION_PROMPT.md) | Small paste-ready new ChatGPT session bootstrap, no hard-coded SHA | Change only when rules/goal change |
+| [TASK_QUEUE.md](TASK_QUEUE.md) | Small active priorities and statuses; previous 112 KB queue preserved in Git history | Never use as a lock; inspect live PRs |
+| [EVIDENCE_LOG.md](EVIDENCE_LOG.md) | Detailed **append-only** E-series observations | Only append; corrections get a new row |
+| [DECISIONS.md](DECISIONS.md) | Detailed **append-only** D-series rationale and authorizations | Only append |
+| [WORKFLOW.md](WORKFLOW.md) | Roles and source-controlled branch/PR gates | Change with rationale and source review |
+| [RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md) | Read/compare source and upstream proposals, distinguish reports from tests | Update for materially changed procedures |
+| [TESTING.md](TESTING.md) | Background source/synthetic/hardware acceptance detail | NVIDIA live protocol is [E127](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md) |
+| [RESTART_TEST_PROTOCOL.md](RESTART_TEST_PROTOCOL.md) | What the currently installed cold-clone CI actually tests | Update alongside `scripts/check-continuity.py` |
+| [NVIDIA_SOURCE_PIN.md](../migration/NVIDIA_SOURCE_PIN.md) | Upstream exact v8 provenance, preserved old-source archive and licensing | Pin new upstream revisions explicitly, never by "latest" |
+| [E127 testing / upload protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md) | One owner-consented supervised run and privacy-safe ZIP/recovery | Keep script and synthetic test aligned |
 
-**Source-of-truth order:** current GitHub code and exact SHA → completed linked CI/test results → independently recorded local hardware evidence → dated handoff → upstream author reports → hypotheses. A lower tier cannot override a higher tier without investigation.
+**Authoritative evidence order:** live GitHub code/branch/PR head > completed exact-head CI/results > anonymized real RTX5090 owner observations > dated snapshot > third-party maintainer reports > hypotheses.
 
-**Refresh sequence:** read required docs → verify live HEAD, open PRs and CI → inspect actual source and tests → check task collisions → do bounded work on a dedicated branch → report evidence/blocked steps in the PR → orchestrator reconciles shared CURRENT_STATE/TASK_QUEUE and append-only records. If GitHub or required test inputs are inaccessible, label the blocked portion `UNKNOWN` or `NOT_RUN`, do useful source-only work, and stop short of acceptance claims.
+**Anti-staleness rule:** A fixed SHA in a dated document is a *historical checkpoint*, not a requirement that the branch remain frozen. Always fetch current main, PRs and CI first and flag changed or contradictory facts. Old source/task details are retained in Git history and append-only logs; never silently revive old code because a historical paragraph says "current."
 
-Do not put screenshots, copyrighted artifacts, title-derived dumps, private logs or credentials in agent documents.
+**Offline check:** `python scripts/check-continuity.py --smoke-clone` checks required docs, concise size limits, NVIDIA source pin, evidence sequence, owner report guardrails, then clones the committed checkout into a disposable Git directory and fails closed on a missing canonical file. It is a **process test**, not an AI or gameplay test.
+
+**Privacy:** No title data, raw logs, screenshots, private paths, shaders, crash dumps or credentials in these docs or the PUBLIC repository.
