@@ -35,7 +35,7 @@ Future enhancements are bounded: compare author-pinned v7 vs v8 only **after** a
 
 ## Next agent's checklist
 
-1. Check the exact status and output of Windows E127 CI for migration PR37; fix any PowerShell syntax/fixture problems **before** owner action. Report all original upstream synthetic failures as failures. If a release build fails, do not distribute it.
+1. Check the exact status and output of Windows E127 CI for current live NVIDIA-based `main` (migration PR37 is already merged); fix any PowerShell syntax/fixture problems **before** owner action. Report all original upstream synthetic failures as failures. If a release build fails, do not distribute it.
 2. Once an executable with SHA-256 exists, issue the owner only **one concise verified download and PowerShell command** with their known Windows file paths; never guess an artifact URL or SHA. A direct GitHub Actions artifact is available only if the job actually completed.
 3. Receive one `E127-anonymous-summary.zip`; inspect sole member schema and update append-only evidence, decision, task and next checkpoint. Ask for further private data only if strictly needed and only through privacy-preserving fixed-schema output.
-4. Preserve `main` and `archive/pre-nvidia-foundation-20261127` until user has accepted the new playable baseline; if the source change is merged later, maintain the archive/rollback branch.
+4. Preserve existing NVIDIA-based `main` and `archive/pre-nvidia-foundation-20261127` throughout testing. The NVIDIA source **has already merged**; use the archive/rollback branch only as history or after an explicit owner-approved rollback, not a default runtime baseline.
