@@ -2697,7 +2697,7 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
             }
             sig.unwrap()
         };
-        // Two records of 65,535 x 16 groups (64 threads each, 2^26 - 2,048
+        // Two records of 65,535 x 16 groups (64 threads each, 2^26 - 1,024
         // threads), then one of 32 groups (2,048 threads): together exactly
         // the budget, so the small record after them does not fit whether
         // or not a record that does not fit takes the rest (`rest`).
