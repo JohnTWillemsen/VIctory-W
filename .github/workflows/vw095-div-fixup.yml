@@ -28,7 +28,7 @@ jobs:
         run: rustup toolchain install
       - name: CPU-only division fixup lowering regression
         shell: pwsh
-        run: cargo test --locked -p victory-shader div_fixup_corner_program_lowers_without_gpu -- --exact --nocapture
+        run: cargo test --locked -p victory-shader div_fixup_corner_program_lowers_without_gpu -- --nocapture
       - name: Locked Windows source check
         shell: pwsh
         run: cargo check --locked -p victory
