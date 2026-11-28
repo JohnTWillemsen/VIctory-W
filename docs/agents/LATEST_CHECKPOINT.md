@@ -1,6 +1,6 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**E147 latest:** E141 RTX5090 scene logs **10.9 FPS** (90 windows) and **3.6 FPS** (5), no recovery. **P0 performance before exploration.** Draft **PR50**: source release+privacy PASS, E144 serial WARP **203 tests + 3 repeats PASS** (run 46097227183); full GPU 3 inherited RED and Clippy RED. **Candidate gameplay FPS NOT RUN.** Merged **PR51** adds verified E127+E141 owner A/B helper. E144–E147, D057; check live CI.
+**E150 latest:** E145 owner test correctly rejected a synthetic PR-merge artifact **before gameplay**. [PR53](https://github.com/JohnTWillemsen/VIctory-W/pull/53) fixed exact-head CI. Draft PR50 HEAD `dd4b1146592909ad26730bc9864d9b25d1f211b2`: release/fixture PASS run `46098122107`, focused WARP 203+3 PASS run `46098122094`, artifact `15244585832`. **Owner candidate gameplay NOT_RUN**; original E141 interior 10.9/3.6 FPS. Full GPU three inherited and Clippy RED. E149–E150/D059.
 
 ## E140 measured severe interior lag — E141 offline per-log follow-up
 
