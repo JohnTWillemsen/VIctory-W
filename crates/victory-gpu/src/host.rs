@@ -9568,6 +9568,35 @@ pub(crate) fn swap_format(format: DXGI_FORMAT) -> Option<DXGI_FORMAT> {
 
 const BUFFERS: u32 = 2;
 
+/// VW093: default stays the owner's verified v2026.11.27.8 behavior.
+/// Upstream v2026.11.27.10 enabled DXGI_PRESENT_ALLOW_TEARING by default;
+/// we require an explicit owner opt-in before changing the presentation path.
+fn tearing_requested(value: Option<&str>) -> bool {
+    value.is_some_and(|v| v.trim() == "1")
+}
+
+/// Only enable immediate windowed presentation when the DXGI factory confirms
+/// feature support. Failed cast or query keeps ordinary Present(0, 0).
+fn tearing(factory: &IDXGIFactory2) -> bool {
+    if !tearing_requested(std::env::var("VICTORY_TEARING").ok().as_deref()) {
+        return false;
+    }
+    let Ok(factory) = factory.cast::<IDXGIFactory5>() else { return false };
+    let mut allowed = windows::core::BOOL(0);
+    let check = unsafe {
+        factory.CheckFeatureSupport(
+            DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+            (&raw mut allowed).cast(),
+            size_of_val(&allowed) as u32,
+        )
+    };
+    check.is_ok() && allowed.as_bool()
+}
+
+fn chain_flags(tearing: bool) -> DXGI_SWAP_CHAIN_FLAG {
+    if tearing { DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING } else { DXGI_SWAP_CHAIN_FLAG(0) }
+}
+
 struct Presenter {
     swap_chain: IDXGISwapChain3,
     width: u32,
@@ -9587,6 +9616,12 @@ struct Presenter {
     notice: panel::Notice,
     /// The F1 settings menu.
     menu: menu::Menu,
+    /// Whether swap chain was created with the opt-in tearing capability.
+    tearing: bool,
+    /// May be disabled after a rejected immediate present, without changing swap chain flags.
+    presents_tearing: bool,
+    /// Log a non-tearing present refusal only once.
+    present_refused: bool,
 }
 
 /// The frame rate, shown in the window's caption every second and logged
@@ -10154,7 +10189,7 @@ impl Host {
             // SAFETY: no back buffer is held; every submission was waited for.
             let resized = unsafe {
                 p.swap_chain
-                    .ResizeBuffers(BUFFERS, width, height, format, DXGI_SWAP_CHAIN_FLAG(0))
+                    .ResizeBuffers(BUFFERS, width, height, format, chain_flags(p.tearing))
             };
             match resized {
                 Ok(()) => {
@@ -10392,7 +10427,24 @@ impl Host {
                 },
             );
             let called = crate::streamline::present_called(&presenting);
-            let _ = p.swap_chain.Present(0, DXGI_PRESENT(0));
+            let shown = p.swap_chain.Present(
+                0,
+                if p.presents_tearing { DXGI_PRESENT_ALLOW_TEARING } else { DXGI_PRESENT(0) },
+            );
+            if shown.is_err() && p.presents_tearing {
+                // A driver/proxy might refuse an immediate present (upstream
+                // observed a white window on an RTX 5070). Retry normally and
+                // never ask for immediate presentation again this run.
+                tracing::warn!(
+                    code = %shown, frame,
+                    "opt-in immediate DXGI present refused; ordinary presents for the rest of the run"
+                );
+                p.presents_tearing = false;
+                let _ = p.swap_chain.Present(0, DXGI_PRESENT(0));
+            } else if shown.is_err() && !p.present_refused {
+                p.present_refused = true;
+                tracing::warn!(code = %shown, frame, "DXGI present refused (logged once)");
+            }
             crate::streamline::present_returned(called);
             crate::streamline::present_ends(presenting);
             showing.next("the frame meter");
@@ -10429,6 +10481,11 @@ impl Host {
         // SAFETY: plain object creation for our window.
         unsafe {
             let factory: IDXGIFactory2 = CreateDXGIFactory2(DXGI_CREATE_FACTORY_FLAGS(0))?;
+            let tearing = tearing(&factory);
+            tracing::info!(
+                tearing,
+                "VW093 immediate DXGI presentation is optional (VICTORY_TEARING=1); fallback on refusal"
+            );
             let desc = DXGI_SWAP_CHAIN_DESC1 {
                 Width: width,
                 Height: height,
@@ -10440,6 +10497,7 @@ impl Host {
                 BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
                 BufferCount: BUFFERS,
                 SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+                Flags: chain_flags(tearing).0 as u32,
                 ..Default::default()
             };
             // FSR 3 frame generation (where DLSS Frame Generation does not
@@ -10490,6 +10548,9 @@ impl Host {
                 panel: panel::Panel::new(),
                 notice: panel::Notice::new(),
                 menu: menu::Menu::new(),
+                tearing,
+                presents_tearing: tearing,
+                present_refused: false,
             })
         }
     }
@@ -11944,3 +12005,25 @@ mod batch {   // Batch::texture_due lives here; `mod tests` is already taken at 
     }
 }
 
+
+/// VW093: CPU-only opt-in/rollback tests; no game, GPU or DXGI device needed.
+#[cfg(test)]
+mod vw093_present_tests {
+    use super::{chain_flags, tearing_requested};
+    use windows::Win32::Graphics::Dxgi::DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+    #[test]
+    fn immediate_present_requires_explicit_opt_in() {
+        for value in [None, Some(""), Some("0"), Some("yes"), Some("auto")] {
+            assert!(!tearing_requested(value));
+        }
+        assert!(tearing_requested(Some("1")));
+        assert!(tearing_requested(Some(" 1 ")));
+    }
+
+    #[test]
+    fn swap_chain_flags_preserve_original_when_off() {
+        assert_eq!(chain_flags(false).0, 0);
+        assert_eq!(chain_flags(true).0, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0);
+    }
+}
