@@ -6,6 +6,7 @@ param(
     [ValidateSet('SelfTest','Prepare','Run','Recover')][string]$Mode='Prepare',
     [long]$GithubRun=0,
     [string]$ExpectedHeadSha='',
+    [ValidateSet('0','1')][string]$Tearing='0',
     [string]$Repo='C:\VIctory-NVIDIA',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$GameRoot='C:\Grand Theft Auto',
@@ -128,6 +129,7 @@ $candidate=VerifiedBuild $build $ExpectedHeadSha
     ('source_commit='+$UpstreamPin)
     ('github_actions_run_id='+$GithubRun)
     'verified_provenance=true'
+    ('dxgi_tearing_requested='+$(if($Tearing -eq '1'){'ON'}else{'OFF'}))
     'game_launched_during_preflight=false'
     'private_paths_or_title_assets_in_report=false'
 ) | Set-Content -LiteralPath (Join-Path $build 'E145-anonymous-preflight.txt') -Encoding ASCII
@@ -147,7 +149,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $games[0].DirectoryName 'appdata0.rp
 $before=@(Get-ChildItem -LiteralPath $ReportRoot -Directory -Filter 'e127-*' | Select-Object -ExpandProperty Name)
 Write-Host 'E127 will request explicit PLAY consent. Back up saves before typing PLAY.'
 Write-Host 'Stay in the same first playable interior; observe movement/FPS, not broad progression.'
-& $session -Mode Start -VictoryExe $candidate.Exe -GameExe $game -ExpectedSha256 $candidate.Sha -ReportRoot $ReportRoot
+& $session -Mode Start -VictoryExe $candidate.Exe -GameExe $game -ExpectedSha256 $candidate.Sha -ReportRoot $ReportRoot -Tearing $Tearing
 $after=@(Get-ChildItem -LiteralPath $ReportRoot -Directory -Filter 'e127-*' | Where-Object { $before -cnotcontains $_.Name })
 if ($after.Count -ne 1) {
     Write-Warning 'Could not identify one new E127 run; E127 checkpoint is under the test root, use Recover after crash/reboot.'
