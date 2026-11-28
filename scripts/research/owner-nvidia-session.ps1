@@ -97,7 +97,8 @@ function PublicReport([string]$Folder,[string]$State,[string]$ExitCode,[string]$
     $summary=LogSummary $Folder
     $pub=Join-Path $Folder 'UPLOAD-ONLY'
     New-Item -ItemType Directory -Force -Path $pub | Out-Null
-    $elapsed=[math]::Max(0,[math]::Floor(([DateTime]::UtcNow - [DateTime]::Parse($cfg.started_utc)).TotalSeconds))
+    $started=[DateTimeOffset]::Parse([string]$cfg.started_utc,[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::RoundtripKind)
+    $elapsed=[math]::Max(0,[math]::Floor(([DateTimeOffset]::UtcNow - $started).TotalSeconds))
     $gpu='UNKNOWN'
     if ($summary.host_5090 -gt 0) { $gpu='HOST_RTX5090_NAME_MATCH' }
     elseif ($summary.host_other -gt 0) { $gpu='OTHER_HOST_ADAPTER_REPORTED' }
@@ -181,6 +182,135 @@ if ($Mode -eq 'SelfTest') {
     if (-not $report.Contains('device_removed_marker_count=1')) { throw 'Device removed parser did not match' }
     if ($report.Contains('C:\\private') -or $report.Contains('never-upload.rpf') -or $report.Contains($root)) { throw 'Private log data leaked' }
     if (-not $report.Contains('human_observed_visual=World')) { throw 'Visual enum absent' }
+    $durationMatch=[regex]::Match($report,'(?m)^elapsed_seconds=(\d+)\r?
+    Write-Host 'E127 synthetic fixed-field privacy, D3D12 host adapter and crash parsers PASS; no game launched'
+    Remove-Item -LiteralPath $root -Recurse -Force
+    exit 0
+}
+if ($Mode -eq 'Start') {
+    # The NVIDIA fork's documented graphics/shader-cache baseline is a normal user session.
+    $who=[Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal=[Security.Principal.WindowsPrincipal]::new($who)
+    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'Launch from a normal, non-administrator PowerShell window; nothing launched.'
+    }
+    $VictoryExe=RequiredFile $VictoryExe
+    $GameExe=RequiredFile $GameExe
+    if (-not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $GameExe) 'appdata0.rpf') -PathType Leaf)) {
+        throw 'Local title startup archive missing; nothing launched.'
+    }
+    $sha=(Get-FileHash -LiteralPath $VictoryExe -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($ExpectedSha256) -or $sha -cne $ExpectedSha256.ToLowerInvariant()) {
+        throw 'Source executable SHA256 does not match the selected known build; nothing launched.'
+    }
+    $nvidia=Get-Command nvidia-smi.exe -ErrorAction SilentlyContinue
+    if ($null -eq $nvidia) { throw 'NVIDIA preflight unavailable; nothing launched.' }
+    $names=(& $nvidia.Source --query-gpu=name --format=csv,noheader 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0 -or $names -notmatch 'RTX\s*5090') { throw 'RTX5090 presence check failed; nothing launched.' }
+    $id='e127-'+[DateTime]::UtcNow.ToString('yyyyMMddHHmmss')+'-'+[Guid]::NewGuid().ToString('N').Substring(0,6)
+    $RunFolder=Join-Path $ReportRoot $id
+    New-Item -ItemType Directory -Force -Path (WorkPrivate $RunFolder),(Join-Path $RunFolder 'home') | Out-Null
+    $cfg=@{
+        victory_exe=$VictoryExe;game_exe=$GameExe
+        executable_sha256=$sha;started_utc=[DateTime]::UtcNow.ToString('o')
+        run_id=$id
+    }
+    [IO.File]::WriteAllText((WorkConfig $RunFolder),($cfg|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
+    PublicReport $RunFolder 'READY' 'UNKNOWN' 'Unknown' 'Unknown'
+    Write-Host ('One ZIP from this session, even after a crash: '+(Join-Path $RunFolder $ZipName))
+    Write-Host ('Private-only logs and settings: '+(Join-Path $RunFolder 'home'))
+    Write-Host 'This may reset the graphics driver or crash/reboot the PC. Back up game saves beforehand.'
+    Write-Host 'This test uses an isolated VICTORY_HOME, forces RTX 5090 by name, and leaves native BVH off.'
+    Write-Host 'On first launch, the NVIDIA program may offer optional DLL downloads and restart itself once to warm up.'
+    $consent=Read-Host 'Type PLAY to launch; anything else keeps the initial anonymous ZIP and cancels'
+    if ($consent -cne 'PLAY') { Write-Host 'Cancelled without launching'; return }
+    $shell=Join-Path $PSHOME 'powershell.exe'
+    $command="& '"+$Base.Replace("'","''")+"' -Mode Watch -RunFolder '"+$RunFolder.Replace("'","''")+"'"
+    $encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+    try {
+        $worker=Start-Process -FilePath $shell -ArgumentList ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand '+$encoded) -WindowStyle Hidden -PassThru
+        [IO.File]::WriteAllText((Join-Path (WorkPrivate $RunFolder) 'watch-pid.txt'),[string]$worker.Id)
+    } catch { Write-Warning 'Independent monitor did not start; initial ZIP retained, recover after title exit.' }
+    $oldHome=$env:VICTORY_HOME
+    $oldAdapter=$env:VICTORY_ADAPTER
+    $oldDebug=$env:VICTORY_D3D12_DEBUG
+    $oldBvh=$env:VICTORY_BVH_BUILDER
+    $oldKeys=$env:VICTORY_KEYS
+    $exit='UNKNOWN'
+    try {
+        $env:VICTORY_HOME=Join-Path $RunFolder 'home'
+        $env:VICTORY_ADAPTER='RTX 5090'
+        Remove-Item Env:VICTORY_D3D12_DEBUG -ErrorAction SilentlyContinue
+        Remove-Item Env:VICTORY_BVH_BUILDER -ErrorAction SilentlyContinue
+        Remove-Item Env:VICTORY_KEYS -ErrorAction SilentlyContinue
+        Write-Host 'Starting the upstream built-in play launcher now; respond to any visible NVIDIA SDK prompt yourself.'
+        & $VictoryExe play $GameExe
+        if ($null -ne $LASTEXITCODE) { $exit=[string]$LASTEXITCODE }
+    } catch {
+        ($_|Out-String) | Set-Content -LiteralPath (Join-Path (WorkPrivate $RunFolder) 'private-launch-exception.txt')
+    } finally {
+        $env:VICTORY_HOME=$oldHome
+        $env:VICTORY_ADAPTER=$oldAdapter
+        $env:VICTORY_D3D12_DEBUG=$oldDebug
+        $env:VICTORY_BVH_BUILDER=$oldBvh
+        $env:VICTORY_KEYS=$oldKeys
+        [IO.File]::WriteAllText((Join-Path (WorkPrivate $RunFolder) 'exit.txt'),$exit)
+    }
+    Write-Host 'If the game restarted itself for warm-up, let the second game finish before answering.'
+    $observed=Answer 'Visual seen? [Unknown / Menu / Black / World]' @('Unknown','Menu','Black','World') 'Unknown'
+    $moved=Answer 'Could you control or move in the 3D world? [Unknown / No / Yes]' @('Unknown','No','Yes') 'Unknown'
+    PutText (Join-Path (WorkPrivate $RunFolder) 'observation.txt') @($observed,$moved)
+    [IO.File]::WriteAllText((Join-Path (WorkPrivate $RunFolder) 'finished.flag'),'finished')
+    Start-Sleep -Seconds 3
+    Write-Host ('UPLOAD ONLY: '+(Join-Path $RunFolder $ZipName))
+    return
+}
+if ($Mode -eq 'Watch') {
+    $cfg=ReadConfig $RunFolder
+    $stopFile=Join-Path (WorkPrivate $RunFolder) 'finished.flag'
+    $end=[DateTime]::UtcNow.AddHours(3)
+    do {
+        $state=if (Test-Path -LiteralPath $stopFile) { 'FINALIZED' } else { 'RUNNING' }
+        $exitFile=Join-Path (WorkPrivate $RunFolder) 'exit.txt'
+        $exit=if (Test-Path -LiteralPath $exitFile) { (Get-Content -LiteralPath $exitFile -Raw).Trim() } else { 'UNKNOWN' }
+        $obsFile=Join-Path (WorkPrivate $RunFolder) 'observation.txt'
+        $visual='Unknown';$controls='Unknown'
+        if (Test-Path -LiteralPath $obsFile) {
+            $obs=@(Get-Content -LiteralPath $obsFile)
+            if ($obs.Count -gt 0 -and $obs[0] -in @('Unknown','Menu','Black','World')) { $visual=$obs[0] }
+            if ($obs.Count -gt 1 -and $obs[1] -in @('Unknown','No','Yes')) { $controls=$obs[1] }
+        }
+        PublicReport $RunFolder $state $exit $visual $controls
+        if ($state -eq 'FINALIZED') { break }
+        Start-Sleep -Seconds 5
+    } while ([DateTime]::UtcNow -lt $end)
+    return
+}
+if ($Mode -eq 'Recover') {
+    if ([string]::IsNullOrWhiteSpace($RunFolder)) { throw 'Recover needs -RunFolder.' }
+    $cfg=ReadConfig $RunFolder
+    $wp=Join-Path (WorkPrivate $RunFolder) 'watch-pid.txt'
+    if (Test-Path -LiteralPath $wp) {
+        $id=0;$value=(Get-Content -LiteralPath $wp -Raw).Trim()
+        if ([int]::TryParse($value,[ref]$id) -and (Get-Process -Id $id -ErrorAction SilentlyContinue)) {
+            Write-Host 'Independent monitor is still writing the current ZIP; no recovery needed.'
+            return
+        }
+    }
+    $exitFile=Join-Path (WorkPrivate $RunFolder) 'exit.txt'
+    $exit=if (Test-Path -LiteralPath $exitFile) { (Get-Content -LiteralPath $exitFile -Raw).Trim() } else { 'UNKNOWN' }
+    if ($Visual -notin @('Unknown','Menu','Black','World')) { $Visual='Unknown' }
+    if ($Controls -notin @('Unknown','No','Yes')) { $Controls='Unknown' }
+    PublicReport $RunFolder 'RECOVERED' $exit $Visual $Controls
+    Write-Host ('UPLOAD ONLY: '+(Join-Path $RunFolder $ZipName))
+    Write-Host 'Exit reason is UNKNOWN if Windows rebooted before the launcher wrote exit.txt.'
+    return
+}
+throw 'Unexpected mode'
+)
+    if (-not $durationMatch.Success) { throw 'Elapsed duration missing from report' }
+    $duration=[int]$durationMatch.Groups[1].Value
+    if ($duration -lt 0 -or $duration -gt 180) { throw 'Synthetic 12-second session elapsed duration invalid; check UTC conversion' }
     Write-Host 'E127 synthetic fixed-field privacy, D3D12 host adapter and crash parsers PASS; no game launched'
     Remove-Item -LiteralPath $root -Recurse -Force
     exit 0
