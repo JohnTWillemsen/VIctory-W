@@ -22,7 +22,20 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 100
     steps:
+      # For pull_request, Actions defaults to refs/pull/N/merge (a synthetic
+      # commit), which is not the source branch's HEAD. E145 checks the exact
+      # candidate source commit; use that same commit in every gate.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Fail closed if checkout differs from requested PR-head commit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          $actual=(& git rev-parse HEAD).Trim()
+          if ($actual -cne $expected) { throw 'E127 checkout differs from exact source PR head' }
+          Write-Host 'E127_EXACT_PR_SOURCE_HEAD_VERIFIED=true'
       - name: Install project Rust toolchain
         shell: pwsh
         run: rustup toolchain install
@@ -79,7 +92,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 80
     steps:
+      # For pull_request, Actions defaults to refs/pull/N/merge (a synthetic
+      # commit), which is not the source branch's HEAD. E145 checks the exact
+      # candidate source commit; use that same commit in every gate.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install project Rust toolchain
         shell: pwsh
         run: rustup toolchain install
@@ -92,7 +110,12 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
+      # For pull_request, Actions defaults to refs/pull/N/merge (a synthetic
+      # commit), which is not the source branch's HEAD. E145 checks the exact
+      # candidate source commit; use that same commit in every gate.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify report script PowerShell syntax
         shell: powershell
         run: |
