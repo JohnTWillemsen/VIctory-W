@@ -18,6 +18,10 @@ Historical source-built game launcher executable [artifact 15237799712](https://
 
 **First** requery live `main`, PRs and CI. **Then** follow [E127 testing/upload protocol](../research/E127-TESTING-AND-UPLOAD-PROTOCOL.md): one consent-gated actual host adapter + rendered world + input owner checkpoint (only when useful); one privacy-safe anonymous ZIP, never raw logs. Diagnose existing three source synthetic failures separately, likely WARP/hardware-feature dependent but not yet established as harmless. Do not ask to repeat obsolete E087/E091 multi-ZIP experiments or reintroduce patches from the old source.
 
+## E131 active source fix (2026-11-27 AZ)
+
+On verified NVIDIA `main` `b801b5218d1ace78fd473dcb197f3eabd235fb97`, `play::prepare` clears `VICTORY_HOME` and `VICTORY_ADAPTER`, even though E127 explicitly sets them. This can compromise the isolated owner test root and named host adapter selection. [Draft PR #41](https://github.com/JohnTWillemsen/VIctory-W/pull/41) carries an upstream-attributed, two-key `KEPT` fix and regression test. **CI pending / unmerged / RTX5090 gameplay NOT_RUN** until independently verified. Do not issue an E127 hardware command using a pre-fix binary.
+
 ## Durable records and unresolved concerns
 
 - [Evidence log](EVIDENCE_LOG.md): append-only E001 onward; latest confirmed before this audit **E128**; never erase old failures.
