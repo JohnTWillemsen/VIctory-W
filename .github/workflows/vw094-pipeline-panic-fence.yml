@@ -1,0 +1,40 @@
+name: VW094 pipeline worker panic fence (Windows; no game)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact candidate commit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $actual = (& git rev-parse HEAD).Trim()
+          $expected = '${{ github.event.pull_request.head.sha || github.sha }}'
+          if ($actual -cne $expected) { throw 'VW094 source pin mismatch' }
+          Write-Host 'VW094_EXACT_SOURCE=true'
+      - name: Install pinned Rust
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Verify worker survives panicking host pipeline (no game)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test --locked -p victory-gpu --lib pipeline::make::tests::a_panicking_pipeline_is_refused_and_the_worker_continues -- --exact --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'VW094 pipeline panic regression failed' }
+          Write-Host 'VW094_PANICKING_PIPELINE_WORKER_RECOVERS_PASS=true'
+      - name: Check complete Windows source launcher
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo check --locked -p victory
+          if ($LASTEXITCODE -ne 0) { throw 'VW094 Windows source check failed' }
+          Write-Host 'VW094_WINDOWS_SOURCE_CHECK_PASS=true'
