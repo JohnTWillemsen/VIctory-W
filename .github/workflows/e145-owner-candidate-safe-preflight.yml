@@ -28,5 +28,7 @@ jobs:
             throw 'E145 syntax invalid'
           }
           & $p -Mode SelfTest
-          if ($LASTEXITCODE -ne 0) { throw 'E145 provenance self-test failed' }
+          # E145 is a PowerShell script returning normally; failure throws.
+          # LASTEXITCODE may be null when no native executable was run.
+          if (-not $?) { throw 'E145 provenance self-test failed' }
           Write-Host 'E145 source artifact verifier PASS; no game/asset access'
