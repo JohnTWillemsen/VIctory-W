@@ -3,7 +3,7 @@
 # Seed/Check/SelfTest never launch. Run delegates to existing E145/E127 PLAY.
 [CmdletBinding()]
 param(
-    [ValidateSet('SelfTest','Seed','Check','Run')][string]$Mode='Check',
+    [ValidateSet('SelfTest','Inspect','Seed','Check','Run')][string]$Mode='Check',
     [string]$Repo='C:\VIctory-NVIDIA',
     [string]$ReportRoot='C:\VIctory-NVIDIA-Tests',
     [string]$GameRoot='C:\Grand Theft Auto',
@@ -76,6 +76,48 @@ function CacheFiles([string]$Folder) {
     if ($files.Count -eq 0) { throw 'Cache is empty' }
     return @($files | Sort-Object relative)
 }
+# Read-only extension histogram. Never return names, paths, cache contents,
+# free-form extensions or hashes; every field is from a fixed allowlist.
+function InspectCache([string]$Folder) {
+    if (-not (Test-Path -LiteralPath $Folder -PathType Container)) {
+        throw 'Prepared local cache folder is absent; nothing launched'
+    }
+    NoLink $Folder
+    $blocked=@('.exe','.dll','.rpf','.pak','.zip','.7z','.log','.dmp','.sav','.mp4')
+    $counts=@{}
+    foreach ($ext in $blocked) { $counts[$ext]=0 }
+    [int]$total=0
+    $stack=New-Object 'System.Collections.Generic.Stack[string]'
+    $stack.Push($Folder)
+    while ($stack.Count -gt 0) {
+        $dir=$stack.Pop()
+        foreach ($item in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
+            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw 'Prepared local cache contains a reparse point; no names exported'
+            }
+            if ($item.PSIsContainer) {
+                $stack.Push($item.FullName)
+            } else {
+                $total++
+                if ($total -gt 100000) { throw 'Cache file-count limit exceeded; no names exported' }
+                $ext=$item.Extension.ToLowerInvariant()
+                if ($counts.ContainsKey($ext)) { $counts[$ext]++ }
+            }
+        }
+    }
+    Write-Host 'format=VW092-private-cache-extension-audit-v1'
+    Write-Host ('inspected_file_count='+$total)
+    [int]$blockedTotal=0
+    foreach ($ext in $blocked) {
+        $n=[int]$counts[$ext]
+        $blockedTotal += $n
+        Write-Host (('blocked_'+$ext.TrimStart('.')+'_count')+'='+$n)
+    }
+    Write-Host ('blocked_total_count='+$blockedTotal)
+    Write-Host ('nonblocked_count='+($total-$blockedTotal))
+    Write-Host 'game_launched=false'
+    Write-Host 'file_names_paths_and_contents_exported=false'
+}
 function PriorSession([string]$Root,[string]$RunId,[string]$Exe) {
     if ($RunId -cnotmatch '^e127-\d{14}-[a-f0-9]{6}$') { throw 'Invalid E127 source ID' }
     $session=Join-Path $Root $RunId
@@ -147,6 +189,9 @@ function SeedCache([string]$Root,[string]$RunId,[string]$Head,[string]$Exe,[hash
 function VerifyCache([string]$Root,[string]$Head,[string]$Exe,[hashtable]$Device) {
     AssertSha $Head $Exe
     $dest=CacheFolder $Root $Head
+    if (-not (Test-Path -LiteralPath $dest -PathType Container)) {
+        throw 'Persistent cache not seeded; previous Seed failed, no game launched'
+    }
     NoLink $dest
     $private=Join-Path $dest $ProvenanceName
     NoLink $private
@@ -172,6 +217,17 @@ if ($Mode -eq 'SelfTest') {
         $src=Join-Path $tmp ('VW092-warm-cache-'+$h.Substring(0,12))
         New-Item -ItemType Directory -Path (Join-Path $src 'pipelines') -Force | Out-Null
         [IO.File]::WriteAllText((Join-Path $src 'pipelines\synthetic.bin'),'Synthetic data only')
+        # A seed must fail on forbidden types; the read-only histogram must
+        # report a fixed category without exposing filename or raw bytes.
+        $syntheticLog=Join-Path $src 'pipelines\PRIVATE-name.log'
+        [IO.File]::WriteAllText($syntheticLog,'PRIVATE synthetic path, do not report')
+        $inspection=(InspectCache $src | Out-String)
+        if (-not $inspection.Contains('blocked_log_count=1') -or
+            $inspection.Contains('PRIVATE-name') -or
+            $inspection.Contains('PRIVATE synthetic')) {
+            throw 'Fixed-field extension histogram leaked details or missed the forbidden .log'
+        }
+        Remove-Item -LiteralPath $syntheticLog -Force
         $private=Join-Path (Join-Path $tmp $run) 'PRIVATE-never-upload'
         New-Item -ItemType Directory -Path $private -Force | Out-Null
         [IO.File]::WriteAllText((Join-Path $private 'session.json'),
@@ -226,6 +282,13 @@ if ($Mode -eq 'Run' -and $GithubRun -ne $AcceptedGithubRun) {
 }
 AssertSha $ExpectedHeadSha $ExpectedExeSha
 $root=Root $ReportRoot
+if ($Mode -eq 'Inspect') {
+    # Intentional pre-launch check: no NVIDIA driver call, no artifact
+    # download, no manifest write, no game or cache file copy.
+    $source=Join-Path $root ('VW092-warm-cache-'+$ExpectedHeadSha.Substring(0,12))
+    InspectCache $source
+    return
+}
 $device=DeviceProof
 if ($Mode -eq 'Seed') {
     SeedCache $root $SourceRunId $ExpectedHeadSha $ExpectedExeSha $device
