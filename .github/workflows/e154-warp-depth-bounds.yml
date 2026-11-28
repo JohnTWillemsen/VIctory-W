@@ -1,0 +1,37 @@
+name: E154 WARP depth bounds enabled-depth diagnostic
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  depth-bounds:
+    name: E154 WARP depth bounds feature diagnostic (no title)
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Exact source head check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $want = '${{ github.event.pull_request.head.sha || github.sha }}'
+          $have = (& git rev-parse HEAD).Trim()
+          if ($want -cne $have) { throw 'E154 source mismatch' }
+          Write-Host 'E154_EXACT_SOURCE=true'
+      - name: Install pinned project toolchain
+        shell: pwsh
+        run: rustup toolchain install
+      - name: Probe WARP depth bounds with depth comparison forced to pass
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:VICTORY_D3D12_WARP = '1'
+          cargo test --locked -p victory-gpu --lib pipeline::host::tests::depth_bounds_pipeline_loads_and_filters_draws -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'E154 depth bounds diagnostic failed: retain earlier red' }
+          Write-Host 'E154_WARP_DEPTH_BOUNDS_WITH_DEPTH_ENABLED_PASS=true'
