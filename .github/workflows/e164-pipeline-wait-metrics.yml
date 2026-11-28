@@ -35,3 +35,10 @@ jobs:
           cargo test --locked -p victory-gpu --lib pipeline::make::tests::opt_in_wait_sample_counts_numeric_durations_and_drains -- --exact --test-threads=1
           if ($LASTEXITCODE -ne 0) { throw 'E164 numeric sample test failed' }
           Write-Host 'E164_NUMERIC_SAMPLE_DRAIN_PASS=true'
+- name: Exercise offline fixed-field wait/FPS parser and privacy ZIP (PowerShell 5.1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts/research/owner-nvidia-wait-audit.ps1 -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'VW092 offline wait report synthetic privacy self-test failed' }
+          Write-Host 'VW092_OFFLINE_WAIT_REPORT_PRIVACY_PASS=true'
