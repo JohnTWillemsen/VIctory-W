@@ -1,0 +1,32 @@
+name: E140 offline NVIDIA FPS and CPU/GPU report privacy gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  offline-perf-privacy:
+    name: Windows PowerShell 5.1 offline synthetic audit
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse and run offline-only perf/privacy fixture
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $script='scripts/research/owner-nvidia-perf-audit.ps1'
+          $tokens=$null
+          $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'E140 PowerShell parser failed'
+          }
+          & $script -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'E140 offline fixture failed' }
