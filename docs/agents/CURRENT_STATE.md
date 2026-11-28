@@ -1,5 +1,10 @@
 # CURRENT STATE — VIctory-W NVIDIA-based source (dated snapshot)
 
+## E139 UPDATED FIRST HARDWARE ACCEPTANCE — owner confirmation on 2026-11-27 Arizona
+
+**FIRST REAL RTX5090 CONTROLLABLE RENDERED 3D INTERIOR = CONFIRMED.** Following the E138 ZIP's original `human_observed_visual=Unknown` and `human_observed_controls=Yes`, the owner explicitly confirmed seeing a rendered 3D interior room/cell and moving the player through it. This direct follow-up upgrades **initial indoor World+Controls acceptance only**, without rewriting E138 ZIP or implying outdoor/open-world access, wide scene progression, fidelity, sustained play, or overall stability. The first session ran a source-matched NVIDIA-v8 binary SHA-256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f` from clean source main `8caccae47243cad361038bab4d4d4025f90ccc82`; RTX5090 was the selected host adapter, exit code 0 and 0 recognized GPU fault markers. Original ZIP's `elapsed_seconds=26020` is invalid, inflated by Phoenix UTC offset; reporting-only [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) fixes calculation. E138 original and E139 owner follow-up are separate append-only evidence rows. No need to rerun dangerous GPU test merely to answer visual question. **Next:** investigate wider scene progression, renderer correctness and measured stability; check live `main` before use.
+
+
 ## First real owner RTX5090 report — E135–E138 (2026-11-27 AZ)
 
 The owner E135 inspection showed an existing **empty** `C:\\VIctory-NVIDIA` folder; the E136 fixed-field report then **verified a clean clone** of the same GitHub `main` at `8caccae47243cad361038bab4d4d4025f90ccc82`. E137 verified the matching [GitHub Actions source-built artifact](https://github.com/JohnTWillemsen/VIctory-W/actions/runs/46089270184), binary SHA-256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f`, and anonymous PowerShell self-test PASS. Old checkout and title files were not moved by these steps.
