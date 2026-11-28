@@ -19,5 +19,5 @@
 
 **Privacy:** No title executable, proprietary data, raw GPU logs, screenshots, identifying file paths or dumps in this PUBLIC repo. For owner tests accept only the fixed-schema E127 anonymous summary ZIP.
 
-| **VW-080 — E138 anonymous elapsed UTC correction** | **[PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) staged**; report-only change | Use offset-aware UTC time and Phoenix -07:00 regression; initial E127 elapsed_seconds inflated by 7h. Do not confuse source/report fix with gameplay. |
+| **VW-080 — E138 anonymous elapsed UTC correction** | **[PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) MERGED** as `b1209cb61cdad5cec7697a88e724e055134c68f6`; report-only change | Use offset-aware UTC time and Phoenix -07:00 regression; initial E127 elapsed_seconds inflated by 7h. Do not confuse source/report fix with gameplay. |
 | **VW-081 — Expand beyond first rendered controllable room** | **P0 NEXT / INITIAL INTERIOR WORLD+CONTROLS PASS, BROADER GAME UNKNOWN** | Owner confirmed rendered 3D room/cell and movement in first E127 game. Next verify transition to further scenes, rendering correctness, controls and repeatability. No need to repeat prior initial hardware run merely for reporting. |
