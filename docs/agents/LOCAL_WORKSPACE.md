@@ -11,7 +11,7 @@
 | `C:\VIctory-W` | **Old owner's local development folder** from pre-NVIDIA experiments | **Leave untouched.** Never run `git pull`, clean, delete, overwrite or use compiled `victory.exe` from here for the new testing baseline. |
 | Owner's existing game files | Title files, saves, caches and dependencies | **Leave in their existing local directory**. Do not move/copy to a Git checkout, commit, upload, publish game paths, or treat them as source code. Only reference the user's own confirmed local game executable when launching with consent. |
 
-**Setup state:** Planned and documented, **NOT VERIFIED AS CREATED ON OWNER'S PC**. Remote GitHub operations cannot create any of these local folders. A future agent must ask for/verify actual local setup output; don't infer completion from this document.
+**Setup state (owner-confirmed 2026-11-27 AZ):** **Verified created and initialized.** Owner E135 inspection established the pre-existing source directory was EMPTY, and E136 validated a clean `main` clone from the same `JohnTWillemsen/VIctory-W` remote at `8caccae47243cad361038bab4d4d4025f90ccc82`. E137 validated the test root, source-matched binary and harness fixture. **Do not run the original clone bootstrap again over this existing checkout.** E138 completed actual RTX5090 hardware test; E139 owner directly confirmed a controllable rendered 3D interior. Old `C:\VIctory-W` and local game assets were not modified by new setup/testing scripts. Live main may have advanced: check before any update. Remote GitHub operations cannot create any of these local folders. A future agent must ask for/verify actual local setup output; don't infer completion from this document.
 
 ## First-time bootstrap — normal, non-administrator PowerShell
 
