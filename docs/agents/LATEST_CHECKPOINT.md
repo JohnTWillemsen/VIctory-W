@@ -1,6 +1,8 @@
 # Latest verified checkpoint — VIctory-W (NVIDIA-based)
 
-**E151 LATEST:** Owner ran exact PR50 candidate on RTX5090 (source head `dd4b1146592909ad26730bc9864d9b25d1f211b2`, executable SHA256 `e4a9ee63e21b7b77daa6620c2eddeda31a94e1aa01477614cd7be045e62529ac`). E127 `FINALIZED`, exit 0, 336s, selected 5090, 0 recognized GPU faults in scanned lines; **visual=Unknown, controls=Unknown**. E141 longer log **29.1 FPS p50 / 30 scene-like windows** vs prior **10.9 FPS / 90 windows (2.67x descriptive)**. Short log **3.6 FPS / 5 windows** in both; pooled candidate p10 **3.5 FPS**, not smooth. **PR50 DRAFT/UNMERGED until visual+input confirmed**, exact scene/cache matched performance unproven. E151/D060; detailed [E151 study](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
+**VW099 LATEST (2026-11-28 UTC):** Owner's PR66 early-head/face-pass RTX5090 run `e127-20261128093225-73c5cd` FINALIZED exit0/200s; E127 World/Controls Yes, adapter UNKNOWN, no detected GPU fault markers. Owner says faces better but still bad. E141 14 scene-like windows FPS p50 **10.8**, p10 **3.4**, first/last **3.5→18.5**, CPU prep p50 34.9ms. Original unmodified full-upstream PR65 19 windows p50 **13.1** with missing head; different workload/cache, not matched. **PR66 visual/performance FAIL, draft, do NOT merge.** VW099 is source experiment: upstream PR378 Wave32 face relocation at `63429aa` (3 commits above v01) plus PR703 head-map patch and FacesOn profile; RTX5090 **NOT_RUN** on VW099. Source/CI acceptance first. Avoid PR33 texture prelude recheck (known RTX5090 black-world regression with PR703). [Source and next steps](../research/VW099-WAVE32-FACE-RELOCATION.md).
+
+**E151 historical:** PR50 was 29.1 FPS median/30 longer-log windows vs 10.9 baseline/90, with World/Controls UNKNOWN and short-log 3.6 in both. Unmerged; see [E151 research](../research/E151-RTX5090-CPU-CANDIDATE-FPS.md).
 
 ## E140–E151 NVIDIA performance evidence
 
