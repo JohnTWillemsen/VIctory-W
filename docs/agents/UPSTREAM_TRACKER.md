@@ -213,3 +213,7 @@ Baseline fork `main` `224a1020b7b03b6bab5243a2d9c0d443cae98386` remains NVIDIA v
 | [NVIDIA PR623](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/623) `0889d0c8c1ecbb40927295b3b61dd13860c08af6` | OPEN, large two-commit performance suite across shader translation, formats, texture, write-watch, DSP. | Author explicitly says **developed/tested only on Linux synthetic benchmarks**, not Windows; second commit adds assembly, C and approximate reverb. | Defer broad import; review smaller individual improvements once actual bottleneck established. |
 
 **Do not blindly replace or merge the pinned source**; source provenance, release build, independent WARP/GPU tests and owner E127 data remain distinct. Review actual upstream PR status before any experiment because GitHub state can change.
+
+## VW095 · 2026-11-28 UTC — narrow shader runtime correctness port
+
+Main pinned upstream `64d4931b3dd90305134512b805fc98f04119fb6e` lacks [NVIDIA commit feb90ade](https://github.com/trustno1-coder/VIctory-NVIDIA/commit/feb90adeb11c9be0cd842c923463b7afbe2e5a30), a division-fixup zero/inf/NaN priority fix and synthetic fixture. [Draft PR64](https://github.com/JohnTWillemsen/VIctory-W/pull/64) ports only those source changes. Upstream at inspection `63b902fe1720a5188ee79d94a88c8de0470f6349` was 56 commits ahead/0 behind; **not** wholesale imported. Owner RTX5090 gaming and FPS on this branch NOT RUN. Independent runtime draft PRs #61/#62/#63 remain in review.
