@@ -377,3 +377,11 @@ Draft [PR42](https://github.com/JohnTWillemsen/VIctory-W/pull/42) fixed a test-o
 ## D-052 · 2026-11-27 AZ — Keep initial GPU-selection evidence in fixed-field E127 ZIP without exposing logs
 
 [PR43](https://github.com/JohnTWillemsen/VIctory-W/pull/43) merged E133 as `88a60ea1d26664e9c04f184da6db153c0c3cde0c`. Adapter selection messages near startup may fall outside E127's last-3500-line scan. Keep the crash-marker tail, and only if no GPU-selection event appears there read a bounded head for adapter name and count. The Windows PowerShell 3600-line synthetic fixture passed with once-only RTX5090 and device-loss matches and no private log text leakage. No real title executed. Raw logs, game data, dumps and caches remain solely local. Future hardware success requires genuine selected RTX5090, rendered World and Controls Yes.
+
+## D-053 · 2026-11-27 AZ — Preserve first owner NVIDIA hardware evidence, not fictional World acceptance
+
+**Evidence:** The first owner E127 sanitized RTX5090 session on source `8caccae47243cad361038bab4d4d4025f90ccc82` with source-executable SHA256 `25100c5247e23ac2f39fd10cf7017ddaaab2dd56a9c60a1dda18c3e89e73c84f` produced `FINALIZED`, `exit_code=0`, actual host RTX5090 name match, no recognized device-loss/hang/DRED markers, `human_observed_visual=Unknown`, and `human_observed_controls=Yes`. Its elapsed time `26020` was inflated by roughly 7h due to offset-naive UTC/local parsing (actual interval between UTC run ID and final report checkpoint ~821 s).
+
+**Decision:** Recognize a real owner GPU session but **do NOT claim a playable 3D world** unless owner confirms actual World+Controls Yes. Preserve visual and controls as separate observations. Fix elapsed time on report-only [PR45](https://github.com/JohnTWillemsen/VIctory-W/pull/45) using offset-aware DateTimeOffset and deterministic Arizona timezone test; do not replay the crash-prone title merely to repair old ZIP reporting. Never publish the owner ZIP, proprietary title data or raw logs.
+
+**Revisit:** Once exact-head report privacy fixture passes, merge the narrow correction while keeping inherited GPU synthetic and Clippy failures honest. Ask owner if they saw a true rendered world and moved a character, not just menu navigation.
