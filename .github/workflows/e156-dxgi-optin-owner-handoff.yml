@@ -1,0 +1,52 @@
+name: E156 source-authenticated opt-in DXGI owner harness (no game)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  script-preflight:
+    name: E156 Windows PS5.1 syntax and dual-mode fixed-field privacy tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Assert exact GitHub source HEAD
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $actual = (& git rev-parse HEAD).Trim()
+          $want = '${{ github.event.pull_request.head.sha || github.sha }}'
+          if ($actual -cne $want) { throw 'E156 wrong source checkout' }
+          Write-Host 'E156_EXACT_HEAD=true'
+      - name: Parse Windows PowerShell 5.1 scripts without running a title
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($script in @('scripts/research/owner-nvidia-session.ps1', 'scripts/research/owner-nvidia-candidate-ab.ps1')) {
+            $tokens=$null
+            $errors=$null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).ProviderPath, [ref]$tokens, [ref]$errors)
+            if (@($errors).Count -ne 0) { throw ("E156 PowerShell syntax failed: " + $script) }
+          }
+          Write-Host 'E156_WINPS51_SYNTAX=true'
+      - name: Synthetic E127 default and opt-in report privacy states
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/research/owner-nvidia-session.ps1' -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'E156 E127 self-test failed' }
+          Write-Host 'E156_E127_DEFAULT_AND_OPTIN_PRIVACY_PASS=true'
+      - name: Synthetic E145 source manifest checks only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/research/owner-nvidia-candidate-ab.ps1' -Mode SelfTest
+          if ($LASTEXITCODE -ne 0) { throw 'E156 E145 self-test failed' }
+          Write-Host 'E156_E145_NO_GAME_PROVENANCE_PASS=true'
